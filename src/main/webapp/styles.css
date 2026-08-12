@@ -1,0 +1,2133 @@
+CSS
+body {
+  /* 🆕 Mismo estilo que el <style> inline de index.html: base gris muy
+     oscuro (no negro puro), líneas verticales tipo "tablas" y viñeta
+     hacia negro puro en los bordes. Si index.html deja de traer su
+     <style> inline, esta regla mantiene el mismo look.
+     🔧 El tamaño ahora usa vw/vh (viewport) en vez de %, para que la
+     viñeta no dependa del alto total de la página: antes, en páginas
+     largas (catálogo completo) el 100% 100% se calculaba sobre todo
+     el scroll y la parte de arriba (toolbar) quedaba casi negra;
+     en páginas cortas (Mi tienda) se veía el tono tablas normal. */
+  background-color: #0a0a0a;
+  background-image:
+    radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.82) 78%, #000000 100%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.028) 0px,
+      rgba(255, 255, 255, 0.028) 1px,
+      transparent 1px,
+      transparent 112px
+    ),
+    linear-gradient(180deg, #1a1a1a 0%, #121212 55%, #090909 100%);
+  background-repeat: no-repeat, repeat, no-repeat;
+  background-size: 100vw 100vh, auto 100vh, 100vw 100vh;
+  background-attachment: fixed, fixed, fixed;
+  color: white;
+}
+
+
+
+/* Estilo del título */
+h1 {
+  color: darkred;
+  display: inline;
+}
+
+.store-title span {
+  display: inline-block; /* permite aplicar margin */
+}
+
+.white-text {
+  color: white;
+  margin-right: 12px; /* espacio entre "Tienda" y "Monjarrez" */
+}
+
+.red-text {
+  color: darkred;
+}
+
+
+/* Icono en la esquina superior izquierda */
+.icon {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 90px;
+  height: 90px;
+  
+}
+
+
+
+
+/* Contenedor del contenido del header (excepto el icono) */
+.header-content {
+  display: flex; /* Coloca elementos en línea */
+  justify-content: center; /* Centra los elementos horizontalmente */
+  align-items: center; /* Alinea verticalmente */
+  gap: 10px; /* Espacio entre los elementos */
+  flex-wrap: wrap; /* Permite que se acomoden en varias líneas si no caben */
+  padding-left: 100px; /* Deja espacio para que no choque con el icono */
+}
+
+/* Campo de búsqueda */
+#search {
+ padding: 8px 12px;
+  border-radius: 8px 0 0 8px;
+  border: none;
+  outline: none;
+  width: 300px;
+  font-size: 16px;
+}
+
+/* Botón de búsqueda */
+#searchButton {
+ padding: 8px 14px;
+  background-color: darkred;
+  color: white;
+  border: none;
+  border-radius: 0 8px 8px 0;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: cen
+}
+
+.icon-search {
+  font-size: 16px;
+}
+
+#searchButton:hover {
+  background-color: red;
+}
+
+
+
+/* Filtros de productos */
+.filters {
+  margin-top: 20px;
+  font-size: 15px;
+  margin-left: -8px;
+}
+
+/* Barra de herramientas (categorías de productos) */
+.toolbar {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-left: -50px;
+}
+
+/* Línea separadora */
+.separator {
+  border-top: 1px solid white;
+  margin: 10px 0;
+}
+
+/* Espaciado entre filtros addProductButton*/
+.filters label {
+  margin-bottom: 10px;
+  display: block;
+}
+
+
+
+/* Modal genérico de btn Mi tienda*/
+.modal {
+  display: none; 
+  position: fixed; 
+  z-index: 999; 
+  padding-top: 100px; 
+  left: 0; top: 0; 
+  width: 100%; height: 100%; 
+  background-color: rgba(0,0,0,0.6);
+}
+
+/* Contenido */
+.modal-content {
+  background: #fff;
+  margin: auto;
+  padding: 20px;
+  border-radius: 10px;
+  width: 300px;
+  text-align: center;
+}
+
+.close {
+  float: right;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+
+
+
+
+
+
+
+
+/* Toggle switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+  margin-left: 50px; /* más espacio desde el botón Buscar */
+  vertical-align: middle;
+}
+
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 24px;
+}
+
+/* Círculo del toggle */
+.slider::before {
+  content: "";
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 2px;
+  bottom: 2px;
+  background-color: black; /* negro por defecto para que se vea el sol */
+  transition: 0.4s;
+  border-radius: 50%;
+  z-index: 2;
+}
+
+.slider::after {
+  content: "🌙   ☀️"; /* ☀️ con variante de color más visible */
+  position: absolute;
+  top: 2px;
+  left: 6px;
+  width: 100%;
+  text-align: space-between;
+  font-size: 14px;
+  z-index: 1;
+  color: #FFD700; /* dorado brillante para el sol */
+}
+
+
+/* Estado activado */
+input:checked + .slider {
+  background-color: #4CAF50;
+}
+
+/* Mover el círculo */
+input:checked + .slider::before {
+  transform: translateX(26px);
+  background-color: white; /* círculo blanco para el modo oscuro */
+}
+
+
+/* Contenedor del botón y preview */
+.subir-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+/* Estilo del "label" que hace de botón */
+.btn-subir {
+  background-color: #8B0000; /* rojo dark */
+  color: white;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 
+    background 0.3s ease, 
+    transform 0.2s ease, 
+    box-shadow 0.2s ease;
+  display: inline-block;
+}
+
+/* Hover → más vivo y con sombra */
+.btn-subir:hover {
+  background-color: #a30000;
+  box-shadow: 0px 4px 10px rgba(0,0,0,0.25);
+  transform: scale(1.05) translateY(-2px); /* crece un poquito */
+}
+
+/* Active → como si se hundiera */
+.btn-subir:active {
+  background-color: #700000;
+  transform: scale(0.97) translateY(0px);
+  box-shadow: 0px 2px 6px rgba(0,0,0,0.15);
+}
+
+/* Input file oculto */
+#imagenProducto {
+  display: none;
+}
+
+/* Preview de la imagen */
+.preview-img {
+  max-width: 120px;  
+  max-height: 120px;  /* más pequeño que antes */
+  object-fit: cover;  
+  border-radius: 6px; 
+  display: none;      
+  border: 1px solid #ccc; 
+  padding: 2px;          
+}
+
+
+
+
+
+
+
+/* Vista en otros dispositivos */
+
+/*
+Adaptación del toggle a móviles y tablets
+*/
+@media (max-width: 500px) {
+  .switch {
+    width: 40px;     /* un poco más pequeño */
+    height: 20px;
+    margin-left: 20px; /* menos separación en móvil */
+  }
+
+  .slider::before {
+    height: 16px;
+    width: 16px;
+  }
+
+  .slider::after {
+    font-size: 12px; /* texto/iconos más pequeños */
+    left: 4px;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 1024px) {
+  .switch {
+    width: 45px;
+    height: 22px;
+    margin-left: 40px; /* separación intermedia */
+  }
+
+  .slider::before {
+    height: 18px;
+    width: 18px;
+  }
+
+  .slider::after {
+    font-size: 13px;
+    left: 5px;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/* Estilo para el grid de productos tipo galería */
+/* Base compartida por #productGrid y #misProductosGrid ("Mi tienda").
+   El layout de columnas nativas de CSS (`columns`) sigue siendo el que
+   usa "Mi tienda" (funciona bien ahí porque sus fotos son parecidas
+   entre sí). */
+.product-grid {
+    column-width: 190px; /* crea tantas columnas quepan, mínimo 190px cada una */
+    column-gap: 20px;
+    padding: 20px;
+}
+
+/* 🆕 MOSAICO ARMADO POR JAVASCRIPT (solo para el catálogo general,
+   #productGrid) — en vez de dejarle las columnas al `columns:` de arriba
+   (que puede colapsar a una sola columna cuando las fotos tienen alturas
+   muy distintas entre sí, como pasa mezclando ropa/servicios/juguetes),
+   script.js arma acá un número fijo de columnas (.masonry-col) y reparte
+   las tarjetas entre ellas. Esta regla es más específica que la de
+   arriba, así que gana solo para el elemento que tenga ambas clases
+   (product-grid Y mosaic-grid) — "Mi tienda" no lleva la clase
+   mosaic-grid, así que sigue exactamente igual que antes. */
+.product-grid.mosaic-grid {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px; /* separación horizontal entre columnas */
+}
+
+.mosaic-grid .masonry-col {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-width: 0; /* permite que las columnas se encojan parejo en vez de desbordar */
+}
+
+/* 🆕 TARJETA DE PRODUCTO
+   Cada .producto ahora es una tarjeta con fondo propio (claro), sombra y
+   esquinas redondeadas — igual que las tarjetas de referencia (AliExpress,
+   Google Shopping). Como el fondo de la tarjeta ya NO depende del fondo de
+   #productGrid, se ve bien encima de los 3 temas (oscuro, claro y
+   estrellado) sin necesitar reglas distintas para cada uno.
+   El orden interno (imagen → nombre → botón) no se toca, solo se le da
+   estilo. */
+.producto {
+    display: inline-block; /* necesario para que fluya bien dentro de las columnas */
+    width: 100%;
+    max-width: 260px; /* 🔧 evita que la tarjeta se estire gigante cuando el
+                          filtro trae pocos productos y el navegador arma
+                          columnas más anchas de lo normal para llenar el
+                          espacio (ej. Novedades, Descuentos) */
+    margin: 0 0 20px; /* separación vertical entre tarjetas de una misma columna */
+    break-inside: avoid; /* evita que una tarjeta quede partida entre dos columnas */
+    background: linear-gradient(180deg, #ffffff 0%, #f4f4f6 100%);
+    border-radius: 0; /* 🔧 esquinas cuadradas, look más "editorial" */
+    overflow: hidden;
+    box-shadow: none; /* 🔧 sin sombra en reposo: la tarjeta se nota poco hasta que se hace hover */
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    color: #1a1a1a; /* texto oscuro legible sobre el fondo claro de la tarjeta */
+}
+
+/* Imagen del producto: se muestra COMPLETA, sin recortar y sin altura
+   fija — cada foto conserva su alto natural según su propia proporción
+   (retrato, cuadrada, panorámica, etc.), igual que en Pinterest/Google
+   Shopping. Ya no se fuerza un mismo alto para todas.
+   El selector es más específico que el estilo inline width/height que
+   trae el <img> desde script.js, para que esta regla siempre gane. */
+.product-grid .producto img {
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    object-fit: contain !important;
+    display: block;
+    border: none !important;
+    border-radius: 0 !important;
+    transition: transform 0.3s ease;
+}
+
+.producto:hover img {
+    transform: scale(1.06); /* leve zoom solo en la imagen, no en toda la tarjeta */
+}
+
+/* Nombre del producto: chico y discreto (una sola línea, se corta con "…"
+   si es muy largo) para que la imagen sea la protagonista de la tarjeta,
+   igual que en el ejemplo de referencia. */
+.producto h3 {
+    margin: 10px 14px 2px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    line-height: 1.3;
+    color: #4a4a4a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Texto adicional dentro de la tarjeta (empresa, descripción, precio en
+   "Mi tienda") — se mantiene disponible por si esos campos existen. */
+.producto p {
+    margin: 0 14px 4px;
+    font-size: 0.85rem;
+    color: #555;
+    line-height: 1.4;
+}
+
+/* Botón "Más información" dentro de la tarjeta: el estilo original
+   (fondo blanco translúcido) estaba pensado para verse sobre negro; aquí
+   se sobreescribe solo dentro de .producto para que contraste bien sobre
+   el nuevo fondo claro de la tarjeta. El .more-info-btn original (por si
+   se usa en otro lugar) no se toca.
+   🆕 Ahora es un pill chiquito con degradado en el rojo vino de la marca
+   (el mismo tono de "Monjarrez" y del estado seleccionado) en vez de
+   negro plano, con un pequeño ícono ✦ antes del texto — estilo insignia,
+   no solo un rectángulo redondeado. Conserva la flecha "→" que se
+   desliza al hacer hover, y la elevación con sombra. */
+.producto .more-info-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin: 6px 14px 12px;
+    padding: 5px 13px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #ffffff;
+    background: linear-gradient(135deg, rgb(150, 10, 45) 0%, rgb(190, 30, 70) 100%);
+    box-shadow: 0 2px 6px rgba(128, 0, 32, 0.35);
+    backdrop-filter: none;
+    min-width: 0;
+    transition: background 0.3s ease, transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.producto .more-info-btn::before {
+    content: "\2726"; /* ✦ */
+    font-size: 0.62rem;
+    opacity: 0.85;
+}
+
+.producto .more-info-btn::after {
+    content: "\2192"; /* → */
+    display: inline-block;
+    width: 0;
+    margin-left: 0;
+    opacity: 0;
+    transform: translateX(-6px);
+    overflow: hidden;
+    transition: width 0.3s ease, opacity 0.3s ease, transform 0.3s ease, margin-left 0.3s ease;
+}
+
+.producto .more-info-btn:hover,
+.producto .more-info-btn:focus {
+    background: linear-gradient(135deg, rgb(115, 0, 32) 0%, rgb(165, 15, 58) 100%);
+    color: #ffffff;
+    backdrop-filter: none;
+    outline: none;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(128, 0, 32, 0.5);
+}
+
+.producto .more-info-btn:hover::after,
+.producto .more-info-btn:focus::after {
+    width: 1em;
+    opacity: 1;
+    transform: translateX(0);
+    margin-left: 6px;
+}
+
+.producto .more-info-btn:active {
+    background: linear-gradient(135deg, rgb(90, 0, 22) 0%, rgb(130, 8, 42) 100%);
+    color: #ffffff;
+    transform: translateY(0);
+    box-shadow: 0 3px 8px rgba(90, 0, 22, 0.4);
+}
+
+.welcome-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 300px; /* Altura ajustable */
+    overflow: hidden;
+    margin: 40px auto 20px auto; /* Poca separación arriba y abajo */
+    width: 90%;
+    max-width: 800px;
+    border-radius: 20px;
+}
+
+.welcome-image {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    transform: translateY(0);
+    transition: transform 0.1s ease-out;
+    border-radius: 20px;
+}
+
+/* Estilo del título */
+.store-title {
+  margin-right: 30px; /* Aleja el título del input */
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.white-text {
+  color: white;
+}
+
+.red-text {
+  color: darkred;
+}
+
+/* Contenedor del contenido del header */
+.header-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  padding-left: 100px;
+  gap: 20px; /* Controla el espacio general entre elementos */
+}
+
+#searchButton {
+  margin-right: 15px; /* Aleja el botón buscar del menú */
+}
+
+.menu-container {
+  margin-left: 15px; /* espacio extra entre Buscar y los tres puntos */
+}
+
+
+
+/* --- BOTÓN DE TRES PUNTITOS (HORIZONTALES) --- */
+.menu-container {
+  position: relative;
+  display: inline-block;
+}
+
+.menu-btn {
+  background: transparent;
+  border: none;
+  font-size: 26px;
+  cursor: pointer;
+  color: white; /* mismo color que el texto del header */
+  padding: 5px 8px;
+  line-height: 1;
+}
+
+/* tres puntitos horizontales */
+.menu-btn::before {
+  content: "⋯"; /* horizontales */
+  font-size: 26px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* --- MENU DESPLEGABLE --- */
+.menu-content {
+  display: none; /* oculto por defecto */
+  position: absolute;
+  right: 0;
+  top: 35px; /* debajo del botón */
+  background-color: rgba(255, 255, 255, 0.95); /* blanco transparente */
+  width: 250px; /* un poco más ancho */
+  box-shadow: 0px 4px 8px rgba(0,0,0,0.25);
+  border-radius: 6px;
+  padding: 8px;
+  z-index: 200;
+  color: #000; /* texto negro para visibilidad */
+  font-size: 14px;
+}
+
+/* Item del menú */
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 6px;
+  margin: 4px 0;
+  color: #000;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border-radius: 4px;
+}
+
+.menu-item:hover {
+  background-color: rgba(0,0,0,0.05); /* gris suave al pasar */
+}
+
+/* Ícono a la izquierda */
+.menu-item i {
+  margin-right: 8px;
+  font-size: 16px;
+  color: #555;
+}
+
+/* Switch compacto */
+.menu-item .switch {
+  flex-shrink: 0;
+  transform: scale(0.85);
+}
+
+/* Botón cerrar sesión */
+.menu-content button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: #ff4d4d; /* rojo elegante */
+  font-weight: 400; /* letras más delgadas */
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+  padding: 6px 8px;
+  border-radius: 4px;
+  width: 100%;
+  transition: background 0.2s ease;
+}
+
+.menu-content button i {
+  font-size: 16px;
+  color: #ff4d4d; /* mismo rojo que el texto */
+}
+
+/* Hover cerrar sesión */
+.menu-content button:hover {
+  background-color: rgba(0,0,0,0.05); /* gris suave sobre blanco */
+}
+
+
+
+/* Logo dentro del menú */
+.menu-logo {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.menu-logo img {
+  width: 80px;  /* ajusta al tamaño que quieras */
+  height: auto;
+  border-radius: 6px;
+}
+
+/* Botón de ayuda (hereda estilos de cerrar sesión) */
+.menu-content button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: #ff4d4d;
+  font-weight: 400;
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+  padding: 6px 8px;
+  border-radius: 4px;
+  width: 100%;
+  transition: background 0.2s ease;
+}
+
+.menu-content button:hover {
+  background-color: rgba(0,0,0,0.05);
+}
+
+/* Botón Ayuda */
+.menu-content .btn-ayuda {
+  color: #000; /* letras negras */
+}
+
+.menu-content .btn-ayuda:hover {
+  background-color: rgba(0,0,0,0.05); /* mismo hover */
+}
+
+
+
+
+
+
+
+/* Agrupar búsqueda */
+.search-group {
+  display: flex;
+  align-items: center;
+  gap: 0px; /* ¡Aquí lo acercamos! Antes tenías 5px */
+  margin-left: -10px; /* Desplaza ligeramente hacia la izquierda */
+}
+
+
+/* Estilos para el fondo del modal (overlay) */
+.modal {
+  display: none; /* Por defecto está oculto */
+  position: fixed; /* Fijo en la pantalla */
+  top: 0;
+  left: 0;
+  width: 100vw; /* Ancho total */
+  height: 100vh; /* Alto total */
+  background-color: rgba(0, 0, 0, 0.7); /* Fondo negro con transparencia */
+  z-index: 1000; /* Muy arriba */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Contenido interno del modal */
+.modal-content {
+  background-color: #111; /* Fondo oscuro sólido para contenido */
+  padding: 20px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 400px;
+  color: white;
+  box-shadow: 0 0 10px rgba(255,255,255,0.2);
+  position: relative;
+}
+
+/* Botón cerrar */
+.close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  color: white;
+  user-select: none;
+}
+
+/* Inputs y labels estilo básico */
+.modal-content label {
+  display: block;
+  margin-top: 15px;
+}
+
+.modal-content input {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  border-radius: 5px;
+  border: none;
+  outline: none;
+}
+  
+.modal-content button[type="submit"] {
+  margin-top: 20px;
+  width: 100%;
+  background-color: darkred;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 7px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.modal-content button[type="submit"]:hover {
+  background-color: red;
+}
+
+/* Contenedor modal ahora posicionamiento manual para arrastre */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  overflow: auto; /* permite scroll general si fuera necesario */
+}
+
+/* Modal centrado inicialmente, pero movible */
+.modal-content {
+    position: absolute;
+  top: 10%; /* empieza más arriba para que se vea solo la mitad */
+  left: 50%;
+  transform: translateX(-50%); /* solo centrado horizontalmente */
+  background-color: #111;
+  padding: 20px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 400px;
+  max-height: 80vh; /* ajustable según preferencia */
+  overflow-y: auto; /* permite scroll interno */
+  color: white;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+  cursor: grab;
+}
+
+/* Handle del drag (ej: el título) */
+.modal-content h2 {
+  cursor: move;
+  margin-top: 0;
+}
+
+/* Agrupaciones izquierda y derecha */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px 20px;
+  gap: 10px;
+}
+
+.toolbar-group {
+  display: flex;
+  gap: 10px;
+}
+
+/* Centro más separado y destacado */
+.toolbar-center {
+  display: flex;
+  gap: 20px;
+}
+
+.toolbar button {
+  padding: 8px 14px;
+  background-color: #222;
+  border: 1px solid darkred;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toolbar button:hover {
+  background-color: darkred;
+}
+
+/* Botones principales más llamativos */
+.toolbar .main {
+  background-color: darkred;
+  border-color: white;
+  font-weight: bold;
+}
+
+.toolbar button.active {
+  background-color: white;
+  color: black;
+  font-weight: bold;
+  border: 2px solid darkred;
+}
+
+
+
+/* Botón normal */
+.toolbar button {
+   position: relative;
+  padding: 8px 14px;
+  background-color: transparent;
+  border: none;
+  color: white;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+  outline: none;
+  overflow: hidden;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.3); /* Borde blanco tenue por defecto */
+
+}
+
+/* Hover */
+.toolbar button:hover {
+  color: #ffcccc;
+  border-bottom: 2px solid #ba55d3; /* Morado más fuerte al pasar el mouse */
+}
+
+/* Botón seleccionado */
+.toolbar button.active {
+  color: white;
+  font-weight: bold;
+  background-color: rgba(186, 85, 211, 0.08);
+  box-shadow: 0 0 12px rgba(186, 85, 211, 0.4);
+  border-bottom: 2px solid #ba55d3; /* Mantiene la base sólida */
+}
+
+
+
+.toolbar button.active::before {
+    content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 100%; /* Borde completo */
+  height: 3px;
+  background: linear-gradient(90deg, #ba55d3, #da70d6);
+  transform: translateX(-50%);
+  border-radius: 2px;
+}
+
+@keyframes border-glow {
+  0% {
+    width: 0%;
+    opacity: 0.3;
+  }
+  100% {
+    width: 100%;
+    opacity: 1;
+  }
+}
+
+
+mark {
+  background-color: yellow;
+  color: black;
+  font-weight: bold;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.modal-content select,
+.modal-content input[type="text"],
+.modal-content input[type="number"] {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  border-radius: 5px;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  font-weight: normal;
+}
+
+.hidden {
+  display: none;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/* Overlay reducido y transparente, solo cubre el área detrás del panel */
+#sideOverlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 400px;  /* solo ancho del panel */
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3); /* más transparente */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  z-index: 1000;
+}
+
+#sideOverlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Panel lateral con animación de deslizamiento + fade-in */
+#infoModal {
+  position: fixed;
+  top: 0;
+  right: -400px; /* oculto fuera de pantalla */
+  width: 400px;
+  height: 100%;
+  background: white; /* Fondo blanco */
+  box-shadow: -2px 0 18px rgba(0, 0, 0, 0.3); /* sombra suave */
+  overflow-y: auto;
+  transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+  z-index: 1001;
+  font-family: Arial, sans-serif;
+  color: black; /* texto negro */
+  opacity: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+#infoModal.open {
+  right: 0;
+  opacity: 1;
+}
+
+#infoModalContent {
+  padding: 20px;
+  position: relative;
+  cursor: default; /* No movible */
+  /* Opcional para evitar que se pueda mover si tenías algo */
+  user-select: text; /* permite seleccionar texto normalmente */
+}
+
+.close-info {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  border: none;
+  background: transparent;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  color: black; /* icono de cerrar en negro */
+}
+
+/* Forzar texto negro en todo el modal */
+#infoModal, #infoModal * {
+  color: black !important;
+}
+
+
+
+
+
+
+
+
+.more-info-btn {
+  background: rgba(255, 255, 255, 0.12); /* fondo semi-transparente */
+  color: #809CBF; /* tono más oscuro que #B0C4DE, elegante sobre negro */
+  border: none;
+  padding: 6px 14px;  
+  border-radius: 20px; 
+  font-weight: 600;
+  cursor: pointer;
+  transition: 
+    background 0.3s ease,
+    color 0.3s ease;
+  backdrop-filter: blur(5px);
+  user-select: none;
+  display: inline-block;
+  text-align: center;
+  font-size: 0.9rem;  
+  min-width: 90px;    
+}
+
+.more-info-btn:hover,
+.more-info-btn:focus {
+  background: rgba(255, 255, 255, 0.25);
+  outline: none;
+  backdrop-filter: blur(8px);
+  color: #87CEEB; /* celeste claro moderno al pasar el mouse */
+}
+
+.more-info-btn:active {
+  background: rgba(135, 206, 235, 0.2); /* más tenue al hacer click */
+  color: #4682B4; /* azul oscuro profesional */
+  transition: none;
+}
+
+
+
+/* Login
+
+
+
+/* Fondo oscuro del modal */
+/* Fondo oscuro del modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 9999;
+}
+
+/* Contenedor del modal */
+.small-modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 450px;
+  padding: 30px;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #111, #1b1b1b);
+ 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  /* Imagen de fondo */
+  background-image: url("imagenes\file_000000000c0861f89b4e4c8909e8da07.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  /* Fallback si no carga la imagen */
+  background-color: #111;
+}
+
+/* Imagen en la parte superior */
+.modal-icon {
+  width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  margin-bottom: 10px;
+  border-radius: 8px;
+}
+
+/* Texto debajo de la imagen */
+.modal-title {
+  font-size: 26px;
+  color: red;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  font-weight: bold;
+  text-align: center;
+}
+
+/* Separador rojo */
+.modal-separator {
+  width: 100%;
+  height: 1.5px;
+  background-color: red;
+  margin-bottom: 25px;
+  border-radius: 2px;
+    flex-shrink: 0; /* evita que se colapse si el contenedor cambia */
+}
+
+/* Texto */
+.modal-text {
+  font-size: 20px;
+  margin-bottom: 20px;
+  font-weight: bold;
+  text-align: center;
+}
+
+/* Botones de roles en columna */
+.roles {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 100%; /* Para que los botones ocupen todo el ancho */
+  margin-bottom: 25px;
+}
+
+.role-btn {
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 16px;
+  transition: transform 0.2s ease, background 0.3s;
+  width: 100%;
+}
+
+
+
+.vendedor:hover {
+  background-color: #1a0000;
+  transform: scale(1.05);
+}
+
+.comprador:hover {
+   background-color: #1a0000;
+  transform: scale(1.05);
+}
+
+.invitado:hover {
+   background: linear-gradient(90deg, #222, #b1e1f9);
+  transform: scale(1.03) rotate(-1deg);
+  box-shadow: 0 0 10px rgba(240, 133, 199, 0.1);
+}
+
+
+.vendedor {
+  background-color: #050504;
+  color: rgb(251, 247, 247);
+  border: 2px solid rgba(254, 1, 1, 0.764);
+}
+
+.comprador {
+  background-color: black;
+  color: white;
+  border: 2px solid white;
+}
+
+.invitado {
+  background-color: #000000;
+  color: white;
+}
+
+/* Botón de registrarse */
+.registrarse {
+  background-color: red;
+  color: white;
+  border: none;
+  padding: 14px;
+  width: 100%;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: transform 0.2s ease, background 0.3s;
+}
+
+.registrarse:hover {
+  transform: scale(1.05);
+  background-color: darkred;
+}
+
+#contenedorPagoExtra {
+  height: auto;
+  overflow: hidden;
+  transition: height 0.3s ease;
+}
+
+.caracteristicas {
+  background-color: #000;
+  color: #fff;
+  padding: 12px;
+  border-radius: 6px;
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+
+  min-height: 180px; /* altura mínima para evitar que se achique */
+  min-width: 300px;  /* ancho mínimo para que mantenga buen tamaño */
+  
+  overflow-y: auto;  /* si el texto es muy largo, añade scroll vertical */
+
+    transition: all 0.3s ease;
+}
+
+
+.oculto {
+  display: none;
+}
+
+.visible {
+  display: block;
+}
+
+
+/* Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Solo para los inputs del modal de vendedor */
+.vendedor-modal .modal-input {
+  display: block; /* Asegura bloque completo */
+  width: 100% !important;
+  box-sizing: border-box; /* Incluye padding en el width */
+  padding: 14px;
+  margin-bottom: 20px;
+  border: none;
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 16px;
+  outline: none;
+  resize: none; /* Evita que se pueda cambiar tamaño */
+}
+
+.vendedor-modal .modal-input::placeholder {
+  color: #ccc;
+}
+
+.vendedor-modal .acceder-btn {
+  margin-bottom: 12px;
+}
+
+.vendedor-modal .volver-btn {
+  background-color: transparent;
+  border: none;
+  color: white;
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.3s;
+}
+
+.vendedor-modal .volver-btn:hover {
+  background-color: white;
+  color: black;
+  transform: scale(1.05);
+}
+
+.vendedor-modal .modal-title {
+  color: white;
+  font-size: 22px;
+  margin-bottom: 10px;
+}
+
+.vendedor-modal .modal-title .highlight-red {
+  color: rgb(248, 37, 37);
+}
+
+.vendedor-modal .small-modal {
+    padding: 60px 30px; /* Más espacio vertical */
+  max-width: 380px;   /* Mantener mismo ancho */
+  width: 90%;
+  overflow-x: hidden; /* Sin barra horizontal */
+  min-height: 480px;  /* Altura mínima para hacerlo más alto */
+}
+
+
+
+/* Aumentar tamaño solo para el input de Cédula */
+.vendedor-modal input[placeholder="Cédula"] {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+
+/* Modal registrarme Estilo compartido con modal de vendedor para el botón "Atrás" */
+#registroModal .volver-btn {
+  background-color: transparent;
+  border: none;
+  color: white;
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.3s;
+  
+}
+
+#registroModal .volver-btn:hover {
+  background-color: white;
+  color: black;
+  transform: scale(1.05);
+ 
+}
+
+#registroModal .small-modal {
+  width: 450px;         /* Antes: 450px */
+  padding: 30px;        /* Antes: 30px */
+    padding: 60px 30px; /* Más espacio vertical */
+  max-width: 380px;   /* Mantener mismo ancho */
+  width: 90%;
+  overflow-x: hidden; /* Sin barra horizontal */
+  min-height: 480px;  /* Altura mínima para hacerlo más alto */
+}
+
+.modal-subtitle {
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 15px;
+}
+   
+#registroModal input,
+#registroModal textarea,
+#registroModal select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#registroModal button#btnSiguienteSolicitud,
+#registroModal button#btnSiguienteSuscripcion {
+  background-color: #d62828; /* Rojo oscuro elegante */
+  color: white;
+  padding: 12px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  width: 100%;
+  font-weight: bold;
+}
+
+#registroModal button#btnSiguienteSolicitud:hover,
+#registroModal button#btnSiguienteSuscripcion:hover {
+  background-color: #b71c1c;
+  transform: scale(1.02);
+}
+
+#registroModal button#btnSiguienteSolicitud:active,
+#registroModal button#btnSiguienteSuscripcion:active {
+  transform: scale(0.98);
+}
+#registroModal .volver-btn {
+  background-color: transparent;
+  color: #fec8c8;
+  padding: 10px;
+  font-size: 14px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  text-align: center;
+}
+
+#registroModal .volver-btn:hover {
+  border: 2px solid #f8f4f4;
+  background-color: rgb(245, 238, 238);
+  transform: scale(1.02);
+}
+
+
+
+
+/* ===== Estilo compartido para los botones "Siguiente" ===== */
+#registroModal button#btnSiguienteUsuario,
+#registroModal button#btnSiguienteSolicitud {
+  background-color: #d62828; /* Rojo elegante */
+  color: white;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 10px;
+  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s;
+}
+
+/* Efecto al pasar el mouse */
+#registroModal button#btnSiguienteUsuario:hover,
+#registroModal button#btnSiguienteSolicitud:hover {
+  background-color: #b71c1c; /* Rojo más oscuro */
+  transform: scale(1.03);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* Efecto al hacer clic */
+#registroModal button#btnSiguienteUsuario:active,
+#registroModal button#btnSiguienteSolicitud:active {
+  transform: scale(0.97);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) inset;
+}
+
+/* Opcional: efecto visual al recibir foco por teclado */
+#registroModal button#btnSiguienteUsuario:focus,
+#registroModal button#btnSiguienteSolicitud:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(214, 40, 40, 0.4);
+}
+
+
+#btnFinalizarRegistro {
+  display: inline-block;
+  background: linear-gradient(135deg, #0078ff, #00c6ff);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  font-size: 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0, 120, 255, 0.3);
+}
+
+#btnFinalizarRegistro:hover {
+  background: linear-gradient(135deg, #005fd1, #00a3e6);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 120, 255, 0.5);
+}
+
+#btnFinalizarRegistro:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 120, 255, 0.3);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Modificaciones para visivilidad en dispositivos
+*/
+@media (max-width: 500px) {
+  .modal-title {
+    font-size: 18px;
+  }
+
+  .modal-icon {
+    width: 60px;
+  }
+
+  .modal-content {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 500px) {
+  #search {
+    width: 70%; /* o 100% si está dentro de un contenedor */
+    font-size: 14px;
+  }
+
+  #searchButton {
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+}
+
+.search-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+}
+
+@media (max-width: 500px) {
+  .search-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #search, #searchButton {
+    width: 100%;
+    border-radius: 8px; /* para que se vea bien en bloque */
+  }
+}
+
+@media (max-width: 500px) {
+  .toolbar {
+    flex-wrap: wrap;
+    margin-left: 0;
+    gap: 6px;
+    padding: 10px 10px;
+  }
+
+  .toolbar button {
+    font-size: 14px;
+    padding: 6px 10px;
+    flex: 1 1 40%; /* que se acomoden mejor */
+    max-width: 45%;
+  }
+
+  .filters {
+    font-size: 14px;
+    text-align: center;
+    margin-left: 0;
+  }
+
+  .filters label {
+    margin-bottom: 8px;
+  }
+
+  .toolbar-center {
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 500px) {
+  h1 {
+    font-size: 20px; /* Tamaño más pequeño para móviles */
+    text-align: center;
+    display: block; /* Asegura que se centre correctamente */
+    margin: 10px 0;
+  }
+}
+
+@media (max-width: 500px) {
+  .icon {
+    width: 50px;
+    height: 50px;
+    top: 5px;
+    left: 5px;
+  }
+}
+
+@media (max-width: 500px) {
+  .icon {
+    width: 50px !important;
+    height: 50px !important;
+    top: 5px !important;
+    left: 5px !important;
+  }
+
+  #search {
+    width: 70% !important; 
+    font-size: 14px !important;
+  }
+
+  #searchButton {
+    padding: 8px 10px !important;
+    font-size: 14px !important;
+  }
+
+  /* Ajusta padding-left para el header-content para que no quede mucho espacio a la izquierda */
+  .header-content {
+    padding-left: 60px !important;
+  }
+}
+
+@media (max-width: 500px) {
+  #infoModal {
+    width: 80%;
+    right: -100%; /* oculto completamente */
+  }
+  #infoModal.open {
+    right: 0; /* visible */
+  }
+
+  #infoModalContent {
+    padding: 15px;
+  }
+}
+
+
+
+/* Adaptación para móviles imagenes */
+@media (max-width: 500px) {
+  .product-grid {
+    column-count: 2; /* Siempre 2 columnas en móvil (esto sigue aplicando a #misProductosGrid) */
+    column-width: auto;
+    column-gap: 10px; /* reduce un poco el gap */
+    padding: 10px; /* menos padding para móviles */
+  }
+
+  .mosaic-grid {
+    gap: 10px; /* separación entre columnas del mosaico JS en móvil */
+  }
+
+  .producto {
+    margin-bottom: 10px;
+  }
+
+  .producto h3 {
+    font-size: 0.78rem;
+    margin: 8px 10px 2px;
+  }
+
+  .producto .more-info-btn {
+    margin: 6px 10px 10px;
+    font-size: 0.68rem;
+    padding: 4px 11px;
+    min-width: 0;
+  }
+}
+
+
+
+/*
+Tablets
+*/
+@media (min-width: 600px) and (max-width: 1024px) {
+  .icon {
+    width: 70px;
+    height: 70px;
+    top: 10px;
+    left: 10px;
+  }
+
+  h1 {
+    font-size: 24px;
+    text-align: center;
+    display: block;
+    margin-top: 80px;
+  }
+
+  #search {
+    width: 100%;
+    max-width: 400px;
+    margin: 10px auto;
+    display: block;
+  }
+
+  .toolbar {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-left: 0;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 1024px) {
+  .toolbar button {
+    flex: 1 1 30%;  /* que los botones ocupen aprox 30% ancho, ajustable */
+    max-width: 150px; /* evitar que sean muy anchos */
+  }
+
+  .toolbar-center {
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+}
+
+
+
+
+
+
+
+/*
+Modal agregar
+*/
+@media (max-width: 500px) {
+  .modal-content {
+    width: 90% !important;
+    max-width: 320px !important;
+    max-height: 80vh !important;
+    top: 10% !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    padding: 15px !important;
+    cursor: grab !important;
+  }
+
+  .modal-content h2 {
+    font-size: 18px !important;
+  }
+
+  .modal-content {
+  transition: all 0.3s ease;
+}
+
+}
+
+/* Contenedor de botones con separador */
+#accionesTienda {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0;
+}
+
+/* Contenedor de los botones con separador */
+.button-group {
+  display: flex;
+  flex-direction: row;       /* línea horizontal */
+  align-items: center;       /* centrar verticalmente */
+  justify-content: center;   /* centrar todo horizontalmente */
+  gap: 25px;                 /* ↑ más espacio entre botones y separador */
+}
+
+/* Botón "Agregar Producto" */
+#addProductButton {
+  background-color: white;
+  color: black;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+}
+
+#addProductButton:hover {
+  background-color: rgb(128, 0, 32);  /* color vino */
+  color: white;
+  transform: scale(1.1);
+  box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+}
+
+/* Separador vertical */
+.separator-vertical {
+  width: 3px;                
+  height: 35px;
+  background-color: white;  
+  margin: 0;                 
+}
+
+/* Botón "Eliminar Producto" */
+#deleteProductButton {
+  background-color: white;
+  color: black;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+}
+
+#deleteProductButton:hover {
+  background-color: rgb(255, 102, 102);  /* rojo claro */
+  color: white;
+  transform: scale(1.1);
+  box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+}
+
+/* Producto seleccionado */
+.producto.selected {
+  border: 2px solid rgb(128,0,32); 
+  box-shadow: 0 0 15px rgba(128,0,32,0.6);
+  transform: scale(1.03);
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+/* Hover para productos: la tarjeta se "levanta" un poco y la sombra se
+   intensifica, en vez de solo agrandarse — se ve más pulido y funciona
+   igual de bien sobre los 3 fondos. */
+.producto:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+}
+
+
+/*
+Visibilidad de logins en dispositivos
+*/
+@media (max-width: 500px) {
+  .small-modal {
+    width: 90% !important;
+    max-width: 350px !important;
+    padding: 20px !important;
+    min-height: auto !important;
+  }
+
+  .modal-icon {
+    max-height: 120px !important;
+  }
+
+  .modal-title {
+    font-size: 20px !important;
+    margin-top: 8px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .modal-text {
+    font-size: 16px !important;
+  }
+
+  .roles {
+    gap: 10px !important;
+  }
+
+  .role-btn, .registrarse {
+    padding: 12px !important;
+    font-size: 14px !important;
+  }
+
+  .vendedor-modal .modal-input {
+    padding: 12px !important;
+    font-size: 14px !important;
+    margin-bottom: 15px !important;
+  }
+
+  .vendedor-modal .modal-title {
+    font-size: 18px !important;
+    margin-bottom: 8px !important;
+  }
+}
+
+
+@media (min-width: 600px) and (max-width: 1024px) {
+  .small-modal {
+    width: 70% !important;
+    max-width: 450px !important;
+    padding: 25px !important;
+  }
+
+  .modal-icon {
+    max-height: 140px !important;
+  }
+
+  .modal-title {
+    font-size: 22px !important;
+    margin-top: 10px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .role-btn, .registrarse {
+    font-size: 15px !important;
+    padding: 14px !important;
+  }
+}
+
+
+
+/* ============ TEMA ESTRELLADO ============ */
+
+/* 🔧 Contenedor estable que envuelve el canvas + #productGrid. Al ser
+   position:relative, el canvas (position:absolute; inset:0) se ajusta
+   exactamente al tamaño de este contenedor, sin importar scroll ni el
+   resto del layout. */
+#productGridWrapper {
+  position: relative;
+  isolation: isolate;
+}
+
+#starsCanvas {
+  position: absolute; /* 🔧 antes era "fixed" (cubría toda la pantalla) */
+  inset: 0;
+  z-index: -1;
+  display: none;
+  background:
+    radial-gradient(ellipse at 50% 15%, #2a1e52 0%, transparent 55%),
+    linear-gradient(180deg, #080b24 0%, #151a4d 55%, #080b24 100%);
+}
+
+body.theme-stars #starsCanvas {
+  display: block;
+}
+
+/* body, header, toolbar y container se quedan con su negro normal (no se tocan).
+   Las estrellas solo se ven a través de #productGrid, que se vuelve transparente
+   por JS (activarEstrellado/desactivarEstrellado en script.js) — así el efecto
+   estrellado aparece únicamente donde están los productos. */
+
+/* Los cuadros de bienvenida (Invitado / Comprador / Vendedor recién registrado)
+   tenían fondo negro semi-transparente (rgba 0,0,0,0.8) que dejaba ver el
+   fondo estrellado detrás y se veía morado en vez de negro. Se vuelven sólidos. */
+#contenidoInvitado,
+#contenidoCompradorRegistrado,
+#contenidoVendedorRegistrado {
+  background-color: #0a0a0a !important;
+  background-image:
+    radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.88) 82%, #000000 100%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.035) 0px,
+      rgba(255, 255, 255, 0.035) 1px,
+      transparent 1px,
+      transparent 58px
+    ),
+    linear-gradient(180deg, #1c1c1c 0%, #121212 55%, #0a0a0a 100%) !important;
+  background-repeat: no-repeat, repeat, no-repeat !important;
+  background-size: 100% 100%, auto 100%, 100% 100% !important;
+}
+
+.star-theme-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.star-theme-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.caracteristicas{
+    margin-top:15px;
+    padding:18px;
+    border-radius:12px;
+    background:#f8f9fa;
+    border:1px solid #ddd;
+}
+
+.caracteristicas h4{
+    margin:0 0 15px 0;
+    font-size:22px;
+    color:#222;
+}
+
+.caracteristicas ul{
+    margin:0;
+    padding-left:20px;
+}
+
+.caracteristicas li{
+    margin-bottom:10px;
+    line-height:1.5;
+    color:#444;
+}
+
+.precio-plan{
+    display:block;
+    margin-top:6px;
+    font-size:18px;
+    font-weight:bold;
+    color:#1d4ed8;
+}
+
+.badge-premium{
+    display:inline-block;
+    margin-left:10px;
+    padding:5px 12px;
+    background:#FFD700;
+    color:#000;
+    border-radius:20px;
+    font-size:13px;
+    font-weight:bold;
+    vertical-align:middle;
+}
+
+.plan-info{
+    margin-top:18px;
+    padding:12px;
+    background:#eef5ff;
+    border-left:4px solid #1d4ed8;
+    border-radius:8px;
+    font-size:14px;
+    line-height:1.5;
+    color:#444;
+}
+
+/* Datos de pago */
+#numeroSimpe,
+#depositoCampos{
+    margin-top:18px;
+    padding:16px;
+    background:#ffffff;
+    border:1px solid #dbe4f0;
+    border-radius:10px;
+    text-align:center;
+    color:#333;
+    line-height:1.6;
+    box-shadow:0 2px 8px rgba(0,0,0,.06);
+}
+
+#numeroSimpe p,
+#depositoCampos p{
+    margin:0;
+    color:#333;
+}
+
+#numeroSimpe strong,
+#depositoCampos strong{
+    color:#1d4ed8;
+    font-size:16px;
+}
+
+/* Nota de los métodos de pago */
+.nota-pago{
+    margin-top:14px;
+    padding:12px;
+    background:#fff8e6;
+    border-left:4px solid #f59e0b;
+    border-radius:8px;
+    color:#555;
+    font-size:13px;
+    line-height:1.5;
+    text-align:left;
+}
+
+.nota-pago strong{
+    color:#b45309;
+}
+
+.olvide-password {
+  font-size: 12px;
+  color: #bbbbbb;
+  text-align: right;
+  margin: -6px 2px 12px 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.olvide-password:hover {
+  color: #ff8a8a;
+}

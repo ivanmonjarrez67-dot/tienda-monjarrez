@@ -1,0 +1,3638 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tienda Monjarrez</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      body {
+        /* 🔧 Revertido: el body vuelve al fondo oscuro original. El
+           blanco ahora vive solo en #productGridWrapper (ver más abajo),
+           no en toda la página. */
+        background-color: #080808;
+        background-image:
+          radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.55) 88%, #000000 100%),
+          repeating-linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.032) 0px,
+            rgba(255, 255, 255, 0.032) 1px,
+            transparent 1px,
+            transparent 112px
+          ),
+          linear-gradient(180deg, #161616 0%, #0e0e0e 55%, #070707 100%);
+        background-repeat: no-repeat, repeat, no-repeat;
+        background-size: 100vw 100vh, auto 100vh, 100vw 100vh;
+        background-attachment: fixed, fixed, fixed;
+        color: white;
+      }
+
+      /* 🆕 Campana de notificaciones en el header */
+      .notif-bell-btn {
+        position: relative;
+        background: transparent;
+        border: none;
+        font-size: 22px;
+        cursor: pointer;
+        margin-left: 10px;
+        line-height: 1;
+      }
+      .notif-dot {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        width: 10px;
+        height: 10px;
+        background: darkred;
+        border: 2px solid #0a0a0a;
+        border-radius: 50%;
+        display: none;
+      }
+      .notif-dot.activo {
+        display: block;
+        animation: notifDotPulse 2.4s ease-in-out infinite;
+      }
+      @keyframes notifDotPulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(178, 34, 34, 0.5); }
+        50% { box-shadow: 0 0 0 5px rgba(178, 34, 34, 0); }
+      }
+      /* Un único pulso discreto al aparecer, no un temblor constante */
+      .notif-bell-btn.sonando {
+        animation: notifBellPop 0.5s ease-out;
+      }
+      @keyframes notifBellPop {
+        0%   { transform: scale(1); }
+        40%  { transform: scale(1.25); }
+        100% { transform: scale(1); }
+      }
+
+      /* 🆕 Transición profesional para los hero-banner al auto-ocultarse:
+         fade + deslizamiento suave hacia arriba, sin giros ni blur. */
+      .hero-banner.ocultando {
+        animation: ocultarBanner 0.4s ease-in forwards;
+      }
+      @keyframes ocultarBanner {
+        0%   { opacity: 1; transform: translateY(0); max-height: 200px; }
+        100% { opacity: 0; transform: translateY(-12px); max-height: 0; }
+      }
+      .hero-banner.reapareciendo {
+        animation: reaparecerBanner 0.35s ease-out forwards;
+      }
+      @keyframes reaparecerBanner {
+        0%   { opacity: 0; transform: translateY(-12px); }
+        100% { opacity: 1; transform: translateY(0); }
+      }
+
+      h1 {
+        color: darkred;
+        display: inline;
+      }
+      
+
+      .icon {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        width: 90px;
+        height: 90px;
+      }
+
+      #search {
+        width: 400px;
+        margin-right: 100px;
+      }
+
+      #searchButton {
+        width: 100px;
+      }
+
+      .filters {
+        margin-top: 20px;
+        font-size: 15px;
+        margin-left: -8px;
+      }
+
+      .filters label {
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .toolbar {
+        margin-top: 10px;
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-left: -50px;
+      }
+
+      .separator {
+        border-top: 1px solid white;
+        margin: 10px 0;
+      }
+
+      /* 🆕 Barra de confianza (hero) debajo del header — ancha y horizontal,
+         estilo Temu, pero con el contenido que ya teníamos en la bolsa y
+         una paleta profesional en vino/carbón en vez de rojo brillante. */
+      .hero-banner {
+        padding: 12px 16px 0;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .info-bar {
+        background: linear-gradient(135deg, #2a1216 0%, #1b0c0e 55%, #140809 100%);
+        border: 1px solid rgba(200, 80, 80, 0.25);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+      }
+
+      .info-bar-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 20px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .info-bar-row--main {
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .info-bar-row--cta {
+        background: rgba(0, 0, 0, 0.22);
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .info-bar-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .info-bar-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
+
+      .info-bar-shield,
+      .info-bar-bell {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: rgba(224, 90, 90, 0.18);
+        border: 1px solid rgba(224, 90, 90, 0.4);
+        color: #ff8a8a;
+        font-size: 12px;
+        flex-shrink: 0;
+      }
+
+      .info-bar-title {
+        color: #f2f2f2;
+        font-weight: 700;
+        font-size: 15px;
+        white-space: nowrap;
+      }
+
+      .info-bar-title .red-text {
+        color: #ff6b6b;
+      }
+
+      .info-bar-feature {
+        color: #d9c7c7;
+        font-size: 12.5px;
+      }
+
+      .info-bar-sep {
+        color: rgba(255, 255, 255, 0.25);
+        font-size: 12px;
+      }
+
+      .info-bar-cta-text {
+        color: #cbb9b9;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      /* Botón "Publicar" con efecto de reflejo tipo espejo, que recorre
+         la superficie del botón periódicamente para llamar la atención. */
+      .cta-vender-btn {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        overflow: hidden;
+        background: linear-gradient(135deg, #7a1414 0%, #4d0d0d 100%);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        padding: 10px 24px;
+        font-size: 13.5px;
+        font-weight: bold;
+        border-radius: 9px;
+        cursor: pointer;
+        letter-spacing: 0.2px;
+        white-space: nowrap;
+        flex-shrink: 0;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      }
+
+      .cta-vender-btn:hover {
+        background: linear-gradient(135deg, #931818 0%, #5c0f0f 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.5);
+      }
+
+      .cta-vender-btn:active {
+        transform: translateY(0);
+      }
+
+      .cta-vender-btn .btn-label {
+        position: relative;
+        z-index: 1;
+      }
+
+      .cta-vender-btn .btn-shine {
+        position: absolute;
+        top: 0;
+        left: -60%;
+        width: 45%;
+        height: 100%;
+        background: linear-gradient(
+          115deg,
+          rgba(255, 255, 255, 0) 0%,
+          rgba(255, 255, 255, 0.55) 50%,
+          rgba(255, 255, 255, 0) 100%
+        );
+        transform: skewX(-20deg);
+        animation: btn-mirror-shine 3.2s ease-in-out infinite;
+        pointer-events: none;
+      }
+
+      @keyframes btn-mirror-shine {
+        0% {
+          left: -60%;
+        }
+        35% {
+          left: 130%;
+        }
+        100% {
+          left: 130%;
+        }
+      }
+
+      @media (max-width: 900px) {
+        .info-bar-right .info-bar-feature,
+        .info-bar-right .info-bar-sep {
+          display: none;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .info-bar-row {
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+        .info-bar-row--cta {
+          justify-content: center;
+        }
+        .info-bar-cta-text {
+          text-align: center;
+        }
+        .cta-vender-btn {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+
+      @media (max-width: 460px) {
+        .info-bar-row {
+          padding: 10px 14px;
+        }
+        .info-bar-title {
+          font-size: 13px;
+        }
+        .info-bar-cta-text {
+          font-size: 12px;
+        }
+      }
+
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        /* 🆕 Mismo fondo de "tablas" + viñeta que el body, en vez de
+           negro plano — así el header y el resto de la página se ven
+           como una sola superficie continua. */
+        background-color: #0a0a0a;
+        background-image:
+          radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.82) 78%, #000000 100%),
+          repeating-linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.028) 0px,
+            rgba(255, 255, 255, 0.028) 1px,
+            transparent 1px,
+            transparent 112px
+          ),
+          linear-gradient(180deg, #1a1a1a 0%, #121212 55%, #090909 100%);
+        background-repeat: no-repeat, repeat, no-repeat;
+        background-size: 100% 100%, auto 100%, 100% 100%;
+        padding: 10px 0;
+        border-bottom: 1px solid darkred;
+      }
+
+      /* 🆕 Clase compartida para las cajas de "Bienvenido ___!" (invitado,
+         comprador, vendedor) — mismo estilo de tablas + viñeta que el
+         header y el body, en vez de negro plano semitransparente. Se usa
+         junto con el resto de estilos inline que ya tenía cada caja
+         (padding, max-width, margin, border-radius, etc.), solo
+         reemplaza el "background". */
+      .caja-tablas {
+        background-color: #0a0a0a !important;
+        background-image:
+          radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.88) 82%, #000000 100%),
+          repeating-linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.035) 0px,
+            rgba(255, 255, 255, 0.035) 1px,
+            transparent 1px,
+            transparent 58px
+          ),
+          linear-gradient(180deg, #1c1c1c 0%, #121212 55%, #0a0a0a 100%) !important;
+        background-repeat: no-repeat, repeat, no-repeat !important;
+        background-size: 100% 100%, auto 100%, 100% 100% !important;
+      }
+
+      .welcome-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 250px;
+        overflow: hidden;
+        margin: 10px auto 20px auto;
+        width: 90%;
+        max-width: 800px;
+        border-radius: 20px;
+      }
+
+      .welcome-image {
+        width: 100%;
+        height: auto;
+        object-fit: cover;
+        transform: translateY(0);
+        transition: transform 0.1s ease-out;
+        border-radius: 20px;
+      }
+
+      /* 🔧 Nuevo: el canvas de estrellas ahora se dimensiona con JS al
+         tamaño real de #productGridWrapper (no de toda la ventana), pero
+         para eso el wrapper necesita ser el contenedor de referencia y el
+         canvas debe quedar superpuesto sin bloquear clics. Si tu
+         styles.css ya define estas reglas, estas simplemente no cambian
+         nada (mismos valores). */
+      #productGridWrapper {
+        position: relative;
+        /* 🔧 El fondo ya NO es un valor fijo: script.js lo actualiza
+           (sincronizarFondoWrapper) cada vez que cambia el tema, para que
+           coincida con #productGrid y no quede ese "borde" del color
+           anterior alrededor. #f4f4f6 es solo el valor inicial antes de
+           que corra el JS. */
+        background: #f4f4f6;
+        border-radius: 14px;
+        padding: 24px;
+        margin: 10px 0 30px;
+        /* 🔧 Sin esto, el canvas de estrellas (z-index:-1, hijo directo)
+           podía terminar pintándose por DEBAJO del propio fondo de este
+           wrapper en vez de solo detrás de #productGrid, porque
+           position:relative por sí solo no crea un contexto de apilamiento
+           propio. "isolation: isolate" obliga a que el z-index negativo del
+           canvas se resuelva DENTRO de este elemento, así el tema
+           Estrellado se ve. */
+        isolation: isolate;
+      }
+      #starsCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+      }
+
+      /* Texto de "Perfil" en negro, igual que las demás opciones del menú */
+      .btn-perfil {
+        color: black !important;
+      }
+
+      /* 🆕 Botón "Rosado suave" del menú — mismo tamaño/forma que el
+         botón Estrellado, autocontenido por si styles.css no define
+         .star-theme-btn con estas medidas exactas. */
+      .pink-theme-btn,
+      .star-theme-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        background: #f2f2f2;
+        font-size: 16px;
+        line-height: 1;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      }
+
+      .pink-theme-btn:hover,
+      .star-theme-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+      }
+
+      .pink-theme-btn.active {
+        background: #ffd9e6;
+        box-shadow: 0 0 0 2px #ff8fb3;
+      }
+
+      .star-theme-btn.active {
+        background: #dbe4ff;
+        box-shadow: 0 0 0 2px #6b7fd7;
+      }
+
+      /* Tema Rosado suave: paleta pastel para el catálogo de productos,
+         igual de "cuadro" que el modo claro/oscuro pero en rosado. */
+      body.theme-pink #productGrid {
+        background: linear-gradient(160deg, #ffeef3 0%, #ffe0ea 100%) !important;
+        color: #5a2f43 !important;
+      }
+
+      body.theme-pink #productGrid .producto {
+        background-color: #fff5f8;
+        border-color: #ffc4d6;
+      }
+    </style>
+    <link rel="stylesheet" href="mascota.css" />
+    
+  </head>
+  <script src="mascota.js" defer></script>
+  <body>
+<!-- 🔧 El <canvas id="starsCanvas"> se movió de aquí hacia abajo, justo
+     antes de #productGrid, envuelto en #productGridWrapper. Antes vivía
+     suelto aquí arriba como overlay fijo de TODA la pantalla, por eso las
+     estrellas se "filtraban" a zonas que no eran el catálogo de productos. -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <!-- 🗑️ Se eliminó el div duplicado de usuarioIdVisibleMitienda que estaba aquí.
+         El único que queda activo es el que está dentro de #miTiendaContainer,
+         más abajo en este archivo, junto a los botones Agregar/Eliminar Producto. -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <!-- Fondo detrás de los modales -->
+    <div
+      id="fondoLogin"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url('imagenes/file_00000000688461f79ea7465417af7218~2.png');
+        background-size: cover;
+        background-position: center;
+        z-index: 998;
+      "
+    ></div>
+
+    <!-- Modal de ingreso -->
+   <div id="loginModal" class="modal-overlay" style="display:none">
+
+      <div
+        class="modal-content small-modal"
+        style="
+          background-image: url('imagenes/file_000000000c0861f89b4e4c8909e8da07.png');
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+        "
+      >
+        <img
+          src="imagenes/Polish_20250226_191728811.png"
+          alt="Icono"
+          class="modal-icon"
+        />
+        <h2 class="modal-title">Monjarrez</h2>
+        <div class="modal-separator"></div>
+        <p class="modal-text">Ingresar como:</p>
+        <div class="roles">
+          <button class="role-btn vendedor">Vendedor/a</button>
+          <button class="role-btn comprador">Comprador/a</button>
+          <button class="role-btn invitado">Invitado</button>
+        </div>
+        <button id="registrarseBtn" class="registrarse">Registrarse</button>
+        <p id="loginMensaje" style="color:red; text-align:center; margin-top:10px;"></p>
+
+      </div>
+    </div>
+
+
+
+
+    <!-- Modal de Vendedor -->
+    <div
+      id="modalVendedor"
+      class="modal-overlay vendedor-modal"
+      style="display: none"
+    >
+      <div
+        class="modal-content small-modal"
+        style="
+          background-image: url('imagenes/file_000000003808622f9a1e8759ef2857cd~2.png');
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+        "
+      >
+        <img
+          src="imagenes/Polish_20250226_191728811.png"
+          alt="Icono"
+          class="modal-icon"
+        />
+        <h2 class="modal-title">
+          <span class="highlight-red">Monjarrez</span> - Vendedor/a
+        </h2>
+
+        <div class="modal-separator"></div>
+
+        <input
+          type="text"
+          placeholder="Cédula"
+          id="cedulaVendedor"
+          class="modal-input"
+        />
+        <input
+          type="password"
+          placeholder="Contraseña"
+          id="passwordVendedor"
+          class="modal-input"
+        />
+        <button id="btnAccederVendedor" class="registrarse acceder-btn">
+          Acceder
+        </button>
+
+        <p id="olvideVendedor" class="olvide-password" style="display:none;">
+  ¿Olvidaste tu contraseña?
+</p>
+
+        <button class="volver-btn">Atrás</button>
+      </div>
+    </div>
+
+    <!-- Modal de Comprador -->
+    <div
+      id="modalComprador"
+      class="modal-overlay vendedor-modal"
+      style="display: none"
+    >
+      <div
+        class="modal-content small-modal"
+        style="
+          background-image: url('imagenes/file_00000000830461f8b86b77ee9b51a308.png');
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+        "
+      >
+        <img
+          src="imagenes/Polish_20250226_191728811.png"
+          alt="Icono"
+          class="modal-icon"
+        />
+        <h2 class="modal-title">
+          <span class="highlight-red">Monjarrez</span> - Comprador/a
+        </h2>
+        <div class="modal-separator"></div>
+        <input
+          type="email"
+          placeholder="Correo"
+          id="correoComprador"
+          class="modal-input"
+        />
+        <input
+          type="password"
+          placeholder="Contraseña"
+          id="passwordComprador"
+          class="modal-input"
+        />
+        <button id="btnAccederComprador" class="registrarse acceder-btn">
+          Acceder
+        </button>
+
+        <p id="olvideComprador" class="olvide-password" style="display:none;">
+  ¿Olvidaste tu contraseña?
+</p>
+
+        <button class="volver-btn">Atrás</button>
+      </div>
+    </div>
+
+
+
+
+<!-- Modal de Recuperar Contraseña -->
+<div id="modalRecuperar" class="modal-overlay vendedor-modal" style="display: none">
+  <div class="modal-content small-modal">
+    <img
+      src="imagenes/Polish_20250226_191728811.png"
+      alt="Icono"
+      class="modal-icon"
+    />
+    <h2 class="modal-title">
+      <span class="highlight-red">Monjarrez</span> - Recuperar contraseña
+    </h2>
+    <div class="modal-separator"></div>
+
+    <!-- Paso 1: pedir correo -->
+    <div id="recuperarPaso1">
+      <input
+        type="email"
+        placeholder="Correo"
+        id="recuperarCorreo"
+        class="modal-input"
+      />
+      <button id="btnEnviarCodigo" class="registrarse acceder-btn">
+        Enviar código
+      </button>
+    </div>
+
+    <!-- Paso 2: código + nueva contraseña -->
+    <div id="recuperarPaso2" style="display: none">
+      <input
+        type="text"
+        placeholder="Código de 6 dígitos"
+        id="recuperarCodigo"
+        class="modal-input"
+        maxlength="6"
+        inputmode="numeric"
+      />
+      <input
+        type="password"
+        placeholder="Nueva contraseña"
+        id="recuperarNueva"
+        class="modal-input"
+      />
+      <input
+        type="password"
+        placeholder="Confirmar contraseña"
+        id="recuperarConfirmar"
+        class="modal-input"
+      />
+      <button id="btnCambiarPassword" class="registrarse acceder-btn">
+        Cambiar contraseña
+      </button>
+    </div>
+
+    <p id="recuperarMensaje" style="text-align:center; margin-top:10px; font-size:13px;"></p>
+
+    <button class="volver-btn" id="btnVolverRecuperar">Atrás</button>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+<!-- Contenido Vendedor Activo -->
+<div id="contenidoVendedorActivo" style="display:none; color:rgb(0, 0, 0); text-align:center; padding:20px;">
+  .
+</div>
+
+<!-- Contenido Comprador Activo -->
+<div id="contenidoCompradorActivo" style="display:none; color:rgb(5, 0, 0); text-align:center; padding:20px;">
+  .
+</div>
+
+
+
+
+
+    <!-- Contenido que se muestra cuando se entra como Invitado -->
+    <div
+      id="contenidoInvitado"
+      class="caja-tablas"
+      style="
+        display: none;
+        padding: 30px;
+        color: white;
+        text-align: center;
+        font-family: Arial, sans-serif;
+        max-width: 500px;
+        margin: 50px auto;
+        border-radius: 12px;
+      "
+    >
+      <h2>¡Bienvenido Invitado!</h2>
+      <p>
+        Has ingresado sin necesidad de registrarte. Disfruta el contenido
+        exclusivo.
+      </p>
+    </div>
+
+
+    <!-- Contenido Comprador Recien Registrado -->
+    <div
+      id="contenidoCompradorRegistrado"
+      class="caja-tablas"
+      style="
+        display: none;
+        padding: 30px;
+        color: white;
+        text-align: center;
+        font-family: Arial, sans-serif;
+        max-width: 500px;
+        margin: 50px auto;
+        border-radius: 12px;
+      "
+    >
+      <h2>¡Bienvenido/a Comprador/a!</h2>
+      <p>
+        Te has registrado con éxito y ahora puedes acceder a contenido exclusivo
+        para compradores.
+      </p>
+    </div>
+
+
+
+<!-- Modal de registro unificado -->
+<div id="registroModal" class="modal-overlay" style="display:none;">
+  <div class="modal-content small-modal"
+       style="background-image: url('imagenes/file_00000000c5e8620a923f1a4ef72a9d7d.png');
+              background-size: cover;
+              background-position: center;
+              background-repeat: no-repeat;">
+    <img src="imagenes/Polish_20250226_191728811.png" alt="Icono" class="modal-icon"/>
+    <h2 class="modal-title">Monjarrez</h2>
+    <div class="modal-separator"></div>
+    <p class="modal-text">Registrarme como:</p>
+
+    <!-- Selección de roles -->
+    <div class="roles" id="rolesContainer">
+      <button class="role-btn vendedor" id="btnVendedor">Vendedor/a</button>
+      <button class="role-btn comprador" id="btnComprador">Comprador/a</button>
+      <button class="volver-btn" id="volverRolesBtn">Atrás</button>
+    </div>
+
+    <!-- Campo de ID de usuario: se mantiene en el DOM porque el resto del
+         flujo lo necesita, pero ya no debe ser visible para el usuario. -->
+    <div id="usuarioIdVisible"
+         style="font-size:14px; color:transparent; font-weight:bold; margin:5px 0; text-align:center; user-select:none;">
+      ID de usuario: ---
+    </div>
+
+    <!-- ===========================
+         FORMULARIO COMPRADOR
+    ============================ -->
+    <div id="formularioComprador" style="display:none; margin-top:20px; width:100%;">
+      <h3 class="modal-subtitle">Comprador/a</h3>
+      <form id="registroFormComprador">
+        <input type="text" id="nombreC" name="nombre" placeholder="Nombre" required />
+        <input type="email" id="correoC" name="correo" placeholder="Correo" required />
+        <input type="password" id="contraseñaC" name="contraseña" placeholder="Contraseña" required />
+        <label class="aceptar-terminos">
+          <input type="checkbox" id="aceptaTerminosComprador" name="aceptaTerminos" required />
+          He leído y acepto los
+          <a href="#" class="link-terminos" data-abrir-terminos>Términos y Condiciones, la Política de Privacidad y las Políticas de Publicación</a>
+          de Tienda Monjarrez.
+        </label>
+        <button type="submit" class="registrarse acceder-btn">Aceptar</button>
+        <button type="button" id="btnAtrasComprador" class="volver-btn">Atrás</button>
+      </form>
+    </div>
+
+    <!-- ===========================
+         FORMULARIO UNIFICADO VENDEDOR
+    ============================ -->
+    <form id="registroVendedorUnificado" style="display:none; margin-top:20px; width:100%;">
+
+      <!-- PASO 1: USUARIO -->
+      <div class="paso" id="pasoUsuario">
+        <h3>Vendedor/a - Usuario</h3>
+        <input type="text" name="nombre" id="nombreV" placeholder="Nombre" required/>
+        <input type="email" name="correo" id="correoV" placeholder="Correo" required/>
+        <input type="password" name="contraseña" id="contraseñaV" placeholder="Contraseña" required/>
+        <button type="button" id="btnSiguienteUsuario">Siguiente</button>
+        <button type="button" id="btnAtrasVendedor" class="volver-btn" style="margin-bottom:10px;">Atrás</button>
+      </div>
+
+      <!-- PASO 2: SOLICITUD -->
+      <div class="paso" id="pasoSolicitud" style="display:none;">
+        <h3>Solicitud de Vendedor/a</h3>
+        <input type="text" name="provincia" placeholder="Provincia" required/>
+        <input type="text" name="canton" placeholder="Cantón" required/>
+        <textarea name="descripcion" placeholder="Descripción productos" required></textarea>
+        <input type="number" name="precio_promedio" placeholder="Precio promedio" required/>
+        <input type="tel" name="telefono" placeholder="Teléfono" required/>
+        <div class="botones-paso">
+          
+          <button type="button" id="btnSiguienteSolicitud">Siguiente</button>
+          <button type="button" id="btnAtrasSolicitud" class="volver-btn">Atrás</button>
+        </div>
+      </div>
+
+
+
+
+
+
+
+
+<!-- PASO 3: SUSCRIPCIÓN -->
+<div class="paso" id="pasoSuscripcion" style="display:none;">
+  <h3>Suscripción</h3>
+
+  <label><input type="radio" name="suscripcion" value="Básica" required/> Básica</label>
+  <label><input type="radio" name="suscripcion" value="Avanzada"/> Avanzada</label>
+
+  <div id="caracteristicasBasica" class="caracteristicas" style="display:none">
+    <h4>Plan Básico <span class="precio-plan">₡12 000 / mes</span></h4>
+
+    <ul>
+    <li>✔ Publica hasta <strong>7 productos</strong>.</li>
+    <li>✔ Panel para administrar tus productos.</li>
+    <li>✔ Edita y elimina tus publicaciones cuando lo desees.</li>
+    <li>✔ Información de contacto visible para compradores.</li>
+    <li>✔ Soporte por correo electrónico.</li>
+    <li>✔ Acceso a futuras mejoras de la plataforma.</li>
+    <li>✔ Ideal para emprendedores que inician su negocio.</li>
+</ul>
+
+<p class="plan-info">
+    Todos los planes incluyen acceso a la plataforma <strong>Tienda Monjarrez</strong>,
+    administración de publicaciones y actualizaciones continuas.
+    Nuevas funciones podrán incorporarse según el plan contratado.
+</p>
+</div>
+
+<div id="caracteristicasAvanzada" class="caracteristicas" style="display:none">
+    <h4>
+        Plan Avanzado
+        <span class="badge-premium">⭐ Recomendado</span>
+        <span class="precio-plan">₡20 000 / mes</span>
+    </h4>
+
+    <ul>
+    <li>✔ Publica hasta <strong>14 productos</strong>.</li>
+    <li>✔ Panel completo para administrar tu catálogo.</li>
+    <li>✔ Edita y elimina todas tus publicaciones.</li>
+    <li>✔ Información de contacto visible para compradores.</li>
+    <li>✔ Soporte prioritario.</li>
+    <li>✔ Acceso anticipado a nuevas funciones.</li>
+    <li>✔ Mayor capacidad para hacer crecer tu negocio.</li>
+    <li>✔ Prioridad para futuras herramientas comerciales.</li>
+    <li>✔ Perfil preparado para nuevas funciones Premium.</li>
+    <li class="carga-asistida">
+      ✨ <strong>Carga asistida de productos:</strong> si lo prefieres, nuestro
+      equipo publica tus 14 productos por ti — solo escríbenos a
+      <strong>tiendamonjarrez@gmail.com</strong> con la información y nosotros
+      nos encargamos de subirlos a la plataforma y avisarte cuando estén
+      listos. Además, durante el proceso recibirás <strong>asesoría
+      personalizada</strong> con recomendaciones para mejorar tus productos
+      y potenciar su rendimiento en la tienda.
+      <em>(Servicio disponible bajo solicitud)</em>
+    </li>
+</ul>
+
+<style>
+  #caracteristicasAvanzada .carga-asistida {
+    list-style: none;
+    margin: 14px 0 0;
+    padding: 12px 14px;
+    background: rgba(178, 34, 34, 0.12);
+    border: 1px solid rgba(178, 34, 34, 0.35);
+    border-radius: 8px;
+    line-height: 1.5;
+  }
+</style>
+
+<p class="plan-info">
+    Todos los planes incluyen acceso a la plataforma <strong>Tienda Monjarrez</strong>,
+    administración de publicaciones y actualizaciones continuas.
+    El <strong>Plan Avanzado</strong> tendrá acceso prioritario a las nuevas funciones
+    que se incorporen en la plataforma.
+</p>
+</div>
+
+  <input type="text" name="cedula" id="cedula" placeholder="Cédula" required/>
+
+
+  <select name="metodoPago" id="metodoPago" required>
+    <option value="" disabled selected>Seleccione método</option>
+    <option value="efectivo">Efectivo</option>
+    <option value="tarjeta">Tarjeta</option>
+    <option value="simpe">Sinpe</option>
+    <option value="deposito">Depósito</option>
+  </select>
+
+  <!-- 🔧 Se restauró este contenedor: script.js lo necesita (contenedorPagoExtra)
+       para animar la altura al mostrar/ocultar cada método de pago. Sin él,
+       el listener de "metodoPago" fallaba con error antes de llegar a mostrar
+       ninguno de los 3 bloques de abajo. -->
+  <div id="contenedorPagoExtra">
+
+  <!-- 🔧 Se restauró este bloque: script.js también lo busca (tarjetaCampos)
+       y sin él, el error rompía TODO el listener (por eso tampoco se veían
+       Simpe ni Depósito). Es informativo, no se recolecta el número de
+       tarjeta por seguridad (sin certificación PCI no es seguro guardarlo). -->
+  <div id="tarjetaCampos" class="caracteristicas oculto">
+    <p>
+        <strong>Pago con Tarjeta:</strong><br>
+        Por seguridad, el pago con tarjeta se coordina directamente con nuestro equipo.
+    </p>
+
+    <div class="nota-pago">
+        <strong>Nota importante:</strong><br>
+        Escríbanos a tiendamonjarrez@gmail.com indicando "Pago con tarjeta" y le enviaremos
+        un enlace de pago seguro. Conserve el comprobante como respaldo.
+    </div>
+  </div>
+
+ <div id="numeroSimpe" class="caracteristicas oculto">
+    <p>
+        <strong>Pago por SINPE Móvil:</strong><br>
+        +506 8721-1252<br>
+        Jennifer Monjarrez S.A.
+    </p>
+
+    <div class="nota-pago">
+        <strong>Nota importante:</strong><br>
+        Una vez realizado el pago, conserve el comprobante como respaldo. Podría ser requerido para verificar su suscripción en caso de cualquier inconveniente.
+    </div>
+</div>
+
+<div id="depositoCampos" class="caracteristicas oculto">
+    <p>
+        <strong>Depósito Bancario BCR:</strong><br>
+        Cuenta IBAN: CR37 0152 0200 1234 1366 7302 10<br>
+        Titular: Ivan Monjarrez S.A.
+    </p>
+
+    <div class="nota-pago">
+        <strong>Nota importante:</strong><br>
+        Después de realizar el depósito, conserve el comprobante de pago como respaldo. Este podrá ser solicitado para confirmar la acreditación y activar su suscripción.
+    </div>
+  </div>
+
+  </div>
+  <!-- fin #contenedorPagoExtra -->
+
+  <label class="aceptar-terminos">
+    <input type="checkbox" id="aceptaTerminosVendedor" name="aceptaTerminos" required />
+    He leído y acepto los
+    <a href="#" class="link-terminos" data-abrir-terminos>Términos y Condiciones, la Política de Privacidad y las Políticas de Publicación</a>
+    de Tienda Monjarrez.
+  </label>
+
+  <div class="botones-paso">
+
+   <!-- Cambiado submit a button para controlar envío -->
+    <button type="button" id="btnFinalizarRegistro">Finalizar Registro</button>
+
+
+    <button type="button" id="btnAtrasSuscripcion" class="volver-btn">Atrás</button>
+    
+  </div>
+</div>
+
+    </form>
+
+
+
+
+  </div>
+</div>
+
+
+
+
+
+    <!-- Contenido Vendedor Recien Registrado -->
+    <div
+      id="contenidoVendedorRegistrado"
+      class="caja-tablas"
+      style="
+        display: none;
+        padding: 30px;
+        color: white;
+        text-align: center;
+        font-family: Arial, sans-serif;
+        max-width: 500px;
+        margin: 50px auto;
+        border-radius: 12px;
+      "
+    >
+      <h2>¡Bienvenido/a Vendedor/a!</h2>
+      <p>
+        Te has registrado con éxito y ahora puedes acceder a contenido exclusivo
+        para vendedores.
+      </p>
+    </div>
+
+
+
+
+
+
+
+
+<div class="container">
+ <header>
+  <img src="imagenes/Polish_20250226_191728811.png" alt="Icono" class="icon" />
+  <div class="header-content">
+    <h1 class="store-title">
+      <span class="white-text">Tienda</span>
+      <span class="red-text">Monjarrez</span>
+    </h1>
+
+    <div class="search-group">
+      <input type="text" id="search" placeholder="Buscar productos..." />
+      <button id="searchButton">🔍Buscar</button>
+
+      <!-- 🆕 Ícono de notificaciones: siempre visible. Al hacerle clic,
+           muestra u oculta (según el estado actual) el aviso de arriba
+           (hero-banner). El puntito rojo indica que el aviso está
+           oculto y hay algo por ver. -->
+      <button id="notifBellBtn" class="notif-bell-btn" title="Mostrar u ocultar el aviso">
+        🔔<span class="notif-dot"></span>
+      </button>
+
+   
+<!-- Botón tres puntitos con menú desplegable -->
+<div class="menu-container">
+  <button class="menu-btn" id="menuBtn"></button> 
+  <div class="menu-content" id="menuContent">
+
+    <!-- Logo en la parte superior -->
+    <div class="menu-logo">
+      <img src="imagenes/Polish_20250226_191728811.png" alt="Logo Tienda" />
+    </div>
+
+    <!-- Botón de Perfil -->
+    <div class="menu-item">
+      <button class="btn-perfil" id="btnAbrirPerfil">👤 Perfil</button>
+    </div>
+
+    <!-- Toggle con texto -->
+    <div class="menu-item">
+      <span>Tema</span>
+      <label class="switch">
+        <input type="checkbox" id="themeToggle">
+        <span class="slider round"></span>
+      </label>
+    </div>
+
+    
+<div class="menu-item">
+  <span>Estrellado</span>
+  <button id="starThemeBtn" class="star-theme-btn" title="Activar tema Estrellado">🌌</button>
+</div>
+
+<div class="menu-item">
+  <span>Rosado suave</span>
+  <button id="pinkThemeBtn" class="pink-theme-btn" title="Activar tema Rosado suave">🌸</button>
+</div>
+
+
+
+
+
+    
+    <!-- Botón de ayuda -->
+    <!-- Botón de ayuda -->
+<button class="btn-ayuda" onclick="mostrarAyuda()">
+  Ayuda
+</button>
+
+
+    <!-- Botón de cerrar sesión -->
+    <button onclick="cerrarSesion()">Cerrar sesión</button>
+  </div>
+</div>
+
+
+    </div>
+  </div>
+</header>
+
+  <!-- 🆕 Sección de confianza (barra ancha horizontal, estilo Temu) -->
+  <div class="hero-banner" id="heroBanner">
+    <div class="info-bar">
+      <div class="info-bar-row info-bar-row--main">
+        <div class="info-bar-left">
+          <span class="info-bar-shield">✔</span>
+          <span class="info-bar-title">
+            Compra y vende con confianza en
+            <span class="white-text">Tienda</span> <span class="red-text">Monjarrez</span>
+          </span>
+        </div>
+        <div class="info-bar-right">
+          <span class="info-bar-feature">Emprendedores/as verificados/as</span>
+          <span class="info-bar-sep">|</span>
+          <span class="info-bar-feature">Soporte personalizado</span>
+          <span class="info-bar-sep">|</span>
+          <span class="info-bar-feature">Productos en todo Costa Rica</span>
+          <span class="info-bar-sep">|</span>
+          <span class="info-bar-feature">Publicaciones 24 horas</span>
+        </div>
+      </div>
+
+      <div class="info-bar-row info-bar-row--cta">
+        <div class="info-bar-left">
+          <span class="info-bar-bell">🔔</span>
+          <span class="info-bar-cta-text">
+            Descubre productos de emprendedores de todo Costa Rica o publica los
+            tuyos y llega a miles de posibles clientes.
+          </span>
+        </div>
+        <button id="btnVenderHero" class="cta-vender-btn">
+          <span class="btn-shine"></span>
+          <span class="btn-label">¿Quieres vender? Publica tus productos</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🆕 Versión del banner de confianza para VENDEDORES ya registrados:
+       mismo estilo visual, pero mensaje motivacional sobre sus beneficios
+       en vez de la invitación a registrarse. Oculto por defecto; se
+       muestra/oculta desde actualizarMiTienda() en script.js según el
+       tipo de usuario en sesión. -->
+  <div class="hero-banner" id="heroBannerVendedor" style="display:none;">
+    <div class="info-bar">
+      <div class="info-bar-row info-bar-row--main">
+        <div class="info-bar-left">
+          <span class="info-bar-shield">🚀</span>
+          <span class="info-bar-title">
+            Haz crecer tu negocio con
+            <span class="white-text">Tienda</span> <span class="red-text">Monjarrez</span>
+          </span>
+        </div>
+        <div class="info-bar-right">
+          <span class="info-bar-feature">Miles de compradores activos</span>
+          <span class="info-bar-sep">|</span>
+          <span class="info-bar-feature">Publicaciones 24 horas</span>
+          <span class="info-bar-sep">|</span>
+          <span class="info-bar-feature">Soporte personalizado</span>
+          <span class="info-bar-sep">|</span>
+          <span class="info-bar-feature">Alcance en todo Costa Rica</span>
+        </div>
+      </div>
+
+      <div class="info-bar-row info-bar-row--cta">
+        <div class="info-bar-left">
+          <span class="info-bar-bell">💼</span>
+          <span class="info-bar-cta-text">
+            Cada producto que publicas es una oportunidad más de vender.
+            Mantén tu tienda activa y actualizada para llegar a más clientes.
+          </span>
+        </div>
+        <button id="btnPublicarHeroVendedor" class="cta-vender-btn">
+          <span class="btn-shine"></span>
+          <span class="btn-label">➕ Publicar un nuevo producto</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+
+  <div class="toolbar">
+    <!-- Filtros a la izquierda -->
+    <div class="toolbar-group">
+      <button class="filter" data-category="Caballeros">Caballeros</button>
+      <button class="filter" data-category="Damas">Damas</button>
+      <button class="filter" data-category="Niños">Niños</button>
+    </div>
+
+    <!-- Botones destacados al centro -->
+    <div class="toolbar-center">
+      <button class="main" data-main="Novedades">Novedades</button>
+      <button class="main" data-main="Colección">Colección</button>
+      <button class="main" data-main="Descuentos">Descuentos</button>
+      <button class="main" data-main="Recomendados">Recomendados</button>
+    </div>
+
+    <!-- Filtros a la derecha -->
+    <div class="toolbar-group">
+      <button class="filter" data-category="Mi tienda">Mi tienda</button>
+      <button class="filter" data-category="Todo">Todo</button>
+      <button class="filter" data-category="Servicios">Servicios</button>
+    </div>
+  </div>
+
+  <div class="separator"></div>
+
+  <!-- Imagen de bienvenida centrada -->
+  <div class="welcome-container">
+    <img
+      src="imagenes/file_00000000213461f79637de8c427ceea4.png"
+      alt="Bienvenido"
+      class="welcome-image"
+    />
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 🔹 Contenedor de Mi Tienda -->
+<div id="miTiendaContainer">
+
+ 
+
+  <!-- 🔹 Botones que ya se muestran bien -->
+  <div class="button-group">
+     <!-- ID de usuario: se mantiene en el DOM (se usa para las peticiones),
+          pero ya no debe verse. -->
+  <div id="usuarioIdVisibleMitienda"
+       style="font-size:14px; color:transparent; font-weight:bold; text-align:center; display:none;
+              background-color: rgba(0,0,0,0.1); padding:8px; margin-bottom:10px; border-radius:5px; user-select:none;">
+    ID de usuario: ---
+  </div>
+    <button id="addProductButton">➕Agregar Producto</button>
+    <div class="separator-vertical"></div>
+    <button id="deleteProductButton">🗑️Eliminar Producto</button>
+  </div>
+
+  <!-- 🆕 Contenedor dedicado para las tarjetas de "Mis Productos".
+       Antes cargarProductosMiTienda() pintaba en #productGrid, pero ese
+       div se oculta al entrar a "Mi tienda", así que los productos nunca
+       se veían. Ahora se pintan aquí, dentro del contenedor visible. -->
+  <div id="misProductosGrid" class="product-grid"></div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const miTiendaContainer = document.getElementById("miTiendaContainer");
+  const botonesMiTienda = document.querySelectorAll("[data-category='Mi tienda']");
+  const botonesPrincipales = document.querySelectorAll("[data-main]");
+  const btnAgregar = document.getElementById("btnAgregarProducto");
+  const btnBorrar = document.getElementById("btnBorrarProducto");
+  const welcomeContainer = document.querySelector(".welcome-container");
+  const productGrid = document.getElementById("productGrid");
+
+  // Ocultar contenedor y botones al inicio
+  if (miTiendaContainer) miTiendaContainer.style.display = "none";
+  if (btnAgregar) btnAgregar.style.display = "none";
+  if (btnBorrar) btnBorrar.style.display = "none";
+
+  // Mostrar Mi tienda
+  // 🔧 Se quitó mostrar miTiendaContainer/botones aquí directamente: antes
+  // se mostraban apenas se hacía clic en la pestaña "Mi tienda", sin esperar
+  // a que el login fuera exitoso. Ahora miTiendaContainer solo se muestra
+  // desde script.js, justo después de un login correcto.
+  botonesMiTienda.forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (welcomeContainer) welcomeContainer.style.display = "none";
+      if (productGrid) productGrid.style.display = "none";
+    });
+  });
+
+  // Volver a vista principal al seleccionar otra categoría
+  botonesPrincipales.forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (miTiendaContainer) miTiendaContainer.style.display = "none";
+      if (btnAgregar) btnAgregar.style.display = "none";
+      if (btnBorrar) btnBorrar.style.display = "none";
+      if (productGrid) productGrid.style.removeProperty("display");
+      if (welcomeContainer) welcomeContainer.style.display = "block";
+    });
+  });
+});
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!--
+  🗑️ DESACTIVADO: script duplicado de login "Mi Tienda" (URL vieja sin /proyecto-web/).
+  La lógica de login + mostrar ID + cargar productos ahora vive únicamente en script.js
+  (función cargarProductosMiTienda). Se deja comentado en vez de borrado por si hace
+  falta revisar algo de aquí en el futuro.
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const miTiendaForm = document.getElementById("miTiendaForm");
+  const errorMsg = document.getElementById("errorMsgMiTienda");
+  const usuarioIdDiv = document.getElementById("usuarioIdVisibleMitienda");
+  const miTiendaModal = document.getElementById("miTiendaModal");
+  const miTiendaContainer = document.getElementById("miTiendaContainer");
+
+  miTiendaForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const cedula = document.getElementById("miTiendaCedula").value.trim();
+    const password = document.getElementById("miTiendaPassword").value.trim();
+
+    try {
+      const res = await fetch("/api/mi-tienda-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `cedula=${encodeURIComponent(cedula)}&password=${encodeURIComponent(password)}`,
+      });
+
+      const text = await res.text();
+      console.log("Texto del servlet:", text);
+
+      if (res.ok && text.startsWith("OK:")) {
+        const usuarioId = text.split(":")[1].trim();
+        console.log("ID detectado:", usuarioId);
+
+        // Mostrar el ID de usuario
+        usuarioIdDiv.textContent = `ID de usuario: ${usuarioId}`;
+        usuarioIdDiv.style.display = "block";
+        usuarioIdDiv.style.visibility = "visible";
+
+        // Cerrar modal y mostrar acciones
+        miTiendaModal.style.display = "none";
+        document.getElementById("accionesTienda").style.display = "block";
+
+        // Cargar productos del vendedor
+        cargarMisProductos(usuarioId);
+
+      } else {
+        errorMsg.style.display = "block";
+        errorMsg.textContent = text || "Credenciales inválidas";
+      }
+    } catch (err) {
+      console.error("Error al conectar:", err);
+      errorMsg.style.display = "block";
+      errorMsg.textContent = "Error de conexión con el servidor.";
+    }
+  });
+});
+
+async function cargarMisProductos(usuarioId) {
+  try {
+    const res = await fetch(`/MisProductosServlet?usuario_id=${encodeURIComponent(usuarioId)}`);
+    const text = await res.text();
+    console.log("Productos recibidos:", text);
+
+    if (res.ok) {
+      const productos = JSON.parse(text);
+      const contenedor = document.getElementById("miTiendaContainer");
+      if (!contenedor) return;
+      contenedor.innerHTML = ""; // Limpiar antes de mostrar
+
+      productos.forEach(p => {
+        const card = document.createElement("div");
+        card.classList.add("producto-card");
+        card.innerHTML = `
+          <h3>${p.nombre}</h3>
+          <p>${p.descripcion}</p>
+          <p><strong>Precio:</strong> ₡${p.precio}</p>
+          <p><strong>Empresa:</strong> ${p.empresa}</p>
+        `;
+        contenedor.appendChild(card);
+      });
+    } else {
+      console.error("Error al obtener productos:", text);
+    }
+  } catch (err) {
+    console.error("Error al conectar:", err);
+  }
+}
+</script>
+-->
+
+
+
+
+
+
+
+
+
+
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      <div id="productGridWrapper">
+        <!-- 🔧 Canvas movido aquí: ahora está "encerrado" dentro de este
+             contenedor estable (que nunca se vacía), así que el fondo
+             estrellado queda confinado exactamente al área de productos,
+             sin filtrarse a otras partes de la página. -->
+        <canvas id="starsCanvas"></canvas>
+        <div id="productGrid" class="product-grid mosaic-grid">
+          <!-- Aquí se cargarán las imágenes de los productos -->
+        </div>
+      </div>
+      <div id="addProductModal" class="modal">
+        <div class="modal-content">
+          <span class="close">&times;</span>
+          <h2>Agregar Producto</h2>
+          <form id="addProductForm" action="GuardarProducto" method="post">
+            <label for="name">Nombre:</label>
+            <input
+              type="text"
+              id="name"
+              name="nombre"
+              required
+              placeholder="Nombre del producto (ej. Tenis)"
+            />
+
+            <!-- Se seccionan las categorias -->
+
+            <label for="Categoria">Categoría:</label>
+            <select id="categoria" name="categoria" required>
+              <option value="">Seleccione...</option>
+              <option value="Damas">Damas</option>
+              <option value="Caballeros">Caballeros</option>
+              <option value="Niños">Niños</option>
+              <option value="Servicios">Servicios</option>
+            </select>
+
+            <label for="description">Descripción:</label>
+            <input
+              type="text"
+              id="description"
+              name="descripcion"
+              required
+              placeholder="Descripción del producto (ej. Marca Nike..)"
+            />
+
+
+<label for="imageUrl">URL de la Imagen:</label>
+<input
+  type="text"
+  id="imageUrl"
+  name="imagen"
+  required
+  placeholder="Dirección de la imagen (ej. data:image/AAQj/trk5=..)"
+/>
+
+<!-- Contenedor del botón y preview -->
+<div class="subir-preview">
+  <label for="imagenProducto" class="btn-subir">
+    Agregar desde mi dispositivo
+  </label>
+  <input type="file" id="imagenProducto" name="imagenProducto" accept="image/*">
+  <img id="previewImagen" class="preview-img" alt="Preview" />
+</div>
+
+
+
+
+
+
+
+
+
+            <label for="telefono">Teléfono:</label>
+            <input
+              type="tel"
+              id="telefono"
+              name="telefono"
+              required
+              placeholder="Ej. 8888-8888"
+            />
+
+            <label for="correoProducto">Correo:</label>
+            <input
+              type="email"
+              id="correoProducto"
+              name="correo"
+              required
+              placeholder="Ej. ejemplo@email.com"
+            />
+
+            <label for="provincia">Provincia:</label>
+            <select id="provincia" name="provincia" required>
+              <option value="">Seleccione provincia...</option>
+              <option value="San José">San José</option>
+              <option value="Alajuela">Alajuela</option>
+              <option value="Cartago">Cartago</option>
+              <option value="Heredia">Heredia</option>
+              <option value="Guanacaste">Guanacaste</option>
+              <option value="Puntarenas">Puntarenas</option>
+              <option value="Limón">Limón</option>
+            </select>
+
+            <label for="ciudad">Ciudad/Barrio/Distrito:</label>
+            <input
+              type="text"
+              id="ciudad"
+              name="ciudad"
+              required
+              placeholder="Ej. San Pedro, Hatillo, Liberia..."
+            />
+
+            <label for="price">Precio ₡:</label>
+            <input
+              type="number"
+              id="price"
+              name="precio"
+              required
+              placeholder="Precio del producto (ej. ₡25000..)"
+            />
+
+          
+
+            <label for="empresa">Nombre de Empresa:</label>
+            <input
+              type="text"
+              id="empresa"
+              name="empresa"
+              placeholder="Ej. TechMóvil"
+              title="Nombre de su emprendimiento"
+            />
+
+            <button type="submit">Agregar</button>
+          </form>
+        </div>
+      </div>
+
+
+
+    </div>
+
+
+
+
+    <style>
+      /* Estilos del panel lateral y overlay (puedes mover a tu archivo CSS) */
+      .side-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.28s ease;
+        z-index: 1000;
+      }
+      .side-overlay.visible {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .side-modal {
+        position: fixed;
+        top: 0;
+        left: -420px; /* oculto a la izquierda por defecto */
+        width: 400px;
+        max-width: 100%;
+        height: 100%;
+        background: #fff;
+        box-shadow: 2px 0 18px rgba(0, 0, 0, 0.25); /* sombra del lado derecho */
+        overflow-y: auto;
+        transition: left 0.28s ease; /* animación desde la izquierda */
+        z-index: 1001;
+        font-family: Arial, sans-serif;
+        -webkit-overflow-scrolling: touch;
+      }
+      .side-modal.open {
+        left: 0; /* visible */
+      }
+
+      .side-modal .side-modal-content {
+        padding: 20px;
+        position: relative;
+      }
+
+      .close-info {
+        position: absolute;
+        top: 12px;
+        right: 14px;
+        border: none;
+        background: transparent;
+        font-size: 26px;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      /* Encabezado y texto */
+      #infoEmpresa {
+        margin-top: 6px;
+        margin-bottom: 12px;
+        font-size: 18px;
+      }
+      #infoContacto {
+        font-size: 15px;
+        color: #222;
+      }
+
+      /* Responsive: en móviles usar 100% ancho */
+      @media (max-width: 768px) {
+        .side-modal {
+          width: 100%;
+          left: -100%;
+        }
+        .side-modal.open {
+          left: 0;
+        }
+      }
+    </style>
+
+    <!-- Overlay (fondo oscuro) -->
+    <div id="sideOverlay" class="side-overlay" aria-hidden="true"></div>
+
+    <!-- Panel lateral de más información -->
+    <div id="infoModal" class="side-modal" aria-hidden="true">
+      <div class="side-modal-content" id="infoModalContent">
+        <button class="close-info" aria-label="Cerrar panel">&times;</button>
+        <h2 id="infoEmpresa"></h2>
+        <div id="infoContacto"></div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         🆕 PANEL DE PERFIL — se abre desde la DERECHA (independiente
+         de #infoModal, que abre desde la izquierda). Usa su propio
+         overlay (#perfilOverlay) para no interferir con el otro panel.
+         ============================================================ -->
+    <style>
+      /* Mismo patrón visual que .side-modal, pero espejado a la derecha */
+      .side-modal-right {
+        position: fixed;
+        top: 0;
+        right: -420px; /* oculto a la derecha por defecto */
+        width: 400px;
+        max-width: 100%;
+        height: 100%;
+        background: #fff;
+        box-shadow: -2px 0 18px rgba(0, 0, 0, 0.25);
+        overflow-y: auto;
+        transition: right 0.28s ease;
+        z-index: 1001;
+        font-family: Arial, sans-serif;
+        -webkit-overflow-scrolling: touch;
+      }
+      .side-modal-right.open {
+        right: 0;
+      }
+      .side-modal-right .side-modal-content {
+        padding: 24px 20px;
+        position: relative;
+      }
+
+      @media (max-width: 768px) {
+        .side-modal-right {
+          width: 100%;
+          right: -100%;
+        }
+        .side-modal-right.open {
+          right: 0;
+        }
+      }
+
+      /* Contenido del perfil */
+      #perfilContent h2 {
+        margin: 8px 0 20px 0;
+        font-size: 20px;
+        color: #1a1a1a;
+      }
+      #perfilBadge {
+        display: inline-block;
+        background: linear-gradient(135deg, #f6c445, #e69b0c);
+        color: #1a1a1a;
+        font-weight: bold;
+        font-size: 12px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        margin-bottom: 16px;
+      }
+      #perfilContent label {
+        display: block;
+        font-size: 13px;
+        color: #666;
+        margin-top: 16px;
+        margin-bottom: 4px;
+      }
+      #perfilContent input[type="text"],
+      #perfilContent input[type="email"] {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+      #perfilTipo {
+        font-size: 14px;
+        color: #333;
+        background: #f2f2f2;
+        padding: 10px 12px;
+        border-radius: 8px;
+      }
+      #perfilPlanWrap {
+        margin-top: 16px;
+      }
+      #perfilPlan {
+        font-size: 14px;
+        color: #333;
+        background: #f2f2f2;
+        padding: 10px 12px;
+        border-radius: 8px;
+      }
+      #perfilGuardarBtn {
+        margin-top: 20px;
+        width: 100%;
+        background: #1f6fd8;
+        color: #fff;
+        border: none;
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      #perfilGuardarBtn:hover {
+        background: #1a5cb8;
+      }
+      #perfilBorrarCuentaBtn {
+        margin-top: 30px;
+        width: 100%;
+        background: transparent;
+        color: #d32f2f;
+        border: 1px solid #d32f2f;
+        padding: 10px;
+        border-radius: 8px;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      #perfilBorrarCuentaBtn:hover {
+        background: #fdecea;
+      }
+      #perfilMensaje {
+        margin-top: 14px;
+        font-size: 13px;
+        display: none;
+      }
+
+      /* Intereses de notificación (solo Compradores) */
+      #perfilInteresesWrap {
+        margin-top: 20px;
+      }
+      #perfilInteresesTexto {
+        font-size: 13px;
+        color: #555;
+        margin-bottom: 10px;
+        line-height: 1.4;
+      }
+      .interes-check-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        background: #f8f8f8;
+        border-radius: 8px;
+        margin-bottom: 6px;
+      }
+      .interes-check-item input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+      }
+      .interes-check-item label {
+        margin: 0;
+        font-size: 14px;
+        color: #333;
+        cursor: pointer;
+      }
+
+      /* 🆕 Provincias de preferencia — mismo estilo que perfilInteresesTexto,
+         faltaba esta regla y por eso el texto se veía invisible (heredaba
+         un color claro del contenedor en vez de un gris legible). */
+      #perfilProvinciasWrap {
+        margin-top: 20px;
+      }
+      #perfilProvinciasTexto {
+        font-size: 13px;
+        color: #555;
+        margin-bottom: 10px;
+        line-height: 1.4;
+      }
+
+      /* 🆕 Rediseño del panel de perfil: tarjeta de identidad + acordeones
+         profesionales para "Administrar notificaciones" y "Cambiar
+         contraseña", dejando Guardar cambios / Borrar cuenta fuera de
+         cualquier menú, como acciones principales al final. */
+
+      /* --- Tarjeta de identidad (nombre, correo, tipo, plan) --- */
+      .perfil-card {
+        background: #f8f9fa;
+        border: 1px solid #eee;
+        border-radius: 12px;
+        padding: 16px 16px 4px;
+        margin-bottom: 22px;
+      }
+      .perfil-card label {
+        margin-top: 14px !important;
+      }
+      .perfil-card label:first-of-type {
+        margin-top: 0 !important;
+      }
+
+      /* --- Acordeones (Administrar notificaciones / Cambiar contraseña) --- */
+      .perfil-accordion {
+        border: 1px solid #e2e2e2;
+        border-radius: 10px;
+        margin-bottom: 14px;
+        overflow: hidden;
+      }
+      .perfil-accordion summary {
+        list-style: none;
+        cursor: pointer;
+        padding: 14px 16px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #1a1a1a;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #fafafa;
+        user-select: none;
+      }
+      .perfil-accordion summary::-webkit-details-marker {
+        display: none;
+      }
+      .perfil-accordion summary .perfil-accordion-icono {
+        font-size: 12px;
+        color: #888;
+        transition: transform 0.2s ease;
+      }
+      .perfil-accordion[open] summary .perfil-accordion-icono {
+        transform: rotate(180deg);
+      }
+      .perfil-accordion[open] summary {
+        border-bottom: 1px solid #e2e2e2;
+      }
+      .perfil-accordion-body {
+        padding: 16px;
+      }
+      .perfil-accordion-subtitulo {
+        font-size: 13px;
+        font-weight: 700;
+        color: #444;
+        margin: 0 0 8px;
+      }
+      .perfil-accordion-subtitulo:not(:first-child) {
+        margin-top: 18px;
+      }
+
+      /* --- Cambiar contraseña --- */
+      .perfil-password-field {
+        margin-bottom: 12px;
+      }
+      .perfil-password-field label {
+        display: block;
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 4px;
+      }
+      .perfil-password-field input[type="password"] {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+      #perfilCambiarPasswordBtn {
+        margin-top: 6px;
+        width: 100%;
+        background: #1a1a1a;
+        color: #fff;
+        border: none;
+        padding: 11px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      #perfilCambiarPasswordBtn:hover {
+        background: #333;
+      }
+      #perfilPasswordMensaje {
+        margin-top: 10px;
+        font-size: 13px;
+        display: none;
+      }
+    </style>
+
+    <div id="perfilOverlay" class="side-overlay" aria-hidden="true"></div>
+
+    <div id="perfilPanel" class="side-modal-right" aria-hidden="true">
+      <div class="side-modal-content" id="perfilContent">
+        <button class="close-info" id="cerrarPerfilBtn" aria-label="Cerrar panel">&times;</button>
+        <h2>Mi Perfil</h2>
+
+        <div id="perfilCargando" style="color:#666;font-size:14px;">Cargando información...</div>
+
+        <div id="perfilDatos" style="display:none;">
+          <span id="perfilBadge" style="display:none;">⭐ Vendedor/a Destacado/a</span>
+
+          <!-- 🆕 Tarjeta de identidad: nombre, correo, tipo de cuenta y
+               plan de suscripción agrupados visualmente. -->
+          <div class="perfil-card">
+            <label for="perfilNombre">Nombre</label>
+            <input type="text" id="perfilNombre" />
+
+            <label for="perfilCorreo">Correo</label>
+            <input type="email" id="perfilCorreo" />
+
+            <label>Tipo de cuenta</label>
+            <div id="perfilTipo">—</div>
+
+            <div id="perfilPlanWrap" style="display:none;">
+              <label>Plan de suscripción</label>
+              <div id="perfilPlan">—</div>
+            </div>
+          </div>
+
+          <!-- 🆕 Acordeón "Administrar notificaciones": agrupa las
+               categorías y provincias de interés, que antes se veían
+               sueltas en el panel. -->
+          <details class="perfil-accordion">
+            <summary>
+              Administrar notificaciones
+              <span class="perfil-accordion-icono">▼</span>
+            </summary>
+            <div class="perfil-accordion-body">
+              <!-- Intereses de notificación: se muestra para TODAS las
+                   cuentas (Comprador y Vendedor, ya que un vendedor también
+                   puede comprar). Permite elegir en qué categorías quiere
+                   recibir aviso por correo cuando se publique un producto
+                   nuevo. Si no marca ninguna, no se le notifica de nada. -->
+              <p class="perfil-accordion-subtitulo">Categorías de interés</p>
+              <div id="perfilInteresesWrap">
+                <p id="perfilInteresesTexto">
+                  ¡No te pierdas ninguna oportunidad!
+                   Selecciona las categorías que más te interesan 
+                   y recibe notificaciones para descubrir nuevos productos
+                   en tiempo real.
+                </p>
+                <div class="interes-check-item">
+                  <input type="checkbox" id="interesDamas" value="Damas" />
+                  <label for="interesDamas">Damas</label>
+                </div>
+                <div class="interes-check-item">
+                  <input type="checkbox" id="interesCaballeros" value="Caballeros" />
+                  <label for="interesCaballeros">Caballeros</label>
+                </div>
+                <div class="interes-check-item">
+                  <input type="checkbox" id="interesNinos" value="Niños" />
+                  <label for="interesNinos">Niños</label>
+                </div>
+                <div class="interes-check-item">
+                  <input type="checkbox" id="interesServicios" value="Servicios" />
+                  <label for="interesServicios">Servicios</label>
+                </div>
+              </div>
+
+              <!-- Provincia(s) de preferencia: se muestra igual que los
+                   intereses de categoría, pero para filtrar las notificaciones
+                   por ubicación. El usuario puede marcar varias provincias.
+                   Si no marca ninguna, no se filtra por provincia (o no se
+                   notifica, según lo defina el backend). -->
+              <p class="perfil-accordion-subtitulo">Provincias de preferencia</p>
+              <div id="perfilProvinciasWrap">
+                <p id="perfilProvinciasTexto">
+                  📍 Selecciona la provincia (o provincias) de tu preferencia
+                   para que te notifiquemos cuando aparezca un producto nuevo
+                   cerca de ti. Es opcional: si no eliges ninguna, seguirás
+                   recibiendo avisos de tus categorías sin importar la zona.
+                </p>
+                <div class="interes-check-item">
+                  <input type="checkbox" id="provSanJose" value="San José" />
+                  <label for="provSanJose">San José</label>
+                </div>
+                <div class="interes-check-item">
+                  <input type="checkbox" id="provAlajuela" value="Alajuela" />
+                  <label for="provAlajuela">Alajuela</label>
+                </div>
+                <div class="interes-check-item">
+                  <input type="checkbox" id="provCartago" value="Cartago" />
+                  <label for="provCartago">Cartago</label>
+                </div>
+                <div class="interes-check-item">
+                  <input type="checkbox" id="provHeredia" value="Heredia" />
+                  <label for="provHeredia">Heredia</label>
+                </div>
+                <div class="interes-check-item">
+                  <input type="checkbox" id="provGuanacaste" value="Guanacaste" />
+                  <label for="provGuanacaste">Guanacaste</label>
+                </div>
+                <div class="interes-check-item">
+                  <input type="checkbox" id="provPuntarenas" value="Puntarenas" />
+                  <label for="provPuntarenas">Puntarenas</label>
+                </div>
+                <div class="interes-check-item">
+                  <input type="checkbox" id="provLimon" value="Limón" />
+                  <label for="provLimon">Limón</label>
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <!-- 🆕 Acordeón "Cambiar contraseña": primero verifica la
+               contraseña actual y luego permite definir la nueva. -->
+          <details class="perfil-accordion">
+            <summary>
+              Cambiar contraseña
+              <span class="perfil-accordion-icono">▼</span>
+            </summary>
+            <div class="perfil-accordion-body">
+              <div class="perfil-password-field">
+                <label for="perfilPasswordActual">Contraseña actual</label>
+                <input type="password" id="perfilPasswordActual" autocomplete="current-password" />
+              </div>
+              <div class="perfil-password-field">
+                <label for="perfilPasswordNueva">Nueva contraseña</label>
+                <input type="password" id="perfilPasswordNueva" autocomplete="new-password" />
+              </div>
+              <div class="perfil-password-field">
+                <label for="perfilPasswordConfirmar">Confirmar nueva contraseña</label>
+                <input type="password" id="perfilPasswordConfirmar" autocomplete="new-password" />
+              </div>
+              <button id="perfilCambiarPasswordBtn">Actualizar contraseña</button>
+              <p id="perfilPasswordMensaje"></p>
+            </div>
+          </details>
+
+          <p id="perfilMensaje"></p>
+
+          <button id="perfilGuardarBtn">Guardar cambios</button>
+          <button id="perfilBorrarCuentaBtn">Borrar cuenta</button>
+        </div>
+      </div>
+    </div>
+    <!-- ============================================================
+         Fin panel de Perfil
+         ============================================================ -->
+
+    <!-- Parallax script -->
+    <script>
+      window.addEventListener("scroll", function () {
+        const image = document.querySelector(".welcome-image");
+        const scrollTop =
+          window.pageYOffset || document.documentElement.scrollTop;
+        if (image) {
+          image.style.transform = `translateY(${scrollTop * 0.3}px)`;
+        }
+      });
+    </script>
+
+    <!-- ===========================
+         MODAL: TÉRMINOS Y CONDICIONES
+         Se abre desde el link dentro del checkbox de ambos formularios
+         de registro (Comprador y Vendedor).
+    ============================ -->
+    <div id="modalTerminos" class="overlay-terminos" style="display:none;">
+      <div class="caja-terminos">
+        <button type="button" class="cerrar-terminos" id="cerrarTerminosBtn" aria-label="Cerrar">✕</button>
+
+        <img src="imagenes/Polish_20250226_191728811.png" alt="Tienda Monjarrez" class="logo-terminos" />
+
+        <h2>Términos y Condiciones</h2>
+        <p class="fecha-actualizacion">Última actualización: Agosto de 2026</p>
+
+        <h3>1. Bienvenido</h3>
+        <p>Bienvenido a Tienda Monjarrez, una plataforma diseñada para conectar vendedores y compradores mediante la publicación y promoción de productos y servicios.</p>
+        <p>Al registrarte o utilizar la plataforma, aceptas los presentes Términos y Condiciones.</p>
+
+        <h3>2. Registro de usuarios</h3>
+        <p>Para utilizar determinadas funciones será necesario crear una cuenta. El usuario se compromete a proporcionar información verdadera, actualizada y completa durante el proceso de registro. Cada usuario es responsable de mantener la confidencialidad de su contraseña y del uso de su cuenta.</p>
+
+        <h3>3. Publicación de productos</h3>
+        <p>Los vendedores podrán publicar productos y servicios conforme al plan de suscripción contratado. Toda la información publicada deberá ser veraz, clara y corresponder al producto o servicio ofrecido. No está permitido publicar información falsa, engañosa o que pueda inducir a error a los compradores.</p>
+
+        <h3>4. Uso de imágenes</h3>
+        <p>Los vendedores son responsables de las imágenes que publiquen en la plataforma. Se recomienda utilizar imágenes propias o imágenes para las cuales se cuente con autorización de uso. Tienda Monjarrez respeta los derechos de autor y podrá eliminar publicaciones que infrinjan derechos de propiedad intelectual.</p>
+
+        <h3>5. Productos prohibidos</h3>
+        <p>No está permitido publicar productos o servicios que sean ilegales o que infrinjan la legislación vigente. Tampoco se permite publicar contenido ofensivo, discriminatorio, fraudulento o que afecte la seguridad de otros usuarios.</p>
+
+        <h3>6. Suscripciones</h3>
+        <p>Las publicaciones disponibles dependerán del plan de suscripción contratado. Las suscripciones podrán incluir beneficios adicionales según las promociones vigentes.</p>
+
+        <h3>7. Responsabilidad</h3>
+        <p>Tienda Monjarrez actúa como plataforma de publicación. La responsabilidad sobre los productos, descripciones, imágenes, precios, disponibilidad y cumplimiento de las ventas corresponde exclusivamente al vendedor.</p>
+
+        <h3>8. Eliminación de contenido</h3>
+        <p>Tienda Monjarrez podrá suspender cuentas o eliminar publicaciones que incumplan estos términos, sin previo aviso.</p>
+
+        <h3>9. Modificaciones</h3>
+        <p>Tienda Monjarrez podrá actualizar estos términos cuando sea necesario. Las modificaciones serán publicadas dentro de la plataforma.</p>
+
+        <h3>10. Contacto</h3>
+        <p>Para consultas relacionadas con estos términos puedes comunicarte mediante el correo de soporte de Tienda Monjarrez.</p>
+
+        <hr class="separador-terminos" />
+
+        <h2>Política de Privacidad</h2>
+        <p class="fecha-actualizacion">Última actualización: Agosto de 2026</p>
+
+        <h3>Información recopilada</h3>
+        <p>Tienda Monjarrez podrá recopilar la siguiente información: nombre, correo electrónico, teléfono, información del negocio, productos publicados y preferencias de notificaciones.</p>
+
+        <h3>Uso de la información</h3>
+        <p>La información recopilada se utiliza para crear y administrar cuentas, mostrar publicaciones, enviar notificaciones, brindar soporte y mejorar continuamente la plataforma.</p>
+
+        <h3>Protección de la información</h3>
+        <p>Tienda Monjarrez implementa medidas razonables de seguridad para proteger la información almacenada. No obstante, ningún sistema es completamente inmune a riesgos de seguridad.</p>
+
+        <h3>Compartición de información</h3>
+        <p>Tienda Monjarrez no vende la información personal de sus usuarios. La información únicamente podrá compartirse cuando exista una obligación legal.</p>
+
+        <h3>Derechos del usuario</h3>
+        <p>El usuario podrá solicitar la actualización o eliminación de su información personal mediante los canales oficiales de soporte.</p>
+
+        <h3>Cookies</h3>
+        <p>La plataforma podrá utilizar cookies o tecnologías similares para mejorar la experiencia de navegación y recordar preferencias del usuario.</p>
+
+        <h3>Cambios</h3>
+        <p>Esta política podrá actualizarse cuando sea necesario.</p>
+
+        <hr class="separador-terminos" />
+
+        <h2>Política de Publicación</h2>
+        <p>Para mantener una plataforma segura y confiable, todos los usuarios deberán cumplir las siguientes normas. Los vendedores se comprometen a:</p>
+        <ul class="lista-terminos">
+          <li>Publicar únicamente información verdadera.</li>
+          <li>Mantener actualizados sus productos.</li>
+          <li>Respetar los derechos de autor.</li>
+          <li>Utilizar imágenes propias o autorizadas.</li>
+          <li>Respetar a los demás usuarios.</li>
+        </ul>
+        <p>Tienda Monjarrez podrá eliminar publicaciones que incumplan estas normas.</p>
+
+        <h3>Aviso sobre imágenes</h3>
+        <p>ℹ️ Utiliza imágenes propias o imágenes para las que cuentes con autorización de uso. El vendedor es responsable del contenido e imágenes que publica en Tienda Monjarrez.</p>
+
+        <button type="button" class="registrarse cerrar-terminos-btn" id="cerrarTerminosBtnFooter">Entendido</button>
+      </div>
+    </div>
+
+    <style>
+      .aceptar-terminos {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        text-align: left;
+        font-size: 13px;
+        line-height: 1.4;
+        color: #ddd;
+        margin: 12px 0;
+      }
+      .aceptar-terminos input[type="checkbox"] {
+        margin-top: 3px;
+        flex-shrink: 0;
+        accent-color: darkred;
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+      }
+      .link-terminos {
+        color: #ff6b6b;
+        text-decoration: underline;
+        cursor: pointer;
+      }
+      .link-terminos:hover {
+        color: #ff9b9b;
+      }
+
+      .overlay-terminos {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.75);
+        z-index: 20000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .caja-terminos {
+        position: relative;
+        max-width: 640px;
+        width: 100%;
+        max-height: 82vh;
+        overflow-y: auto;
+        padding: 34px 30px;
+        border-radius: 14px;
+        border: 1px solid #ddd;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+        background: #f8f9fa;
+        color: #444;
+      }
+      .logo-terminos {
+        display: block;
+        width: 64px;
+        height: 64px;
+        object-fit: contain;
+        margin: 0 auto 14px;
+      }
+      .caja-terminos h2 {
+        color: #222;
+        font-size: 20px;
+        margin: 0 0 4px;
+        text-align: center;
+      }
+      .caja-terminos h3 {
+        /* 🔧 Rojo claro (como pediste) en vez de azul, ajustado un poco
+           más vivo/saturado que el original para que se lea bien sobre
+           el fondo blanco. */
+        color: #e0384b;
+        font-size: 15px;
+        margin: 18px 0 6px;
+      }
+      .caja-terminos p,
+      .caja-terminos li {
+        font-size: 13.5px;
+        line-height: 1.6;
+        color: #444;
+        margin: 0 0 8px;
+      }
+      .fecha-actualizacion {
+        font-size: 12px;
+        color: #888;
+        margin-bottom: 14px;
+        text-align: center;
+      }
+      .separador-terminos {
+        border: none;
+        border-top: 1px solid #e0e0e0;
+        margin: 24px 0;
+      }
+      .lista-terminos {
+        margin: 0 0 10px 18px;
+        padding: 0;
+      }
+      .cerrar-terminos {
+        position: sticky;
+        float: right;
+        top: 0;
+        right: 0;
+        background: transparent;
+        border: none;
+        color: #999;
+        font-size: 20px;
+        cursor: pointer;
+        line-height: 1;
+      }
+      .cerrar-terminos:hover {
+        color: #222;
+      }
+      .cerrar-terminos-btn {
+        display: block;
+        margin: 20px auto 0;
+      }
+    </style>
+
+    <script>
+      // Abrir / cerrar el modal de Términos y Condiciones desde cualquier
+      // link con [data-abrir-terminos], en ambos formularios de registro.
+      (function () {
+        const modal = document.getElementById("modalTerminos");
+        if (!modal) return;
+
+        // 🔧 Si el modal quedó anidado dentro de algún contenedor con
+        // transform/posicionamiento propio, "position: fixed" deja de
+        // cubrir toda la pantalla y se recorta dentro de ese contenedor.
+        // Moverlo directo a <body> lo garantiza como overlay de página
+        // completa sin importar dónde esté ubicado en el HTML.
+        document.body.appendChild(modal);
+
+        document.querySelectorAll("[data-abrir-terminos]").forEach((link) => {
+          link.addEventListener("click", function (e) {
+            e.preventDefault();
+            modal.style.display = "flex";
+          });
+        });
+
+        function cerrarModal() {
+          modal.style.display = "none";
+        }
+        document.getElementById("cerrarTerminosBtn").addEventListener("click", cerrarModal);
+        document.getElementById("cerrarTerminosBtnFooter").addEventListener("click", cerrarModal);
+        modal.addEventListener("click", function (e) {
+          if (e.target === modal) cerrarModal();
+        });
+
+        // 🔒 El botón "Finalizar Registro" del vendedor es un <button
+        // type="button">, así que el atributo required del checkbox NO
+        // lo bloquea solo (eso únicamente aplica a envíos nativos de
+        // formulario). Este listener se registra en fase de captura
+        // sobre el propio formulario, por lo que se ejecuta ANTES que
+        // el manejador de click de script.js, sin importar el orden en
+        // que se hayan añadido — si el checkbox no está marcado, detiene
+        // el evento ahí mismo y no deja que llegue a script.js.
+        const formVendedor = document.getElementById("registroVendedorUnificado");
+        const checkVendedor = document.getElementById("aceptaTerminosVendedor");
+        if (formVendedor && checkVendedor) {
+          formVendedor.addEventListener(
+            "click",
+            function (e) {
+              if (e.target && e.target.id === "btnFinalizarRegistro" && !checkVendedor.checked) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                checkVendedor.scrollIntoView({ behavior: "smooth", block: "center" });
+                checkVendedor.style.outline = "2px solid #ff6b6b";
+                setTimeout(() => (checkVendedor.style.outline = ""), 1500);
+                alert("Debes aceptar los Términos y Condiciones para continuar.");
+              }
+            },
+            true
+          );
+        }
+      })();
+    </script>
+
+    <!-- 🆕 Notificación tipo "estrella" para los hero-banner -->
+    <script>
+      (function () {
+        const bell = document.getElementById("notifBellBtn");
+        const dot = bell ? bell.querySelector(".notif-dot") : null;
+        const banners = ["heroBanner", "heroBannerVendedor"]
+          .map((id) => document.getElementById(id))
+          .filter(Boolean);
+
+        // 🔧 Rediseñado como un interruptor simple: la campana YA NO
+        // desaparece nunca. "bannerActual" es el banner que le
+        // corresponde a la sesión de este usuario (el que
+        // actualizarMiTienda dejó sin display:none); "oculto" indica si
+        // ese banner está mostrándose o no en este momento. Cada clic en
+        // la campana alterna entre los dos estados.
+        let bannerActual = null;
+        let oculto = false;
+        let hideTimer = null;
+
+        function bannerDeSesion() {
+          // De los dos banners (comprador/invitado y vendedor), script.js
+          // deja exactamente uno sin display:none según el tipo de usuario.
+          return banners.find((b) => b.style.display !== "none");
+        }
+
+        function ocultar() {
+          if (!bannerActual || oculto) return;
+          oculto = true;
+          bannerActual.classList.add("ocultando");
+          bannerActual.addEventListener(
+            "animationend",
+            function () {
+              bannerActual.style.display = "none";
+              bannerActual.classList.remove("ocultando");
+            },
+            { once: true }
+          );
+          if (dot) dot.classList.add("activo");
+        }
+
+        function mostrar() {
+          if (!bannerActual || !oculto) return;
+          oculto = false;
+          bannerActual.style.display = "";
+          bannerActual.classList.add("reapareciendo");
+          bannerActual.addEventListener(
+            "animationend",
+            function () {
+              bannerActual.classList.remove("reapareciendo");
+            },
+            { once: true }
+          );
+          if (dot) dot.classList.remove("activo");
+        }
+
+        // 🆕 (Re)inicializa cuál es "el" banner vigente y reprograma el
+        // auto-ocultado a los 8s. Se llama al cargar la página y también
+        // desde actualizarMiTienda() cada vez que cambia la sesión, para
+        // que la campana siempre apunte al banner correcto y nunca deje
+        // dos banners visibles a la vez.
+        function iniciar() {
+          clearTimeout(hideTimer);
+          banners.forEach((b) => b.classList.remove("ocultando", "reapareciendo"));
+          bannerActual = bannerDeSesion();
+          oculto = false;
+          if (dot) dot.classList.remove("activo");
+          if (bannerActual) {
+            hideTimer = setTimeout(ocultar, 8000);
+          }
+        }
+        window.resetNotifBanner = iniciar;
+
+        if (bell) {
+          bell.addEventListener("click", function () {
+            if (oculto) mostrar();
+            else ocultar();
+          });
+        }
+
+        iniciar();
+      })();
+    </script>
+
+    <script src="script.js"></script>
+
+    <script>
+      // ---------------------------
+      // Script principal (modo integrado)
+      // ---------------------------
+
+      document.addEventListener("DOMContentLoaded", function () {
+        // Activación de botones .filter
+        const filterButtons = document.querySelectorAll(".toolbar .filter");
+        filterButtons.forEach((button) => {
+          button.addEventListener("click", () => {
+            filterButtons.forEach((btn) => btn.classList.remove("active"));
+            button.classList.add("active");
+          });
+        });
+
+        // Activación de botones .main (botones del centro)
+        const mainButtons = document.querySelectorAll(".toolbar .main");
+        mainButtons.forEach((button) => {
+          button.addEventListener("click", () => {
+            mainButtons.forEach((btn) => btn.classList.remove("active"));
+            button.classList.add("active");
+          });
+        });
+
+        // Botón invitado (si existe)
+        const btnInvitado = document.querySelector(".role-btn.invitado");
+        if (btnInvitado) {
+          const loginModal = document.getElementById("loginModal");
+          const contenidoInvitado =
+            document.getElementById("contenidoInvitado");
+          btnInvitado.addEventListener("click", () => {
+            if (loginModal) loginModal.style.display = "none";
+            if (contenidoInvitado) contenidoInvitado.style.display = "block";
+          });
+        }
+      });
+
+      // ---------------------------
+      // Panel lateral: abrir / cerrar
+      // ---------------------------
+      (function () {
+        const modal = document.getElementById("infoModal");
+        const overlay = document.getElementById("sideOverlay");
+        const closeBtn = modal ? modal.querySelector(".close-info") : null;
+
+        function openPanel() {
+          if (!modal || !overlay) return;
+          // 🔧 nuevo: si el panel de Perfil estaba abierto, lo cerramos
+          // primero — antes podían quedar los dos abiertos a la vez,
+          // pisándose visualmente.
+          const perfilPanel = document.getElementById("perfilPanel");
+          const perfilOverlay = document.getElementById("perfilOverlay");
+          if (perfilPanel && perfilPanel.classList.contains("open")) {
+            perfilPanel.classList.remove("open");
+            perfilPanel.setAttribute("aria-hidden", "true");
+          }
+          if (perfilOverlay && perfilOverlay.classList.contains("visible")) {
+            perfilOverlay.classList.remove("visible");
+            perfilOverlay.setAttribute("aria-hidden", "true");
+          }
+
+          modal.classList.add("open");
+          modal.setAttribute("aria-hidden", "false");
+          overlay.classList.add("visible");
+          overlay.setAttribute("aria-hidden", "false");
+          // Opcional no bloquear scroll
+          // document.body.style.overflow = "hidden";
+        }
+
+        function closePanel() {
+          if (!modal || !overlay) return;
+          modal.classList.remove("open");
+          modal.setAttribute("aria-hidden", "true");
+          overlay.classList.remove("visible");
+          overlay.setAttribute("aria-hidden", "true");
+          // document.body.style.overflow = "";
+        }
+
+        document.addEventListener("click", function (e) {
+          const target = e.target;
+          if (target.classList && target.classList.contains("more-info-btn")) {
+            const empresa = target.dataset.empresa || "Empresa no disponible";
+            const imagen = target.dataset.imagen || "";
+            const nombre = target.dataset.nombre || "";
+            const descripcion = target.dataset.descripcion || "";
+            const provincia = target.dataset.provincia || "";
+            const ciudad = target.dataset.ciudad || "";
+            const telefono = target.dataset.telefono || "—";
+            const correo = target.dataset.correo || "—";
+            const precio = target.dataset.precio || "—";
+
+            // Construir HTML del modal
+            let imagenHtml = imagen
+              ? `<img src="${imagen}" alt="Imagen de empresa" style="width:100%; margin:10px 0; border-radius:8px;">`
+              : "";
+
+            // 🆕 Botón de ubicación → abre Google Maps con la búsqueda de
+            // provincia + ciudad
+            let ubicacionHtml = `${provincia}, ${ciudad}`;
+            if (provincia || ciudad) {
+              const query = encodeURIComponent(`${provincia}, ${ciudad}`);
+              ubicacionHtml = `<a class="contacto-btn contacto-ubicacion" href="https://www.google.com/maps/search/?api=1&query=${query}" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+                ${provincia}, ${ciudad}
+              </a>`;
+            }
+
+            // 🆕 Botón de WhatsApp a partir del teléfono: se limpia el
+            // número (solo dígitos) y, si viene sin código de país (8
+            // dígitos, formato típico de Costa Rica), se le antepone 506.
+            // Además se precarga un mensaje profesional con el nombre del
+            // producto, para que el vendedor sepa de dónde le escriben.
+            // El comprador puede seguir escribiendo o editando el mensaje
+            // antes de enviarlo; solo queda precargado, no bloqueado.
+            let telefonoHtml = telefono;
+            if (telefono && telefono !== "—") {
+              const soloDigitos = telefono.replace(/\D/g, "");
+              if (soloDigitos) {
+                const numeroWhatsapp =
+                  soloDigitos.length === 8 ? `506${soloDigitos}` : soloDigitos;
+                const mensajeWhatsapp = encodeURIComponent(
+                  `Hola, le escribo desde *Tienda Monjarrez* por el producto "${nombre}". Vi su publicacion y me intereso mucho, me gustaria conocer mas detalles antes de decidir mi compra. Quedo atento a su respuesta, muchas gracias!`
+                );
+                telefonoHtml = `<a class="contacto-btn contacto-whatsapp" href="https://wa.me/${numeroWhatsapp}?text=${mensajeWhatsapp}" target="_blank" rel="noopener">
+                  <svg viewBox="0 0 32 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M16.001 2.667c-7.363 0-13.334 5.97-13.334 13.333 0 2.353.615 4.65 1.784 6.667L2.667 29.333l6.822-1.789a13.27 13.27 0 0 0 6.512 1.72h.006c7.362 0 13.333-5.97 13.333-13.334 0-3.56-1.386-6.907-3.903-9.424a13.24 13.24 0 0 0-9.436-3.839zm0 24.4a11.03 11.03 0 0 1-5.625-1.54l-.404-.24-4.05 1.062 1.082-3.948-.263-.406a11.02 11.02 0 0 1-1.694-5.895c0-6.11 4.972-11.081 11.084-11.081 2.96 0 5.744 1.154 7.837 3.25a11.01 11.01 0 0 1 3.244 7.837c0 6.111-4.972 11.081-11.211 11.081zm6.078-8.297c-.333-.167-1.966-.971-2.271-1.081-.305-.111-.526-.167-.748.166-.222.334-.86 1.082-1.054 1.304-.194.223-.388.25-.721.083-.333-.166-1.406-.518-2.678-1.652-.99-.883-1.659-1.973-1.853-2.306-.194-.334-.021-.514.146-.68.15-.15.333-.389.5-.583.166-.194.221-.334.333-.556.111-.223.055-.417-.028-.583-.083-.167-.748-1.803-1.026-2.469-.27-.649-.545-.561-.748-.571l-.638-.011c-.222 0-.583.083-.888.417-.305.333-1.166 1.14-1.166 2.777s1.194 3.222 1.361 3.444c.166.222 2.35 3.588 5.693 5.032.795.343 1.415.549 1.898.703.797.254 1.523.218 2.096.132.639-.095 1.966-.804 2.244-1.581.277-.777.277-1.443.194-1.581-.083-.139-.305-.222-.638-.389z"/></svg>
+                  ${telefono}
+                </a>`;
+              }
+            }
+
+            // 🆕 Botón de correo (mailto), estilo similar al botón "Ayuda".
+            // También se precarga asunto y cuerpo con el nombre del
+            // producto y el remitente (Tienda Monjarrez), editable por el
+            // comprador antes de enviar.
+            let correoHtml = correo;
+            if (correo && correo !== "—") {
+              const asuntoCorreo = encodeURIComponent(
+                `Consulta por "${nombre}" - Tienda Monjarrez`
+              );
+              const cuerpoCorreo = encodeURIComponent(
+                `Hola,\n\nLe escribo desde Tienda Monjarrez por el producto "${nombre}". Vi su publicacion y me intereso mucho, me gustaria conocer mas detalles antes de decidir mi compra.\n\nQuedo atento a su respuesta, muchas gracias.\n\nSaludos cordiales.`
+              );
+              correoHtml = `<a class="contacto-btn contacto-correo" href="mailto:${correo}?subject=${asuntoCorreo}&body=${cuerpoCorreo}">
+                <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6zm-2 0-8 5-8-5h16zm0 12H4V8l8 5 8-5v10z"/></svg>
+                ${correo}
+              </a>`;
+            }
+
+            // 🔧 Se eliminó la línea que hacía
+            // document.getElementById("infoEmpresa").textContent = ...
+            // porque el <h2 id="infoEmpresa"> original se destruye justo
+            // abajo al reemplazar infoModalContent.innerHTML (el nuevo
+            // <h2> ya no tiene ese id). Eso hacía que, desde la segunda
+            // vez que se abría el panel, getElementById("infoEmpresa")
+            // devolviera null y lanzara un error que cortaba la ejecución
+            // antes de llegar a openPanel() — el panel dejaba de abrir.
+            // El nombre de la empresa ya se incluye en el <h2>${empresa}</h2>
+            // de la plantilla de abajo, así que esta línea era redundante.
+            document.getElementById("infoModalContent").innerHTML = `
+        <button class="close-info" aria-label="Cerrar">&times;</button>
+        <h2>${empresa}</h2>
+        ${imagenHtml}
+        <p><strong>Nombre:</strong> ${nombre}</p>
+        <p><strong>Descripción:</strong> ${descripcion}</p>
+        <h3>Ubicación</h3>
+        <p>${ubicacionHtml}</p>
+        <h3>Contacto</h3>
+        <p>${telefonoHtml}<br>${correoHtml}</p>
+        <p><strong>Precio:</strong> ₡${precio}</p>
+      `;
+
+            // Reasignar listener para cerrar después de crear contenido nuevo
+            const closeBtnNew = document.querySelector(
+              "#infoModalContent .close-info"
+            );
+            if (closeBtnNew) {
+              closeBtnNew.addEventListener("click", closePanel);
+            }
+
+            openPanel();
+          }
+        });
+
+        if (closeBtn) closeBtn.addEventListener("click", closePanel);
+        if (overlay) overlay.addEventListener("click", closePanel);
+
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape") closePanel();
+        });
+
+        const content = document.getElementById("infoModalContent");
+        if (content) {
+          content.addEventListener("click", function (e) {
+            e.stopPropagation();
+          });
+        }
+      })();
+    </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+    <!-- 🆕 Modal de Ayuda — reemplaza el alert() nativo del navegador por
+         una tarjeta con estilo propio, acorde al tema oscuro/rojo del
+         sitio. El CSS va con !important y nombres de clase propios para
+         no depender de reglas que puedan existir (o no) en styles.css. -->
+    <style>
+      #ayudaModal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.65);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+      }
+      #ayudaModal.activo {
+        display: flex;
+      }
+      #ayudaModal .ayuda-card {
+        background: linear-gradient(180deg, #1c1c1c 0%, #121212 100%);
+        border: 1px solid rgba(178, 34, 34, 0.4);
+        border-radius: 14px;
+        padding: 32px 30px 26px;
+        max-width: 360px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+        position: relative;
+        font-family: inherit;
+      }
+      #ayudaModal .ayuda-cerrar {
+        position: absolute !important;
+        top: 10px !important;
+        right: 14px !important;
+        width: auto !important;
+        height: auto !important;
+        background: transparent !important;
+        border: none !important;
+        color: #999 !important;
+        font-size: 22px !important;
+        cursor: pointer !important;
+        line-height: 1 !important;
+        transition: color 0.2s ease;
+      }
+      #ayudaModal .ayuda-cerrar:hover {
+        color: #fff !important;
+      }
+      #ayudaModal .ayuda-icono {
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 14px;
+        border-radius: 50%;
+        background: rgba(178, 34, 34, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+      }
+      #ayudaModal h3 {
+        color: #fff;
+        font-size: 19px;
+        margin: 0 0 10px;
+      }
+      #ayudaModal p {
+        color: #bbb;
+        font-size: 14px;
+        line-height: 1.5;
+        margin: 0 0 18px;
+      }
+      #ayudaModal .ayuda-correo {
+        display: inline-block;
+        color: #fff;
+        background: #8c1c1c;
+        padding: 10px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 600;
+        transition: background 0.2s ease;
+      }
+      #ayudaModal .ayuda-correo:hover {
+        background: #a32323;
+      }
+
+      /* Botones de contacto en el panel "Ver detalles" del producto:
+         WhatsApp en verde, correo en rojo (mismo estilo de botón
+         que el correo del modal de Ayuda). */
+      #infoModalContent .contacto-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #fff;
+        padding: 10px 18px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 600;
+        transition: background 0.2s ease;
+        margin: 6px 8px 6px 0;
+      }
+      #infoModalContent .contacto-btn svg {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+      }
+      #infoModalContent .contacto-whatsapp {
+        background: #25d366;
+      }
+      #infoModalContent .contacto-whatsapp:hover {
+        background: #1ebe57;
+      }
+      #infoModalContent .contacto-correo {
+        background: transparent;
+        color: #e53935;
+        border: 2px solid #e53935;
+      }
+      #infoModalContent .contacto-correo:hover {
+        background: #e53935;
+        color: #fff;
+      }
+
+      /* Botón de ubicación → abre Google Maps */
+      #infoModalContent .contacto-ubicacion {
+        background: transparent;
+        color: #4285F4;
+        border: 2px solid #4285F4;
+      }
+      #infoModalContent .contacto-ubicacion:hover {
+        background: #4285F4;
+        color: #fff;
+      }
+    </style>
+    <div id="ayudaModal">
+      <div class="ayuda-card">
+        <span class="ayuda-cerrar" id="cerrarAyudaModal">&times;</span>
+        <div class="ayuda-icono">💬</div>
+        <h3>¿Necesitas ayuda?</h3>
+        <p>Nuestro equipo de soporte está listo para atenderte.
+           Escríbenos y con gusto resolveremos tu consulta.</p>
+        <a class="ayuda-correo" href="mailto:tiendamonjarrez@gmail.com">
+          ✉️ tiendamonjarrez@gmail.com
+        </a>
+      </div>
+    </div>
+
+ <!-- Modal Mi Tienda -->
+<div id="miTiendaModal" class="modal">
+  <div class="modal-content">
+    <span id="cerrarMiTiendaModal" class="close">&times;</span>
+    <h3>Acceso a Mi Tienda</h3>
+    <form id="miTiendaForm">
+      <label for="miTiendaCedula">Cédula</label>
+      <input type="text" id="miTiendaCedula" name="cedula" required />
+
+      <label for="miTiendaPassword">Contraseña</label>
+      <input type="password" id="miTiendaPassword" name="password" required />
+
+      <button type="submit">Ingresar</button>
+    </form>
+
+    <p id="errorMsgMiTienda" style="color: red; display: none">
+      Credenciales inválidas
+    </p>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- Loader -->
+<div id="loader" class="loader-overlay">
+  <div class="loader-box">
+    <div class="spinner">
+      <div class="spinner-inner"></div> <!-- Círculo girando -->
+      <img 
+        src="imagenes/Polish_20250226_191728811.png" 
+        alt="Icono" 
+        class="loader-logo"
+      />
+    </div>
+    <p class="loader-text">Cargando...</p>
+  </div>
+</div>
+
+<div id="miniLoader" class="mini-loader-overlay">
+  <div class="mini-loader-box">
+    <div class="spinner-mini">
+      <div class="spinner-mini-inner"></div>
+      <img src="imagenes/Polish_20250226_191728811.png" alt="Icono" class="mini-loader-logo"/>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+<!--
+  🗑️ DESACTIVADO: segundo script duplicado de login "Mi Tienda".
+  Igual que el anterior, esta lógica ya vive únicamente en script.js.
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const miTiendaForm = document.getElementById("miTiendaForm");
+  const errorMsg = document.getElementById("errorMsgMiTienda");
+  const usuarioIdDiv = document.getElementById("usuarioIdVisibleMitienda");
+  const miTiendaModal = document.getElementById("miTiendaModal");
+
+  miTiendaForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const cedula = document.getElementById("miTiendaCedula").value.trim();
+    const password = document.getElementById("miTiendaPassword").value.trim();
+
+    try {
+      // Ruta corregida
+      const res = await fetch("/proyecto-web/api/mi-tienda-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `cedula=${encodeURIComponent(cedula)}&password=${encodeURIComponent(password)}`
+      });
+
+      const text = await res.text();
+
+      if (res.ok && text.startsWith("OK:")) {
+        const usuarioId = text.split(":")[1];
+
+        usuarioIdDiv.textContent = `ID de usuario: ${usuarioId}`;
+        usuarioIdDiv.style.display = "block";
+
+        miTiendaModal.style.display = "none";
+
+        document.getElementById("accionesTienda").style.display = "block";
+
+        console.log("Login exitoso, ID:", usuarioId);
+      } else {
+        errorMsg.style.display = "block";
+        errorMsg.textContent = text || "Credenciales inválidas";
+      }
+    } catch (err) {
+      console.error("Error al conectar:", err);
+      errorMsg.style.display = "block";
+      errorMsg.textContent = "Error de conexión con el servidor.";
+    }
+  });
+});
+</script>
+-->
+
+
+
+
+<!-- CSS -->
+<style>
+/* Fondo translúcido centrado */
+.loader-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(255,255,255,0.8); /* fondo blanco translúcido */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.loader-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.loader-overlay.hide {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.8s ease, visibility 0.8s ease;
+}
+
+
+/* Caja del loader */
+.loader-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+/* Spinner circular */
+.spinner {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Círculo girando solo con línea visible */
+.spinner-inner {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  border: 6px solid transparent;   /* todo transparente */
+  border-top: 6px solid #8B0000;   /* solo la línea que gira */
+  border-radius: 50%;
+  animation: spin 1.8s linear infinite;
+  box-sizing: border-box;
+}
+
+/* Logo centrado dentro del spinner, borde minimalista */
+.loader-logo {
+  width: 140px;
+  height: 140px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  object-fit: contain;
+  border-radius: 4px; /* casi plano */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* sombra mínima */
+  z-index: 2;
+  animation: none; 
+}
+
+/* Texto debajo */
+.loader-text {
+  margin-top: 20px;
+  font-size: 18px;
+  color: #8B0000;
+  font-weight: bold;
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+
+/* Animación del círculo */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
+
+
+
+/* Mini loader centralizado sobre la pantalla */
+.mini-loader-overlay {
+  position: fixed; /* flota sobre todo */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.mini-loader-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.mini-loader-overlay.hide {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* Caja del mini loader más grande y transparente */
+.mini-loader-box {
+  width: 220px;          /* más grande */
+  height: 220px;         /* más grande */
+  background: rgba(255,255,255,0.2); /* fondo blanco transparente */
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+  padding: 20px;
+}
+
+/* Spinner circular más grande */
+.spinner-mini {
+  width: 120px;   /* más grande */
+  height: 120px;  /* más grande */
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Spinner circular más grande solo línea visible */
+.spinner-mini-inner {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  border: 6px solid transparent;     /* todo transparente */
+  border-top: 6px solid #8B0000;     /* línea visible que gira */
+  border-radius: 50%;
+  animation: spin 1.5s linear infinite;
+}
+
+/* Logo centrado dentro del spinner */
+.mini-loader-logo {
+  width: 70px;   /* más grande */
+  height: 70px;  /* más grande */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  object-fit: contain;
+  border-radius: 6px;
+  animation: none;
+}
+
+
+</style>
+
+<!-- JS -->
+<script>
+const loader = document.getElementById("loader");
+
+// Mostrar loader con callback opcional
+function mostrarLoader(callback) {
+  loader.classList.remove("hide");
+  loader.classList.add("show");
+
+  setTimeout(() => {
+    loader.classList.remove("show");
+    loader.classList.add("hide");
+    if(callback) callback();
+  }, 2000); // dura 2 segundos
+}
+
+// Botones del login
+document.querySelectorAll("#loginModal .role-btn, #loginModal #registrarseBtn")
+  .forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      mostrarLoader(() => {
+        document.getElementById("loginModal").style.display = "none";
+
+        if (btn.classList.contains("vendedor")) {
+          document.getElementById("modalVendedor").style.display = "block";
+        } else if (btn.classList.contains("comprador")) {
+          document.getElementById("modalComprador").style.display = "block";
+        } else if (btn.classList.contains("invitado")) {
+          document.getElementById("contenidoInvitado").style.display = "block";
+        } else if (btn.id === "registrarseBtn") {
+          document.getElementById("registroModal").style.display = "block";
+        }
+      });
+    });
+  });
+
+// Formulario de suscripción
+const susForm = document.getElementById("suscripcionForm");
+if (susForm) {
+  susForm.addEventListener("submit", function(e) {
+    e.preventDefault();
+    mostrarLoader(() => {
+      susForm.submit(); // envía el formulario después de mostrar loader
+    });
+  });
+}
+
+
+
+
+// Mini loader
+const miniLoader = document.getElementById("miniLoader");
+
+function mostrarMiniLoader(callback) {
+  if (!miniLoader) return; // evita errores si no existe el elemento
+  miniLoader.classList.remove("hide");
+  miniLoader.classList.add("show");
+
+  setTimeout(() => {
+    miniLoader.classList.remove("show");
+    miniLoader.classList.add("hide");
+    if (typeof callback === "function") callback();
+  }, 1500);
+}
+
+// Botones específicos (solo los que realmente necesites)
+const botonesMiniLoader = document.querySelectorAll(
+  "#btnAccederVendedor, #btnAccederComprador"
+);
+
+botonesMiniLoader.forEach(btn => {
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    mostrarMiniLoader(() => {
+      if (btn.closest("form")) {
+        btn.closest("form").submit();
+      }
+    });
+  });
+});
+
+
+
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+
+
+/* 🔧 Se eliminó un listener de "load" duplicado que llamaba a
+   actualizarMiTienda() leyendo sessionStorage.getItem("usuario") — esa
+   clave nunca se guarda en ningún lugar del código, así que siempre
+   resolvía a "invitado". Al correr en paralelo con el listener de abajo
+   (que sí usa la sesión real en localStorage), generaba dos llamadas a
+   actualizarMiTienda() con datos distintos y abría la puerta a que el
+   estado de los banners quedara inconsistente. Ahora solo queda la
+   llamada real, más abajo, basada en comprobarSesion(). */
+
+/* --------- CONFIG --------- */
+const DURACION_SESION = 30 * 60 * 1000; // 30 minutos en ms
+
+/* --------- FUNCIONES DE SESIÓN --------- */
+function iniciarSesion(tipo) {
+  const expiracion = Date.now() + DURACION_SESION;
+  localStorage.setItem("sesionUsuario", JSON.stringify({ tipo, expiracion }));
+}
+
+function cerrarSesion() {
+   const confirmar = confirm("¿Estás seguro que deseas cerrar sesión?");
+  if (!confirmar) return; 
+  localStorage.removeItem("sesionUsuario");
+  mostrarLogin("Tiempo de sesión agotado");
+  actualizarMiTienda("invitado"); // 🆕 vuelve a mostrar el hero y bloquea "Mi tienda"
+}
+
+function comprobarSesion() {
+  const sesion = JSON.parse(localStorage.getItem("sesionUsuario"));
+  if (!sesion) return null;
+  if (Date.now() > sesion.expiracion) {
+    cerrarSesion();
+    return null;
+  }
+  return sesion.tipo; // "vendedor" o "comprador"
+}
+
+function actualizarActividad() {
+  const sesion = JSON.parse(localStorage.getItem("sesionUsuario"));
+  if (!sesion) return;
+  sesion.expiracion = Date.now() + DURACION_SESION;
+  localStorage.setItem("sesionUsuario", JSON.stringify(sesion));
+}
+
+/* --------- FUNCIONES DE LOGIN Y CONTENIDO --------- */
+function mostrarLogin(mensaje) {
+  document.getElementById("loginModal").style.display = "flex";
+  if(mensaje) document.getElementById("loginMensaje").innerText = mensaje;
+
+  // Ocultar todos los contenidos
+  document.getElementById("contenidoVendedorRegistrado").style.display = "none";
+  document.getElementById("contenidoVendedorActivo").style.display = "none";
+  document.getElementById("contenidoCompradorRegistrado").style.display = "none";
+  document.getElementById("contenidoCompradorActivo").style.display = "none";
+}
+
+function mostrarContenido(tipo, registrado = true) {
+  document.getElementById("loginModal").style.display = "none";
+
+  // Ocultar todo
+  document.getElementById("contenidoVendedorRegistrado").style.display = "none";
+  document.getElementById("contenidoVendedorActivo").style.display = "none";
+  document.getElementById("contenidoCompradorRegistrado").style.display = "none";
+  document.getElementById("contenidoCompradorActivo").style.display = "none";
+
+  if(tipo === "vendedor") {
+    if(registrado) document.getElementById("contenidoVendedorRegistrado").style.display = "block";
+    else document.getElementById("contenidoVendedorActivo").style.display = "block";
+  }
+
+  if(tipo === "comprador") {
+    if(registrado) document.getElementById("contenidoCompradorRegistrado").style.display = "block";
+    else document.getElementById("contenidoCompradorActivo").style.display = "block";
+  }
+}
+
+
+
+
+/* --------- INICIALIZACIÓN --------- */
+window.addEventListener("load", () => {
+  const tipo = comprobarSesion();
+  if (tipo) {
+    mostrarContenido(tipo, false); // Sesión activa → mostrar contenido
+    actualizarMiTienda(tipo);      // 🔹 Ajustar "Mi tienda" según tipo
+  } else {
+    mostrarLogin();                // No hay sesión → mostrar login
+    actualizarMiTienda("invitado"); // 🔹 Bloquear por defecto
+  }
+});
+
+
+
+
+
+
+
+
+/* --------- ACTIVIDAD DEL USUARIO --------- */
+["click","mousemove","keydown","scroll"].forEach(evt => {
+  document.addEventListener(evt, actualizarActividad);
+});
+
+/* --------- BOTONES DE LOGIN --------- */
+// 🔧 Antes, este bloque llamaba a iniciarSesion(tipo) apenas el usuario
+// elegía "Vendedor" o "Comprador" aquí — ANTES de escribir cédula/contraseña.
+// Eso marcaba sesión "activa" en localStorage sin que el servidor hubiera
+// autenticado a nadie, y por eso /api/perfil respondía "Debes iniciar
+// sesión" aunque el front pensara que sí había sesión. Ahora ese botón solo
+// abre el formulario de credenciales (modalVendedor/modalComprador, ver
+// listener de arriba con mostrarLoader); la sesión real se marca en
+// script.js, dentro de btnAccederVendedor/btnAccederComprador, SOLO cuando
+// el servidor confirma el login (response.ok) — que es donde también se
+// crea la sesión real en el backend (session.setAttribute("usuarioId", ...)).
+document.querySelectorAll("#loginModal .role-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const tipo = btn.classList.contains("vendedor") ? "vendedor" :
+                 btn.classList.contains("comprador") ? "comprador" :
+                 "invitado";
+
+    if (tipo === "invitado") {
+      mostrarContenido(tipo, true);
+    }
+    // vendedor/comprador: no hacemos nada más aquí, el modal de
+    // credenciales ya se muestra por el otro listener.
+  });
+});
+
+/* Botón registrarse */
+document.getElementById("registrarseBtn").addEventListener("click", () => {
+  document.getElementById("registroModal").style.display = "flex";
+});
+
+/* 🆕 Botón "¿Quieres vender?" del hero: abre el mismo flujo de registro */
+const btnVenderHero = document.getElementById("btnVenderHero");
+if (btnVenderHero) {
+  btnVenderHero.addEventListener("click", () => {
+    document.getElementById("registroModal").style.display = "flex";
+  });
+}
+
+/* 🆕 Botón "Publicar un nuevo producto" del banner motivacional de
+   vendedores: NO abre addProductModal directamente, porque ese
+   formulario necesita el ID de usuario que solo existe dentro del
+   panel "Mi tienda" (usuarioIdVisibleMitienda). En su lugar, simula
+   un clic en el filtro "Mi tienda" — el mismo que ya abre miTiendaModal
+   y, desde ahí, el usuario entra a agregar su producto con el ID
+   correcto ya cargado. */
+const btnPublicarHeroVendedor = document.getElementById("btnPublicarHeroVendedor");
+if (btnPublicarHeroVendedor) {
+  btnPublicarHeroVendedor.addEventListener("click", () => {
+    document.querySelector('.filter[data-category="Mi tienda"]')?.click();
+  });
+}
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+const cedulaInput = document.getElementById("miTiendaCedula");
+const passwordInput = document.getElementById("miTiendaPassword");
+
+// Tiempo de expiración en milisegundos (30 min)
+const EXPIRATION_TIME = 30 * 60 * 1000;
+
+// Función para guardar con timestamp
+function guardarLogin() {
+  const now = new Date().getTime();
+  localStorage.setItem("miTiendaCedula", cedulaInput.value);
+  localStorage.setItem("miTiendaPassword", passwordInput.value);
+  localStorage.setItem("miTiendaLoginTime", now);
+}
+
+// Función para cargar datos si no expiró
+function cargarLogin() {
+  const savedTime = localStorage.getItem("miTiendaLoginTime");
+  if (savedTime) {
+    const now = new Date().getTime();
+    if (now - savedTime < EXPIRATION_TIME) {
+      cedulaInput.value = localStorage.getItem("miTiendaCedula") || "";
+      passwordInput.value = localStorage.getItem("miTiendaPassword") || "";
+    } else {
+      // Borrar si expiró
+      localStorage.removeItem("miTiendaCedula");
+      localStorage.removeItem("miTiendaPassword");
+      localStorage.removeItem("miTiendaLoginTime");
+    }
+  }
+}
+
+// Guardar cada vez que el usuario escribe
+cedulaInput.addEventListener("input", guardarLogin);
+passwordInput.addEventListener("input", guardarLogin);
+
+// Cargar al iniciar la página
+window.addEventListener("DOMContentLoaded", cargarLogin);
+
+// Limpiar si login fue exitoso
+document.getElementById("miTiendaForm").addEventListener("submit", () => {
+  // Después de verificar credenciales correctamente:
+  // localStorage.removeItem("miTiendaCedula");
+  // localStorage.removeItem("miTiendaPassword");
+  // localStorage.removeItem("miTiendaLoginTime");
+});
+</script>
+
+
+
+
+
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,32 @@
+# ============================
+# Maven
+# ============================
+
+target/
+*.war
+*.jar
+*.ear
+*.class
+
+# ============================
+# NetBeans
+# ============================
+
+nbproject/private/
+nbactions.xml
+nb-configuration.xml
+build/
+dist/
+
+# ============================
+# VS Code
+# ============================
+
+.vscode/
+
+# ============================
+# Sistema operativo
+# ============================
+
+.DS_Store
+Thumbs.db
