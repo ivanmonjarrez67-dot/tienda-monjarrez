@@ -961,14 +961,23 @@ Adaptación del toggle a móviles y tablets
   transform: scale(0.96);
 }
 
-/* Botones centrales: mismo degradado rojo-negro difuminado que "Registrarse" */
+/* Botones centrales: fondo blanco plano (antes tenían un degradado
+   rojo-negro difuminado). */
 .toolbar .main {
-  background: linear-gradient(135deg, #1a1a1a, #6b0f0f);
+  background-color: #ffffff;
+  color: #1a1a1a;
   font-weight: 600;
 }
 
 .toolbar .main:hover {
-  background: linear-gradient(135deg, #232323, #8b0000);
+  background-color: #f0f0f0;
+}
+
+/* Como ahora el fondo por defecto ya es blanco (igual que el estado
+   "seleccionado" de abajo), se agrega un anillo rojo cuando está activo
+   para que siga notándose cuál filtro central está seleccionado. */
+.toolbar .main.active {
+  box-shadow: 0 0 0 2px #6b0f0f inset;
 }
 
 /* Botón seleccionado: se aclara sin perder el look plano.
