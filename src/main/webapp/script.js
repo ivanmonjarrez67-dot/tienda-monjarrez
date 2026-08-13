@@ -250,14 +250,37 @@ function construirTarjetaProductoHTML(producto) {
       `;
 }
 
+function mostrarEsqueletoCarga(grid, cantidad = 8) {
+  if (!grid) return;
+  grid.classList.remove("mosaic-grid");
+  grid.classList.add("skeleton-grid");
+  grid.innerHTML = "";
+  for (let i = 0; i < cantidad; i++) {
+    const tarjeta = document.createElement("div");
+    tarjeta.className = "skeleton-card";
+    tarjeta.innerHTML = `
+      <div class="skeleton-img"></div>
+      <div class="skeleton-line skeleton-line--title"></div>
+      <div class="skeleton-line skeleton-line--btn"></div>
+    `;
+    grid.appendChild(tarjeta);
+  }
+}
+
+const gridProductosInicial = document.getElementById("productGrid");
+mostrarEsqueletoCarga(gridProductosInicial);
+
 fetch("/api/productos")
   .then((response) => response.json())
   .then((productos) => {
     const grid = document.getElementById("productGrid");
+    grid.classList.remove("skeleton-grid");
     pintarMosaico(grid, productos, construirTarjetaProductoHTML);
   })
   .catch((error) => {
     console.error("Error al cargar productos:", error);
+    const grid = document.getElementById("productGrid");
+    if (grid) { grid.classList.remove("skeleton-grid"); grid.innerHTML = ""; }
   });
 
   window.addEventListener("scroll", function () {
@@ -1014,13 +1037,12 @@ function activarOscuro(guardar = true) {
 }
 
 (function restaurarTemaGuardado() {
-  const temaGuardado = localStorage.getItem('temaTienda') || 'claro';
-  switch (temaGuardado) {
-    case 'claro': activarClaro(false); break;
-    case 'estrellado': activarEstrellado(false); break;
-    case 'rosado': activarRosado(false); break;
-    default: activarOscuro(false); break;
-  }
+  // 🔧 Antes se recordaba el último tema elegido (localStorage). Ahora
+  // la página siempre arranca en claro, sin importar lo que el usuario
+  // haya elegido en una visita anterior. El switch de Tema sigue
+  // funcionando con normalidad durante la sesión, solo que ya no se
+  // guarda para la próxima carga.
+  activarClaro(false);
 })();
 
 const welcomeContainer = document.querySelector('.welcome-container');
@@ -1348,3 +1370,33 @@ document.getElementById("btnCambiarPassword")?.addEventListener("click", async (
     btn.textContent = "Cambiar contraseña";
   }
 });
+
+/* 🆕 Auto-ocultar el bloque "¡Bienvenido Invitado!" pasados 25 segundos.
+   Hay varios lugares del código que hacen
+   contenidoInvitado.style.display = "block" (botón "Invitado" del login,
+   el flujo con loader, etc.), así que en vez de tocar cada uno, se
+   observa el propio elemento: cada vez que se vuelve visible, arranca
+   un temporizador de 25s que lo oculta; si se oculta antes por otro
+   motivo, el temporizador se cancela. */
+(function () {
+  const contenidoInvitado = document.getElementById("contenidoInvitado");
+  if (!contenidoInvitado) return;
+
+  let timeoutInvitado = null;
+
+  const observer = new MutationObserver(() => {
+    const visible = contenidoInvitado.style.display === "block";
+
+    if (visible && !timeoutInvitado) {
+      timeoutInvitado = setTimeout(() => {
+        contenidoInvitado.style.display = "none";
+        timeoutInvitado = null;
+      }, 25000);
+    } else if (!visible && timeoutInvitado) {
+      clearTimeout(timeoutInvitado);
+      timeoutInvitado = null;
+    }
+  });
+
+  observer.observe(contenidoInvitado, { attributes: true, attributeFilter: ["style"] });
+})();

@@ -90,9 +90,14 @@ h1 {
   border-radius: 0 8px 8px 0;
   font-size: 16px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.2s ease, transform 0.15s ease;
   display: flex;
-  align-items: cen
+  align-items: center;
+  justify-content: center;
+}
+
+#searchButton:active {
+  transform: scale(0.93);
 }
 
 .icon-search {
@@ -582,6 +587,15 @@ Adaptación del toggle a móviles y tablets
   color: white; /* mismo color que el texto del header */
   padding: 5px 8px;
   line-height: 1;
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 50%;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.menu-btn:active {
+  transform: scale(0.9);
+  background-color: rgba(255, 255, 255, 0.08);
 }
 
 /* tres puntitos horizontales */
@@ -927,6 +941,10 @@ Adaptación del toggle a móviles y tablets
 .toolbar button:hover {
   color: #ffcccc;
   border-bottom: 2px solid #ba55d3; /* Morado más fuerte al pasar el mouse */
+}
+
+.toolbar button:active {
+  transform: scale(0.94);
 }
 
 /* Botón seleccionado */
@@ -1599,19 +1617,49 @@ Modificaciones para visivilidad en dispositivos
   }
 }
 
-@media (max-width: 500px) {
+@media (max-width: 600px) {
+  /* 🔧 Antes esta regla aplicaba "flex: 1 1 40%; max-width: 45%" a
+     TODOS los botones del toolbar por igual (los 3 grupos mezclados:
+     Caballero/Damas/Niños, Novedades/Colección/Descuentos/Recomendados,
+     Mi tienda/Todo/Servicios), así que al haber 10 botones en total
+     terminaban amontonados en una cuadrícula de 2 columnas sin ningún
+     orden. Ahora cada grupo fluye en su propia fila como "chips" chicos
+     (estilo red social: solo lo ancho que el texto necesita, no bloques
+     grandes ocupando toda la columna), y hacen wrap si no caben todos.  */
   .toolbar {
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: center;
     margin-left: 0;
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .toolbar-group,
+  .toolbar-center {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
     gap: 6px;
-    padding: 10px 10px;
+    width: 100%;
   }
 
   .toolbar button {
-    font-size: 14px;
-    padding: 6px 10px;
-    flex: 1 1 40%; /* que se acomoden mejor */
-    max-width: 45%;
+    font-size: 10px;
+    font-weight: 400 !important;
+    padding: 4px 10px;
+    width: auto;
+    max-width: none;
+    flex: 0 0 auto;
+    border-radius: 6px;
+    white-space: nowrap;
+    letter-spacing: 0;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  }
+
+  .toolbar .main {
+    border-color: rgba(255, 255, 255, 0.22) !important;
   }
 
   .filters {
@@ -1622,12 +1670,6 @@ Modificaciones para visivilidad en dispositivos
 
   .filters label {
     margin-bottom: 8px;
-  }
-
-  .toolbar-center {
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: center;
   }
 }
 
@@ -1817,23 +1859,30 @@ Modal agregar
 
 /* Botón "Agregar Producto" */
 #addProductButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   background-color: white;
   color: black;
   border: none;
-  padding: 6px 16px;
-  border-radius: 8px;
+  padding: 10px 20px;
+  border-radius: 999px;
   font-size: 14px;
-  font-weight: bold;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+  transition: all 0.25s ease;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+
+#addProductButton i {
+  font-size: 14px;
 }
 
 #addProductButton:hover {
   background-color: rgb(128, 0, 32);  /* color vino */
   color: white;
-  transform: scale(1.1);
-  box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.25);
 }
 
 /* Separador vertical */
@@ -1846,23 +1895,30 @@ Modal agregar
 
 /* Botón "Eliminar Producto" */
 #deleteProductButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   background-color: white;
   color: black;
   border: none;
-  padding: 6px 16px;
-  border-radius: 8px;
+  padding: 10px 20px;
+  border-radius: 999px;
   font-size: 14px;
-  font-weight: bold;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+  transition: all 0.25s ease;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+
+#deleteProductButton i {
+  font-size: 14px;
 }
 
 #deleteProductButton:hover {
-  background-color: rgb(255, 102, 102);  /* rojo claro */
+  background-color: rgb(220, 53, 69);  /* rojo más profesional */
   color: white;
-  transform: scale(1.1);
-  box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.25);
 }
 
 /* Producto seleccionado */
@@ -1995,16 +2051,9 @@ body.theme-stars #starsCanvas {
   background-color: #0a0a0a !important;
   background-image:
     radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.88) 82%, #000000 100%),
-    repeating-linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.035) 0px,
-      rgba(255, 255, 255, 0.035) 1px,
-      transparent 1px,
-      transparent 58px
-    ),
     linear-gradient(180deg, #1c1c1c 0%, #121212 55%, #0a0a0a 100%) !important;
-  background-repeat: no-repeat, repeat, no-repeat !important;
-  background-size: 100% 100%, auto 100%, 100% 100% !important;
+  background-repeat: no-repeat, no-repeat !important;
+  background-size: 100% 100%, 100% 100% !important;
 }
 
 .star-theme-btn {
@@ -2044,6 +2093,11 @@ body.theme-stars #starsCanvas {
     margin-bottom:10px;
     line-height:1.5;
     color:#444;
+}
+
+.list-check-icon {
+    color: #2ecc71;
+    margin-right: 4px;
 }
 
 .precio-plan{
@@ -2130,4 +2184,167 @@ body.theme-stars #starsCanvas {
 }
 .olvide-password:hover {
   color: #ff8a8a;
+}
+/* ============ ESQUELETO DE CARGA DEL CATÁLOGO ============ */
+/* Se muestra en #productGrid mientras llega la respuesta de
+   /api/productos, en vez de dejar un bloque negro vacío. */
+.skeleton-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+}
+
+.skeleton-card {
+  width: 190px;
+  max-width: 45%;
+  background: linear-gradient(180deg, #ffffff 0%, #f4f4f6 100%);
+  border-radius: 4px;
+  overflow: hidden;
+  padding-bottom: 10px;
+}
+
+.skeleton-img,
+.skeleton-line {
+  background: linear-gradient(
+    90deg,
+    #e4e4e7 25%,
+    #f1f1f3 37%,
+    #e4e4e7 63%
+  );
+  background-size: 400% 100%;
+  animation: skeletonPulso 1.4s ease-in-out infinite;
+}
+
+.skeleton-img {
+  width: 100%;
+  height: 150px;
+}
+
+.skeleton-line {
+  height: 10px;
+  border-radius: 4px;
+  margin: 10px 10px 0;
+}
+
+.skeleton-line--title {
+  width: 70%;
+}
+
+.skeleton-line--btn {
+  width: 45%;
+  height: 22px;
+  border-radius: 20px;
+  margin-top: 10px;
+}
+
+@keyframes skeletonPulso {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@media (max-width: 600px) {
+  .skeleton-card {
+    width: 45%;
+    max-width: 47%;
+  }
+  .skeleton-img {
+    height: 120px;
+  }
+}
+
+/* ==========================================================
+   SISTEMA DE INPUTS CON ICONO — login, registro y recuperación
+   Mismo lenguaje visual en todos los formularios: icono a la
+   izquierda dentro del campo, estilo tipo app móvil.
+   ========================================================== */
+.input-icon-wrap {
+  position: relative;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.input-icon-wrap > i {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+}
+
+.input-icon-wrap input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 14px 14px 44px !important;
+  margin-bottom: 0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.08);
+  color: white;
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.input-icon-wrap input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.input-icon-wrap input:focus {
+  border-color: rgb(220, 53, 69);
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.input-icon-wrap input:focus + i,
+.input-icon-wrap:focus-within > i {
+  color: rgb(220, 53, 69);
+}
+
+/* Inputs del flujo de registro (nombre, correo, contraseña) que antes no
+   tenían estilo propio: ahora igualan el look del login. */
+#registroModal input[type="text"],
+#registroModal input[type="email"],
+#registroModal input[type="password"] {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.08);
+  color: white;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+#registroModal input[type="text"]::placeholder,
+#registroModal input[type="email"]::placeholder,
+#registroModal input[type="password"]::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+#registroModal input[type="text"]:focus,
+#registroModal input[type="email"]:focus,
+#registroModal input[type="password"]:focus {
+  border-color: rgb(220, 53, 69);
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Botones con icono: alinear icono y texto en todos los botones de
+   acción de login/registro/recuperación. */
+.registrarse,
+.role-btn,
+.volver-btn,
+#btnSiguienteUsuario {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.registrarse i,
+.role-btn i,
+.volver-btn i,
+#btnSiguienteUsuario i {
+  font-size: 15px;
 }
