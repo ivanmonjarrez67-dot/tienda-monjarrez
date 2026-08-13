@@ -971,17 +971,15 @@ Adaptación del toggle a móviles y tablets
   background: linear-gradient(135deg, #232323, #8b0000);
 }
 
-/* Botón seleccionado: se aclara sin perder el look plano */
+/* Botón seleccionado: se aclara sin perder el look plano.
+   🔧 Antes .toolbar .main.active tenía una regla aparte (fondo rosa
+   pálido + texto rojo) que lo hacía verse distinto a los demás filtros
+   activos. Ahora usa exactamente el mismo estilo que .filter.active. */
 .toolbar .filter.active,
 .toolbar .main.active {
   background-color: white;
   color: black;
   font-weight: 700;
-}
-
-.toolbar .main.active {
-  background-color: #ffe0e0;
-  color: darkred;
 }
 
 @keyframes border-glow {
