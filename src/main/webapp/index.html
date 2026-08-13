@@ -207,13 +207,8 @@
         display: block;
       }
 
-      .toolbar {
-        margin-top: 10px;
-        display: flex;
-        justify-content: center;
-        gap: 10px;
-        margin-left: -50px;
-      }
+      /* El diseño real del toolbar (fila plana deslizable, colores
+         laterales/centrales) vive en styles.css; aquí no se toca. */
 
       .separator {
         border-top: 1px solid white;
@@ -1313,6 +1308,35 @@
   </div>
 </header>
 
+  <!-- 🆕 Filtros movidos aquí: quedan pegados debajo del header/línea
+       roja, justo después de la barra de búsqueda, como una sola fila
+       plana y deslizable en vez de aparecer más abajo tras los banners. -->
+  <div class="toolbar">
+    <!-- Filtros a la izquierda -->
+    <div class="toolbar-group">
+      <button class="filter" data-category="Caballeros">Caballeros</button>
+      <button class="filter" data-category="Damas">Damas</button>
+      <button class="filter" data-category="Niños">Niños</button>
+    </div>
+
+    <!-- Botones destacados al centro -->
+    <div class="toolbar-center">
+      <button class="main" data-main="Novedades">Novedades</button>
+      <button class="main" data-main="Colección">Colección</button>
+      <button class="main" data-main="Descuentos">Descuentos</button>
+      <button class="main" data-main="Recomendados">Recomendados</button>
+    </div>
+
+    <!-- Filtros a la derecha -->
+    <div class="toolbar-group">
+      <button class="filter" data-category="Mi tienda">Mi tienda</button>
+      <button class="filter" data-category="Todo">Todo</button>
+      <button class="filter" data-category="Servicios">Servicios</button>
+    </div>
+  </div>
+
+  <div class="separator"></div>
+
   <!-- 🆕 Sección de confianza (barra ancha horizontal, estilo Temu) -->
   <div class="hero-banner" id="heroBanner">
     <div class="info-bar">
@@ -1395,31 +1419,9 @@
 
 
 
-  <div class="toolbar">
-    <!-- Filtros a la izquierda -->
-    <div class="toolbar-group">
-      <button class="filter" data-category="Caballeros">Caballeros</button>
-      <button class="filter" data-category="Damas">Damas</button>
-      <button class="filter" data-category="Niños">Niños</button>
-    </div>
 
-    <!-- Botones destacados al centro -->
-    <div class="toolbar-center">
-      <button class="main" data-main="Novedades">Novedades</button>
-      <button class="main" data-main="Colección">Colección</button>
-      <button class="main" data-main="Descuentos">Descuentos</button>
-      <button class="main" data-main="Recomendados">Recomendados</button>
-    </div>
 
-    <!-- Filtros a la derecha -->
-    <div class="toolbar-group">
-      <button class="filter" data-category="Mi tienda">Mi tienda</button>
-      <button class="filter" data-category="Todo">Todo</button>
-      <button class="filter" data-category="Servicios">Servicios</button>
-    </div>
-  </div>
 
-  <div class="separator"></div>
 
   <!-- Imagen de bienvenida centrada -->
   <div class="welcome-container">

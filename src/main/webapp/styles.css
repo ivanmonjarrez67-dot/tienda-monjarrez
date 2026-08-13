@@ -117,13 +117,10 @@ h1 {
   margin-left: -8px;
 }
 
-/* Barra de herramientas (categorías de productos) */
+/* Barra de herramientas (categorías de productos) — el diseño real
+   (fila plana deslizable) está más abajo; aquí solo queda el margen. */
 .toolbar {
-  margin-top: 10px;
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-left: -50px;
+  margin-top: 0;
 }
 
 /* Línea separadora */
@@ -870,104 +867,87 @@ Adaptación del toggle a móviles y tablets
   margin-top: 0;
 }
 
-/* Agrupaciones izquierda y derecha */
+/* ==========================================================
+   🆕 TOOLBAR DE FILTROS — una sola fila, plana y deslizable
+   hacia los lados (como pestañas de navegación), pegada debajo
+   del header. Los 3 grupos (.toolbar-group izq, .toolbar-center,
+   .toolbar-group der) siguen existiendo en el HTML tal cual, pero
+   con "display: contents" dejan de ser cajas propias y sus
+   botones pasan a ser hijos directos del flex del .toolbar, así
+   los 10 filtros quedan en una única fila continua deslizable,
+   sin tocar el HTML ni el JS que ya los selecciona por clase.
+   Se mantienen los mismos colores de siempre: laterales (.filter)
+   en negro, centrales (.main) en rojo — solo cambia que ahora son
+   planos (sin degradado, sombra ni relieve) y van todos en línea.
+   ========================================================== */
 .toolbar {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: nowrap;
   align-items: center;
-  flex-wrap: wrap;
-  padding: 10px 20px;
-  gap: 10px;
+  gap: 8px;
+  padding: 10px 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  scrollbar-width: none; /* Firefox: oculta la barra de scroll */
+  -ms-overflow-style: none; /* Edge/IE viejo */
 }
 
-.toolbar-group {
-  display: flex;
-  gap: 10px;
+.toolbar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari: oculta la barra de scroll */
 }
 
-/* Centro más separado y destacado */
+.toolbar-group,
 .toolbar-center {
-  display: flex;
-  gap: 20px;
+  display: contents; /* los botones se vuelven hijos directos del flex de .toolbar */
 }
 
+/* Botón base: plano, sin degradado ni sombra, en una sola línea. */
 .toolbar button {
-  padding: 8px 14px;
-  background-color: #222;
-  border: 1px solid darkred;
-  color: white;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.toolbar button:hover {
-  background-color: darkred;
-}
-
-/* Botones principales más llamativos */
-.toolbar .main {
-  background-color: darkred;
-  border-color: white;
-  font-weight: bold;
-}
-
-.toolbar button.active {
-  background-color: white;
-  color: black;
-  font-weight: bold;
-  border: 2px solid darkred;
-}
-
-
-
-/* Botón normal */
-.toolbar button {
-   position: relative;
-  padding: 8px 14px;
-  background-color: transparent;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: 8px 16px;
+  margin: 0;
+  background-color: #1a1a1a; /* laterales: negro */
   border: none;
-  color: white;
-  font-size: 16px;
-  transition: all 0.3s ease;
   border-radius: 6px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
   outline: none;
-  overflow: hidden;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.3); /* Borde blanco tenue por defecto */
-
+  transition: background-color 0.2s ease, transform 0.15s ease;
 }
 
-/* Hover */
 .toolbar button:hover {
-  color: #ffcccc;
-  border-bottom: 2px solid #ba55d3; /* Morado más fuerte al pasar el mouse */
+  background-color: #2c2c2c;
 }
 
 .toolbar button:active {
-  transform: scale(0.94);
+  transform: scale(0.96);
 }
 
-/* Botón seleccionado */
+/* Botones centrales: rojo plano */
+.toolbar .main {
+  background-color: darkred;
+  font-weight: 600;
+}
+
+.toolbar .main:hover {
+  background-color: #b22222;
+}
+
+/* Botón seleccionado: se aclara sin perder el look plano */
 .toolbar button.active {
-  color: white;
-  font-weight: bold;
-  background-color: rgba(186, 85, 211, 0.08);
-  box-shadow: 0 0 12px rgba(186, 85, 211, 0.4);
-  border-bottom: 2px solid #ba55d3; /* Mantiene la base sólida */
+  background-color: white;
+  color: black;
+  font-weight: 700;
 }
 
-
-
-.toolbar button.active::before {
-    content: "";
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  width: 100%; /* Borde completo */
-  height: 3px;
-  background: linear-gradient(90deg, #ba55d3, #da70d6);
-  transform: translateX(-50%);
-  border-radius: 2px;
+.toolbar .main.active {
+  background-color: #ffe0e0;
+  color: darkred;
 }
 
 @keyframes border-glow {
@@ -1618,48 +1598,17 @@ Modificaciones para visivilidad en dispositivos
 }
 
 @media (max-width: 600px) {
-  /* 🔧 Antes esta regla aplicaba "flex: 1 1 40%; max-width: 45%" a
-     TODOS los botones del toolbar por igual (los 3 grupos mezclados:
-     Caballero/Damas/Niños, Novedades/Colección/Descuentos/Recomendados,
-     Mi tienda/Todo/Servicios), así que al haber 10 botones en total
-     terminaban amontonados en una cuadrícula de 2 columnas sin ningún
-     orden. Ahora cada grupo fluye en su propia fila como "chips" chicos
-     (estilo red social: solo lo ancho que el texto necesita, no bloques
-     grandes ocupando toda la columna), y hacen wrap si no caben todos.  */
+  /* 🔧 Se mantiene la fila única y deslizable (igual que en escritorio);
+     en móvil solo se reduce el tamaño de los botones para que quepan
+     más sin que la fila se vuelva demasiado alta. */
   .toolbar {
-    flex-direction: column;
-    align-items: center;
-    margin-left: 0;
-    gap: 8px;
+    gap: 6px;
     padding: 8px 10px;
   }
 
-  .toolbar-group,
-  .toolbar-center {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 6px;
-    width: 100%;
-  }
-
   .toolbar button {
-    font-size: 10px;
-    font-weight: 400 !important;
-    padding: 4px 10px;
-    width: auto;
-    max-width: none;
-    flex: 0 0 auto;
-    border-radius: 6px;
-    white-space: nowrap;
-    letter-spacing: 0;
-    border: 1px solid rgba(255, 255, 255, 0.14) !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
-  }
-
-  .toolbar .main {
-    border-color: rgba(255, 255, 255, 0.22) !important;
+    font-size: 12px;
+    padding: 6px 12px;
   }
 
   .filters {
@@ -1789,23 +1738,8 @@ Tablets
   }
 
   .toolbar {
-    flex-wrap: wrap;
-    justify-content: center;
     gap: 8px;
     margin-left: 0;
-  }
-}
-
-@media (min-width: 600px) and (max-width: 1024px) {
-  .toolbar button {
-    flex: 1 1 30%;  /* que los botones ocupen aprox 30% ancho, ajustable */
-    max-width: 150px; /* evitar que sean muy anchos */
-  }
-
-  .toolbar-center {
-    justify-content: center;
-    gap: 12px;
-    flex-wrap: wrap;
   }
 }
 
@@ -2265,19 +2199,17 @@ body.theme-stars #starsCanvas {
 }
 
 .input-icon-wrap > i {
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 15px;
-  color: rgba(255, 255, 255, 0.5);
-  pointer-events: none;
+  /* 🔧 Se quitan los iconos (cédula/candado/etc.) de dentro de los
+     campos: en varias pantallas quedaban encima del texto escrito por
+     el usuario y tapaban las credenciales. Se ocultan por CSS en vez
+     de borrarlos del HTML para no tocar los 14 bloques que los usan. */
+  display: none;
 }
 
 .input-icon-wrap input {
   width: 100%;
   box-sizing: border-box;
-  padding: 14px 14px 14px 44px !important;
+  padding: 14px !important; /* 🔧 ya no hace falta el hueco a la izquierda para el icono */
   margin-bottom: 0 !important;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 10px;
