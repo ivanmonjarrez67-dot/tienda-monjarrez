@@ -121,78 +121,30 @@
         height: 90px;
       }
 
-      #search {
-        width: 400px;
-        max-width: 100%;
-        margin-right: 100px;
-      }
+      /* El tamaño real de #search y #searchButton (barra que crece al
+         máximo + botón circular dentro del campo) vive en styles.css;
+         aquí ya no se fija un ancho propio para no pisarlo. */
 
-      #searchButton {
-        width: 100px;
-      }
-
-      /* 🆕 Header responsive: en pantallas de teléfono, la barra de
-         búsqueda pasa a ocupar su propia fila completa (ya no se
-         achica peleando por espacio con la campana y el menú), y la
-         campana de notificaciones baja a un tamaño de ícono normal en
-         vez del tamaño pensado para escritorio. Se pone aquí, después
-         de las reglas de arriba, para que gane sobre ellas en móvil. */
+      /* 🆕 Header responsive: en pantallas de teléfono, el título pasa
+         a su propia línea (centrado) y, debajo, queda solo la barra de
+         búsqueda ocupando todo el ancho disponible (la campana y el
+         menú ahora viven en la fila de filtros, no aquí). Se pone
+         aquí, después de las reglas de arriba, para que gane sobre
+         ellas en móvil. */
       @media (max-width: 600px) {
         .header-content {
           padding-left: 60px !important;
-          flex-direction: column;
-          align-items: stretch;
-          gap: 10px;
+          flex-wrap: wrap;
+          gap: 8px;
         }
 
         .store-title {
+          flex: 1 1 100%; /* el título ocupa su propia línea completa */
           justify-content: center;
-          margin-right: 0 !important;
-        }
-
-        .search-group {
-          width: 100%;
-          margin-left: 0 !important;
-          flex-wrap: nowrap;
-          gap: 8px !important;
         }
 
         #search {
-          width: auto !important;
-          flex: 1 1 auto;
-          min-width: 0;
-          margin-right: 0 !important;
           font-size: 15px !important;
-          box-sizing: border-box;
-        }
-
-        #searchButton {
-          width: 38px !important;
-          height: 38px;
-          flex: 0 0 auto;
-          padding: 0 !important;
-          font-size: 16px !important;
-          margin-right: 0 !important;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
-        }
-
-        .notif-bell-btn {
-          margin-left: 4px;
-          min-width: 38px;
-          min-height: 38px;
-          flex: 0 0 auto;
-        }
-
-        .menu-container {
-          margin-left: 4px !important;
-          flex: 0 0 auto;
-        }
-
-        .menu-btn {
-          font-size: 22px !important;
         }
       }
 
@@ -292,7 +244,7 @@
       }
 
       .info-bar-title .red-text {
-        color: #ff6b6b;
+        color: #d97a86; /* antes #ff6b6b: muy vivo */
       }
 
       .info-bar-feature {
@@ -660,7 +612,7 @@
           <button class="role-btn invitado"><i class="fa-solid fa-eye"></i> Invitado</button>
         </div>
         <button id="registrarseBtn" class="registrarse"><i class="fa-solid fa-user-plus"></i> Registrarse</button>
-        <p id="loginMensaje" style="color:red; text-align:center; margin-top:10px;"></p>
+        <p id="loginMensaje" style="color:#d97a86; text-align:center; margin-top:10px;"></p>
 
       </div>
     </div>
@@ -1237,73 +1189,6 @@
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
       </button>
-
-      <!-- 🆕 Ícono de notificaciones: siempre visible. Al hacerle clic,
-           muestra u oculta (según el estado actual) el aviso de arriba
-           (hero-banner). El puntito rojo indica que el aviso está
-           oculto y hay algo por ver. -->
-      <button id="notifBellBtn" class="notif-bell-btn" title="Mostrar u ocultar el aviso">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-        </svg>
-        <span class="notif-dot"></span>
-      </button>
-
-   
-<!-- Botón tres puntitos con menú desplegable -->
-<div class="menu-container">
-  <button class="menu-btn" id="menuBtn"></button> 
-  <div class="menu-content" id="menuContent">
-
-    <!-- Logo en la parte superior -->
-    <div class="menu-logo">
-      <img src="imagenes/Polish_20250226_191728811.png" alt="Logo Tienda" />
-    </div>
-
-    <!-- Botón de Perfil -->
-    <div class="menu-item">
-      <button class="btn-perfil" id="btnAbrirPerfil"><i class="fa-solid fa-user"></i> Perfil</button>
-    </div>
-
-    <!-- Toggle con texto -->
-    <div class="menu-item">
-      <span><i class="fa-solid fa-circle-half-stroke"></i> Tema</span>
-      <label class="switch">
-        <input type="checkbox" id="themeToggle">
-        <span class="slider round"></span>
-      </label>
-    </div>
-
-    
-<div class="menu-item">
-  <span><i class="fa-solid fa-star"></i> Estrellado</span>
-  <button id="starThemeBtn" class="star-theme-btn" title="Activar tema Estrellado"><i class="fa-solid fa-meteor"></i></button>
-</div>
-
-<div class="menu-item">
-  <span><i class="fa-solid fa-palette"></i> Rosado</span>
-  <button id="pinkThemeBtn" class="pink-theme-btn" title="Activar tema Rosado"><i class="fa-solid fa-heart"></i></button>
-</div>
-
-
-
-
-
-    
-    <!-- Botón de ayuda -->
-    <!-- Botón de ayuda -->
-<button class="btn-ayuda" onclick="mostrarAyuda()">
-  <i class="fa-regular fa-circle-question"></i> Ayuda
-</button>
-
-
-    <!-- Botón de cerrar sesión -->
-    <button onclick="cerrarSesion()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</button>
-  </div>
-</div>
-
-
     </div>
   </div>
 </header>
@@ -1332,6 +1217,65 @@
       <button class="filter" data-category="Mi tienda">Mi tienda</button>
       <button class="filter" data-category="Todo">Todo</button>
       <button class="filter" data-category="Servicios">Servicios</button>
+
+      <!-- 🆕 Menú de 3 puntitos: se movió aquí, al final de los filtros,
+           para dejar el header libre solo con la barra de búsqueda y la
+           campana de notificaciones. -->
+      <div class="menu-container">
+        <button class="menu-btn" id="menuBtn"></button>
+        <div class="menu-content" id="menuContent">
+
+          <!-- Logo en la parte superior -->
+          <div class="menu-logo">
+            <img src="imagenes/Polish_20250226_191728811.png" alt="Logo Tienda" />
+          </div>
+
+          <!-- Botón de Perfil -->
+          <div class="menu-item">
+            <button class="btn-perfil" id="btnAbrirPerfil"><i class="fa-solid fa-user"></i> Perfil</button>
+          </div>
+
+          <!-- Toggle con texto -->
+          <div class="menu-item">
+            <span><i class="fa-solid fa-circle-half-stroke"></i> Tema</span>
+            <label class="switch">
+              <input type="checkbox" id="themeToggle">
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div class="menu-item">
+            <span><i class="fa-solid fa-star"></i> Estrellado</span>
+            <button id="starThemeBtn" class="star-theme-btn" title="Activar tema Estrellado"><i class="fa-solid fa-meteor"></i></button>
+          </div>
+
+          <div class="menu-item">
+            <span><i class="fa-solid fa-palette"></i> Rosado</span>
+            <button id="pinkThemeBtn" class="pink-theme-btn" title="Activar tema Rosado"><i class="fa-solid fa-heart"></i></button>
+          </div>
+
+          <!-- Botón de ayuda -->
+          <button class="btn-ayuda" onclick="mostrarAyuda()">
+            <i class="fa-regular fa-circle-question"></i> Ayuda
+          </button>
+
+          <!-- Botón de cerrar sesión -->
+          <button onclick="cerrarSesion()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</button>
+        </div>
+      </div>
+
+      <!-- 🆕 Ícono de notificaciones: se movió aquí, justo después del
+           menú de 3 puntitos, en la misma fila de filtros. Al hacerle
+           clic, muestra u oculta (según el estado actual) el aviso de
+           arriba (hero-banner). El puntito rojo indica que el aviso
+           está oculto y hay algo por ver. -->
+      <button id="notifBellBtn" class="notif-bell-btn" title="Mostrar u ocultar el aviso">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        <span class="notif-dot"></span>
+      </button>
     </div>
   </div>
 
@@ -2503,12 +2447,12 @@ async function cargarMisProductos(usuarioId) {
         cursor: pointer;
       }
       .link-terminos {
-        color: #ff6b6b;
+        color: #d97a86; /* antes #ff6b6b: muy vivo */
         text-decoration: underline;
         cursor: pointer;
       }
       .link-terminos:hover {
-        color: #ff9b9b;
+        color: #e6a5ac; /* antes #ff9b9b */
       }
 
       .overlay-terminos {
@@ -2647,7 +2591,7 @@ async function cargarMisProductos(usuarioId) {
                 e.stopPropagation();
                 e.stopImmediatePropagation();
                 checkVendedor.scrollIntoView({ behavior: "smooth", block: "center" });
-                checkVendedor.style.outline = "2px solid #ff6b6b";
+                checkVendedor.style.outline = "2px solid #b3505c";
                 setTimeout(() => (checkVendedor.style.outline = ""), 1500);
                 alert("Debes aceptar los Términos y Condiciones para continuar.");
               }
@@ -3081,11 +3025,11 @@ async function cargarMisProductos(usuarioId) {
       }
       #infoModalContent .contacto-correo {
         background: transparent;
-        color: #e53935;
-        border: 2px solid #e53935;
+        color: #a13341; /* antes #e53935: muy vivo */
+        border: 2px solid #a13341;
       }
       #infoModalContent .contacto-correo:hover {
-        background: #e53935;
+        background: #a13341;
         color: #fff;
       }
 
@@ -3128,7 +3072,7 @@ async function cargarMisProductos(usuarioId) {
       <button type="submit">Ingresar</button>
     </form>
 
-    <p id="errorMsgMiTienda" style="color: red; display: none">
+    <p id="errorMsgMiTienda" style="color:#d97a86; display: none">
       Credenciales inválidas
     </p>
   </div>

@@ -64,30 +64,53 @@ h1 {
 /* Contenedor del contenido del header (excepto el icono) */
 .header-content {
   display: flex; /* Coloca elementos en línea */
-  justify-content: center; /* Centra los elementos horizontalmente */
   align-items: center; /* Alinea verticalmente */
-  gap: 10px; /* Espacio entre los elementos */
-  flex-wrap: wrap; /* Permite que se acomoden en varias líneas si no caben */
+  gap: 14px; /* Espacio entre los elementos */
+  flex-wrap: nowrap;
   padding-left: 100px; /* Deja espacio para que no choque con el icono */
 }
 
-/* Campo de búsqueda */
+.store-title {
+  flex: 0 0 auto; /* tamaño fijo, no compite por espacio con la barra */
+}
+
+/* Campo de búsqueda: ahora es un wrapper que crece al máximo con el
+   botón de lupa metido DENTRO del campo, pegado a la derecha. En el
+   header ya solo quedan el título y esta barra (la campana y el menú
+   se movieron a la fila de filtros), así que puede estirarse al
+   máximo del espacio disponible. */
+.search-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto; /* ocupa todo el espacio libre junto al título */
+  min-width: 0; /* permite que se achique en vez de desbordar */
+}
+
 #search {
- padding: 8px 12px;
-  border-radius: 8px 0 0 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 46px 10px 16px; /* espacio a la derecha para el botón de lupa */
+  border-radius: 24px;
   border: none;
   outline: none;
-  width: 300px;
   font-size: 16px;
 }
 
-/* Botón de búsqueda */
+/* Botón de búsqueda: círculo pequeño DENTRO del campo, pegado al borde
+   derecho. */
 #searchButton {
- padding: 8px 14px;
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  padding: 0;
   background-color: darkred;
   color: white;
   border: none;
-  border-radius: 0 8px 8px 0;
+  border-radius: 50%;
   font-size: 16px;
   cursor: pointer;
   transition: background-color 0.2s ease, transform 0.15s ease;
@@ -97,7 +120,7 @@ h1 {
 }
 
 #searchButton:active {
-  transform: scale(0.93);
+  transform: translateY(-50%) scale(0.9);
 }
 
 .icon-search {
@@ -105,7 +128,14 @@ h1 {
 }
 
 #searchButton:hover {
-  background-color: red;
+  background-color: #a52a2a; /* antes "red" puro: se ve chillón sobre el fondo oscuro */
+}
+
+/* 🆕 La campana de notificaciones ahora vive en .toolbar (junto al
+   menú de 3 puntitos, al final de los filtros), no en el header.
+   flex:0 0 auto evita que se estire como los demás botones. */
+.notif-bell-btn {
+  flex: 0 0 auto;
 }
 
 
@@ -464,8 +494,8 @@ Adaptación del toggle a móviles y tablets
     font-weight: 700;
     letter-spacing: 0.02em;
     color: #ffffff;
-    background: linear-gradient(135deg, rgb(150, 10, 45) 0%, rgb(190, 30, 70) 100%);
-    box-shadow: 0 2px 6px rgba(128, 0, 32, 0.35);
+    background: linear-gradient(135deg, #5c1a24 0%, #7a2530 100%); /* antes rgb(150,10,45)/rgb(190,30,70): muy vivo */
+    box-shadow: 0 2px 6px rgba(90, 20, 30, 0.35);
     backdrop-filter: none;
     min-width: 0;
     transition: background 0.3s ease, transform 0.25s ease, box-shadow 0.25s ease;
@@ -490,12 +520,12 @@ Adaptación del toggle a móviles y tablets
 
 .producto .more-info-btn:hover,
 .producto .more-info-btn:focus {
-    background: linear-gradient(135deg, rgb(115, 0, 32) 0%, rgb(165, 15, 58) 100%);
+    background: linear-gradient(135deg, #4a1620 0%, #6e2430 100%);
     color: #ffffff;
     backdrop-filter: none;
     outline: none;
     transform: translateY(-2px);
-    box-shadow: 0 8px 18px rgba(128, 0, 32, 0.5);
+    box-shadow: 0 8px 18px rgba(90, 20, 30, 0.45);
 }
 
 .producto .more-info-btn:hover::after,
@@ -507,10 +537,10 @@ Adaptación del toggle a móviles y tablets
 }
 
 .producto .more-info-btn:active {
-    background: linear-gradient(135deg, rgb(90, 0, 22) 0%, rgb(130, 8, 42) 100%);
+    background: linear-gradient(135deg, #351016 0%, #4a1620 100%);
     color: #ffffff;
     transform: translateY(0);
-    box-shadow: 0 3px 8px rgba(90, 0, 22, 0.4);
+    box-shadow: 0 3px 8px rgba(58, 15, 21, 0.4);
 }
 
 .welcome-container {
@@ -536,7 +566,7 @@ Adaptación del toggle a móviles y tablets
 
 /* Estilo del título */
 .store-title {
-  margin-right: 30px; /* Aleja el título del input */
+  margin-right: 0; /* el espacio ahora lo da el gap de .header-content */
   display: flex;
   align-items: center;
   gap: 5px;
@@ -550,42 +580,29 @@ Adaptación del toggle a móviles y tablets
   color: darkred;
 }
 
-/* Contenedor del contenido del header */
-.header-content {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  padding-left: 100px;
-  gap: 20px; /* Controla el espacio general entre elementos */
-}
+/* El layout real de .header-content (flex, gap, nowrap) vive en la
+   primera definición, más arriba; aquí no se repite para no pisarlo. */
 
-#searchButton {
-  margin-right: 15px; /* Aleja el botón buscar del menú */
-}
-
-.menu-container {
-  margin-left: 15px; /* espacio extra entre Buscar y los tres puntos */
-}
-
-
-
-/* --- BOTÓN DE TRES PUNTITOS (HORIZONTALES) --- */
+/* --- BOTÓN DE TRES PUNTITOS (HORIZONTALES) ---
+   🆕 Ahora vive dentro de .toolbar (fila de filtros), no en el header.
+   flex:0 0 auto evita que se estire como los demás flex items. */
 .menu-container {
   position: relative;
   display: inline-block;
+  flex: 0 0 auto;
+  align-self: center;
 }
 
 .menu-btn {
   background: transparent;
   border: none;
-  font-size: 26px;
+  font-size: 22px;
   cursor: pointer;
-  color: white; /* mismo color que el texto del header */
+  color: white;
   padding: 5px 8px;
   line-height: 1;
-  min-width: 40px;
-  min-height: 40px;
+  min-width: 36px;
+  min-height: 36px;
   border-radius: 50%;
   transition: background-color 0.15s ease, transform 0.15s ease;
 }
@@ -626,20 +643,26 @@ Adaptación del toggle a móviles y tablets
 
 
 
-/* --- MENU DESPLEGABLE --- */
+/* --- MENU DESPLEGABLE ---
+   position:fixed (calculado por JS en script.js) en vez de
+   position:absolute: el botón vive dentro de .toolbar, que tiene
+   overflow para poder deslizarse hacia los lados, y eso recortaba el
+   desplegable antes de que llegara a mostrarse completo. Con fixed +
+   un z-index muy alto queda flotando por encima de todo, incluido el
+   grid de productos. */
 .menu-content {
   display: none; /* oculto por defecto */
-  position: absolute;
-  right: 0;
-  top: 35px; /* debajo del botón */
+  position: fixed;
   background-color: rgba(255, 255, 255, 0.95); /* blanco transparente */
   width: 250px; /* un poco más ancho */
   box-shadow: 0px 4px 8px rgba(0,0,0,0.25);
   border-radius: 6px;
   padding: 8px;
-  z-index: 200;
+  z-index: 5000;
   color: #000; /* texto negro para visibilidad */
   font-size: 14px;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
 }
 
 /* Item del menú */
@@ -751,13 +774,8 @@ Adaptación del toggle a móviles y tablets
 
 
 
-/* Agrupar búsqueda */
-.search-group {
-  display: flex;
-  align-items: center;
-  gap: 0px; /* ¡Aquí lo acercamos! Antes tenías 5px */
-  margin-left: -10px; /* Desplaza ligeramente hacia la izquierda */
-}
+/* El layout real de .search-group (flex, ancho máximo, botón dentro
+   del campo) vive en la primera definición, más arriba. */
 
 
 /* Estilos para el fondo del modal (overlay) */
@@ -817,7 +835,7 @@ Adaptación del toggle a móviles y tablets
 .modal-content button[type="submit"] {
   margin-top: 20px;
   width: 100%;
-  background-color: darkred;
+  background: linear-gradient(135deg, #1a1a1a, #6b0f0f); /* combinación rojo-negro más sobria que el rojo plano */
   color: white;
   border: none;
   padding: 10px;
@@ -827,7 +845,7 @@ Adaptación del toggle a móviles y tablets
 }
 
 .modal-content button[type="submit"]:hover {
-  background-color: red;
+  background: linear-gradient(135deg, #232323, #8b0000); /* antes "red" puro */
 }
 
 /* Contenedor modal ahora posicionamiento manual para arrastre */
@@ -903,8 +921,16 @@ Adaptación del toggle a móviles y tablets
   display: contents; /* los botones se vuelven hijos directos del flex de .toolbar */
 }
 
-/* Botón base: plano, sin degradado ni sombra, en una sola línea. */
-.toolbar button {
+/* Botón base: plano, sin degradado ni sombra, en una sola línea.
+   🔧 Antes el selector era ".toolbar button" (cualquier <button>
+   dentro de .toolbar). Como el menú de 3 puntitos vive ahora dentro
+   de .toolbar, eso también pintaba de negro/rojo los botones de
+   ADENTRO del menú desplegable (Perfil, Estrellado, Ayuda, Cerrar
+   sesión) y el propio botón "⋯", que debían quedar con su estilo
+   propio (fondo blanco/transparente). Se acota a .filter y .main,
+   que son justo los botones de categorías/destacados. */
+.toolbar .filter,
+.toolbar .main {
   flex: 0 0 auto;
   white-space: nowrap;
   padding: 8px 16px;
@@ -920,11 +946,13 @@ Adaptación del toggle a móviles y tablets
   transition: background-color 0.2s ease, transform 0.15s ease;
 }
 
-.toolbar button:hover {
+.toolbar .filter:hover,
+.toolbar .main:hover {
   background-color: #2c2c2c;
 }
 
-.toolbar button:active {
+.toolbar .filter:active,
+.toolbar .main:active {
   transform: scale(0.96);
 }
 
@@ -939,7 +967,8 @@ Adaptación del toggle a móviles y tablets
 }
 
 /* Botón seleccionado: se aclara sin perder el look plano */
-.toolbar button.active {
+.toolbar .filter.active,
+.toolbar .main.active {
   background-color: white;
   color: black;
   font-weight: 700;
@@ -1160,7 +1189,7 @@ mark {
 /* Texto debajo de la imagen */
 .modal-title {
   font-size: 26px;
-  color: red;
+  color: #b33a3a; /* antes "red" puro: muy chillón sobre fondo oscuro */
   margin-top: 10px;
   margin-bottom: 10px;
   font-weight: bold;
@@ -1171,7 +1200,7 @@ mark {
 .modal-separator {
   width: 100%;
   height: 1.5px;
-  background-color: red;
+  background: linear-gradient(90deg, #4d0000, #8b0000); /* antes "red" plano */
   margin-bottom: 25px;
   border-radius: 2px;
     flex-shrink: 0; /* evita que se colapse si el contenedor cambia */
@@ -1227,7 +1256,7 @@ mark {
 .vendedor {
   background-color: #050504;
   color: rgb(251, 247, 247);
-  border: 2px solid rgba(254, 1, 1, 0.764);
+  border: 2px solid rgba(139, 0, 0, 0.7); /* antes rgba(254,1,1,...): rojo neón */
 }
 
 .comprador {
@@ -1243,7 +1272,7 @@ mark {
 
 /* Botón de registrarse */
 .registrarse {
-  background-color: red;
+  background: linear-gradient(135deg, #1a1a1a, #6b0f0f); /* combinación rojo-negro, antes rojo plano */
   color: white;
   border: none;
   padding: 14px;
@@ -1257,7 +1286,7 @@ mark {
 
 .registrarse:hover {
   transform: scale(1.05);
-  background-color: darkred;
+  background: linear-gradient(135deg, #232323, #8b0000);
 }
 
 #contenedorPagoExtra {
@@ -1354,7 +1383,7 @@ mark {
 }
 
 .vendedor-modal .modal-title .highlight-red {
-  color: rgb(248, 37, 37);
+  color: #c0392b; /* antes rgb(248,37,37): rojo neón */
 }
 
 .vendedor-modal .small-modal {
@@ -1423,7 +1452,7 @@ mark {
 
 #registroModal button#btnSiguienteSolicitud,
 #registroModal button#btnSiguienteSuscripcion {
-  background-color: #d62828; /* Rojo oscuro elegante */
+  background-color: #6e2430; /* antes #d62828: rojo muy vivo */
   color: white;
   padding: 12px;
   font-size: 16px;
@@ -1437,7 +1466,7 @@ mark {
 
 #registroModal button#btnSiguienteSolicitud:hover,
 #registroModal button#btnSiguienteSuscripcion:hover {
-  background-color: #b71c1c;
+  background-color: #832b39; /* antes #b71c1c */
   transform: scale(1.02);
 }
 
@@ -1470,7 +1499,7 @@ mark {
 /* ===== Estilo compartido para los botones "Siguiente" ===== */
 #registroModal button#btnSiguienteUsuario,
 #registroModal button#btnSiguienteSolicitud {
-  background-color: #d62828; /* Rojo elegante */
+  background-color: #6e2430; /* antes #d62828: rojo muy vivo */
   color: white;
   padding: 12px;
   font-size: 16px;
@@ -1486,7 +1515,7 @@ mark {
 /* Efecto al pasar el mouse */
 #registroModal button#btnSiguienteUsuario:hover,
 #registroModal button#btnSiguienteSolicitud:hover {
-  background-color: #b71c1c; /* Rojo más oscuro */
+  background-color: #832b39; /* antes #b71c1c */
   transform: scale(1.03);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
@@ -1568,12 +1597,6 @@ Modificaciones para visivilidad en dispositivos
 
 @media (max-width: 500px) {
   #search {
-    width: 70%; /* o 100% si está dentro de un contenedor */
-    font-size: 14px;
-  }
-
-  #searchButton {
-    padding: 8px 10px;
     font-size: 14px;
   }
 }
@@ -1585,18 +1608,6 @@ Modificaciones para visivilidad en dispositivos
   gap: 5px;
 }
 
-@media (max-width: 500px) {
-  .search-container {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  #search, #searchButton {
-    width: 100%;
-    border-radius: 8px; /* para que se vea bien en bloque */
-  }
-}
-
 @media (max-width: 600px) {
   /* 🔧 Se mantiene la fila única y deslizable (igual que en escritorio);
      en móvil solo se reduce el tamaño de los botones para que quepan
@@ -1606,7 +1617,8 @@ Modificaciones para visivilidad en dispositivos
     padding: 8px 10px;
   }
 
-  .toolbar button {
+  .toolbar .filter,
+  .toolbar .main {
     font-size: 12px;
     padding: 6px 12px;
   }
@@ -1619,6 +1631,30 @@ Modificaciones para visivilidad en dispositivos
 
   .filters label {
     margin-bottom: 8px;
+  }
+
+  /* 🆕 Login / Registro / Recuperar contraseña a pantalla completa en
+     celular: en vez de la tarjeta chica y centrada, el modal ocupa
+     todo el alto y ancho de la pantalla, sin bordes redondeados ni
+     posicionamiento "flotante". Solo afecta a los modales dentro de
+     .modal-overlay (login, registro, recuperar), no a los demás
+     modales del sitio (agregar producto, mi tienda, etc.). */
+  .modal-overlay .modal-content {
+    position: fixed !important;
+    inset: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    transform: none !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow-y: auto;
+    cursor: auto;
   }
 }
 
@@ -1648,13 +1684,10 @@ Modificaciones para visivilidad en dispositivos
     left: 5px !important;
   }
 
+  /* El tamaño de #search y #searchButton (barra al máximo + botón
+     circular dentro) ya vive en la definición base; aquí ya no se
+     fuerza un ancho fijo que la achicaba. */
   #search {
-    width: 70% !important; 
-    font-size: 14px !important;
-  }
-
-  #searchButton {
-    padding: 8px 10px !important;
     font-size: 14px !important;
   }
 
@@ -1730,12 +1763,8 @@ Tablets
     margin-top: 80px;
   }
 
-  #search {
-    width: 100%;
-    max-width: 400px;
-    margin: 10px auto;
-    display: block;
-  }
+  /* El tamaño de #search ya vive en la definición base (crece al
+     máximo dentro de .search-group); aquí ya no se fuerza 400px. */
 
   .toolbar {
     gap: 8px;
@@ -1849,7 +1878,7 @@ Modal agregar
 }
 
 #deleteProductButton:hover {
-  background-color: rgb(220, 53, 69);  /* rojo más profesional */
+  background-color: #8a2530;  /* antes rgb(220,53,69): rojo muy vivo */
   color: white;
   transform: translateY(-2px) scale(1.03);
   box-shadow: 0 6px 14px rgba(0,0,0,0.25);
@@ -2226,13 +2255,13 @@ body.theme-stars #starsCanvas {
 }
 
 .input-icon-wrap input:focus {
-  border-color: rgb(220, 53, 69);
+  border-color: #9a3040; /* antes rgb(220,53,69): rojo muy vivo */
   background-color: rgba(255, 255, 255, 0.12);
 }
 
 .input-icon-wrap input:focus + i,
 .input-icon-wrap:focus-within > i {
-  color: rgb(220, 53, 69);
+  color: #9a3040; /* antes rgb(220,53,69) */
 }
 
 /* Inputs del flujo de registro (nombre, correo, contraseña) que antes no
@@ -2258,7 +2287,7 @@ body.theme-stars #starsCanvas {
 #registroModal input[type="text"]:focus,
 #registroModal input[type="email"]:focus,
 #registroModal input[type="password"]:focus {
-  border-color: rgb(220, 53, 69);
+  border-color: #9a3040; /* antes rgb(220,53,69): rojo muy vivo */
   background-color: rgba(255, 255, 255, 0.12);
 }
 

@@ -98,14 +98,32 @@ function cargarProductosMiTienda() {
   const menuBtn = document.getElementById('menuBtn');
   const menuContent = document.getElementById('menuContent');
   if (menuBtn && menuContent) {
+    // El botón vive dentro de .toolbar (que tiene overflow para
+    // deslizarse hacia los lados), así que el desplegable usa
+    // position:fixed (ver styles.css) calculado en JS, de modo que
+    // siempre flota por encima de todo, incluido el grid de productos.
+    function posicionarMenu() {
+      const r = menuBtn.getBoundingClientRect();
+      menuContent.style.top = (r.bottom + 8) + 'px';
+      menuContent.style.right = (window.innerWidth - r.right) + 'px';
+      menuContent.style.left = 'auto';
+    }
     menuBtn.addEventListener('click', () => {
-      menuContent.style.display = menuContent.style.display === 'block' ? 'none' : 'block';
+      const abrir = menuContent.style.display !== 'block';
+      if (abrir) posicionarMenu();
+      menuContent.style.display = abrir ? 'block' : 'none';
     });
     window.addEventListener('click', (e) => {
       if (!menuBtn.contains(e.target) && !menuContent.contains(e.target)) {
         menuContent.style.display = 'none';
       }
     });
+    window.addEventListener('resize', () => {
+      if (menuContent.style.display === 'block') posicionarMenu();
+    });
+    window.addEventListener('scroll', () => {
+      if (menuContent.style.display === 'block') posicionarMenu();
+    }, true);
   }
 
 window.mostrarAyuda = function mostrarAyuda() {
