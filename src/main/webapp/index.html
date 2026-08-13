@@ -369,15 +369,12 @@
         position: sticky;
         top: 0;
         z-index: 1000;
-        /* 🔧 Se quita el patrón de líneas repetidas ("entablado"), igual
-           que en el body — no aporta nada visualmente notorio y obliga
-           a repintar una textura extra en cada frame de scroll. */
+        /* 🔧 Negro mate, sin el "brillo" central que tenía antes (un
+           radial-gradient con hueco transparente en medio dejaba ver
+           un parche más claro ahí, como un foco de luz). Ahora es un
+           degradado vertical suave y parejo, más oscuro en general. */
         background-color: #0a0a0a;
-        background-image:
-          radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.82) 78%, #000000 100%),
-          linear-gradient(180deg, #1a1a1a 0%, #121212 55%, #090909 100%);
-        background-repeat: no-repeat, no-repeat;
-        background-size: 100% 100%, 100% 100%;
+        background-image: linear-gradient(180deg, #131313 0%, #0d0d0d 55%, #070707 100%);
         padding: 10px 0;
         border-bottom: 1px solid darkred;
         box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
