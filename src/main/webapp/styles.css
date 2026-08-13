@@ -44,10 +44,12 @@ h1 {
 }
 
 .red-text {
-  color: darkred;
+  background: linear-gradient(135deg, #ff3b3b, #6b0f0f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: darkred; /* respaldo si el navegador no soporta el degradado en texto */
 }
-
-
 /* Icono en la esquina superior izquierda */
 .icon {
   position: absolute;
@@ -107,13 +109,13 @@ h1 {
   width: 34px;
   height: 34px;
   padding: 0;
-  background-color: darkred;
+  background: linear-gradient(135deg, #1a1a1a, #6b0f0f);
   color: white;
   border: none;
   border-radius: 50%;
   font-size: 16px;
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.15s ease;
+  transition: background 0.3s ease, transform 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -128,7 +130,7 @@ h1 {
 }
 
 #searchButton:hover {
-  background-color: #a52a2a; /* antes "red" puro: se ve chillón sobre el fondo oscuro */
+  background: linear-gradient(135deg, #232323, #8b0000);
 }
 
 /* 🆕 La campana de notificaciones ahora vive en .toolbar (junto al
@@ -577,9 +579,12 @@ Adaptación del toggle a móviles y tablets
 }
 
 .red-text {
-  color: darkred;
+  background: linear-gradient(135deg, #ff3b3b, #6b0f0f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: darkred; /* respaldo si el navegador no soporta el degradado en texto */
 }
-
 /* El layout real de .header-content (flex, gap, nowrap) vive en la
    primera definición, más arriba; aquí no se repite para no pisarlo. */
 
@@ -956,14 +961,14 @@ Adaptación del toggle a móviles y tablets
   transform: scale(0.96);
 }
 
-/* Botones centrales: rojo plano */
+/* Botones centrales: mismo degradado rojo-negro difuminado que "Registrarse" */
 .toolbar .main {
-  background-color: darkred;
+  background: linear-gradient(135deg, #1a1a1a, #6b0f0f);
   font-weight: 600;
 }
 
 .toolbar .main:hover {
-  background-color: #b22222;
+  background: linear-gradient(135deg, #232323, #8b0000);
 }
 
 /* Botón seleccionado: se aclara sin perder el look plano */

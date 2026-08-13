@@ -45,14 +45,14 @@ public class EmailService {
     // 🆕 Remitentes por tipo de correo (dominio ya verificado en Brevo)
     // ---------------------------------------------------------
     private static final String EMAIL_NO_REPLY       = "no-reply@tiendamonjarrez.com";
-    private static final String EMAIL_SOPORTE         = "soporte@tiendamonjarrez.com";
+    //private static final String EMAIL_SOPORTE         = "soporte@tiendamonjarrez.com";
     private static final String EMAIL_SEGURIDAD       = "seguridad@tiendamonjarrez.com";
     private static final String EMAIL_NOTIFICACIONES  = "notificaciones@tiendamonjarrez.com";
 
     private static final String NOMBRE_GENERICO       = "Tienda Monjarrez";
     private static final String NOMBRE_SEGURIDAD      = "Tienda Monjarrez - Seguridad";
     private static final String NOMBRE_NOTIFICACIONES = "Tienda Monjarrez - Notificaciones";
-    private static final String NOMBRE_SOPORTE        = "Tienda Monjarrez - Soporte";
+    //private static final String NOMBRE_SOPORTE        = "Tienda Monjarrez - Soporte";
 
     private static final HttpClient client = HttpClient.newHttpClient();
 
