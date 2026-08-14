@@ -71,9 +71,17 @@ function cargarProductosMiTienda() {
       productos.forEach(producto => {
         const card = document.createElement("div");
         card.className = "producto";
+        const precioNumerico = parseFloat(producto.precio);
+        const precioFormateado = !isNaN(precioNumerico)
+          ? precioNumerico.toLocaleString("es-CR", { maximumFractionDigits: 0 })
+          : null;
+        const precioHtml = precioFormateado
+          ? `<p class="producto-precio">₡${precioFormateado}</p>`
+          : "";
         card.innerHTML = `
           <img src="${producto.imagen || ''}" alt="${producto.nombre || ''}" style="width:150px;height:150px;object-fit:cover;border-radius:8px;">
           <h3>${producto.nombre || ''} (ID: ${producto.id})</h3>
+          ${precioHtml}
           <button class="more-info-btn"
             data-id="${producto.id}"
             data-empresa="${producto.empresa || ''}"
@@ -249,9 +257,25 @@ function pintarMosaico(grid, productos, construirTarjetaHTML) {
 }
 
 function construirTarjetaProductoHTML(producto) {
+  // 🆕 Precio visible directo en la tarjeta (antes solo vivía dentro de
+  // data-precio, oculto hasta abrir "Ver detalles"). Se formatea con
+  // separador de miles para que se lea bien con montos grandes.
+  const precioNumerico = parseFloat(producto.precio);
+  const precioFormateado = !isNaN(precioNumerico)
+    ? precioNumerico.toLocaleString("es-CR", { maximumFractionDigits: 0 })
+    : null;
+  const precioHtml = precioFormateado
+    ? `<p class="producto-precio">₡${precioFormateado}</p>`
+    : "";
+  const badgeHtml = producto.empresa
+    ? `<span class="producto-badge">${producto.empresa}</span>`
+    : "";
+
   return `
+        ${badgeHtml}
         <img src="${producto.imagen || ''}" alt="${producto.nombre || ''}" style="width:150px;height:150px;">
         <h3>${producto.nombre || ''}</h3>
+        ${precioHtml}
         <button class="more-info-btn"
           data-empresa="${producto.empresa || ''}"
           data-imagen="${producto.imagen || ''}"

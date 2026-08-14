@@ -417,6 +417,7 @@ Adaptación del toggle a móviles y tablets
    estilo. */
 .producto {
     display: inline-block; /* necesario para que fluya bien dentro de las columnas */
+    position: relative; /* 🆕 ancla el badge del vendedor sobre la esquina de la imagen */
     width: 100%;
     max-width: 260px; /* 🔧 evita que la tarjeta se estire gigante cuando el
                           filtro trae pocos productos y el navegador arma
@@ -474,6 +475,41 @@ Adaptación del toggle a móviles y tablets
     font-size: 0.85rem;
     color: #555;
     line-height: 1.4;
+}
+
+/* 🆕 PRECIO VISIBLE EN LA TARJETA
+   Antes el precio solo vivía escondido en data-precio, y solo se veía
+   al abrir "Ver detalles". Ahora se muestra directo en la tarjeta, entre
+   el nombre y el botón, grande y en el mismo tono vino de la marca para
+   que sea lo primero que salte a la vista después de la foto — igual
+   que en catálogos de referencia (AliExpress, Google Shopping). */
+.producto-precio {
+    margin: 2px 14px 6px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #7a2530;
+    line-height: 1.2;
+}
+
+/* 🆕 Badge con el nombre del vendedor sobre la esquina de la foto —
+   inspirado en las insignias de marca de catálogos tipo AliExpress.
+   Fondo oscuro semitransparente para que se lea sobre cualquier foto. */
+.producto-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    max-width: calc(100% - 20px);
+    padding: 3px 9px;
+    background: rgba(20, 20, 20, 0.72);
+    color: #ffffff;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    border-radius: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    z-index: 2;
 }
 
 /* Botón "Más información" dentro de la tarjeta: el estilo original
@@ -941,14 +977,14 @@ Adaptación del toggle a móviles y tablets
   padding: 8px 16px;
   margin: 0;
   background-color: #161616; /* antes #1a1a1a: un poco menos brilloso */
-  border: none;
+  border: 2px solid transparent; /* 🆕 reservado para el borde del estado activo, así no cambia de tamaño al seleccionarse */
   border-radius: 6px;
   color: #e8e8e8;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   outline: none;
-  transition: background-color 0.2s ease, transform 0.15s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 
 .toolbar .filter:hover,
@@ -973,22 +1009,27 @@ Adaptación del toggle a móviles y tablets
   background-color: #f0f0f0;
 }
 
-/* Como ahora el fondo por defecto ya es blanco (igual que el estado
-   "seleccionado" de abajo), se agrega un anillo rojo cuando está activo
-   para que siga notándose cuál filtro central está seleccionado. */
-.toolbar .main.active {
-  box-shadow: 0 0 0 2px #6b0f0f inset;
-}
-
-/* Botón seleccionado: se aclara sin perder el look plano.
-   🔧 Antes .toolbar .main.active tenía una regla aparte (fondo rosa
-   pálido + texto rojo) que lo hacía verse distinto a los demás filtros
-   activos. Ahora usa exactamente el mismo estilo que .filter.active. */
+/* 🆕 Botón seleccionado: solo el borde en el tono vino de la marca
+   (#7a2530), sin tocar el fondo ni el color del texto — se mantiene el
+   mismo look que el resto de filtros, solo con el borde marcándolo como
+   activo. Un poco más grueso que el borde transparente de reposo para
+   que se note incluso a simple vista. */
 .toolbar .filter.active,
 .toolbar .main.active {
-  background-color: white;
-  color: black;
+  border-color: #7a2530;
+}
+
+.toolbar .filter.active::before,
+.toolbar .main.active::before {
+  content: "\2713"; /* ✓ */
+  margin-right: 5px;
   font-weight: 700;
+  color: #d84252;
+}
+
+.toolbar .filter.active:hover,
+.toolbar .main.active:hover {
+  border-color: #954258;
 }
 
 @keyframes border-glow {
