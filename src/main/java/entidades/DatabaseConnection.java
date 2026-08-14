@@ -35,7 +35,10 @@ public class DatabaseConnection {
         // Tiempo máximo esperando una conexión libre del pool antes de
         // lanzar error (evita que una petición se quede colgada para
         // siempre si el pool está agotado).
-        config.setConnectionTimeout(10000); // 10s
+        // Subido de 10s a 30s: en arranques en frío de Render (plan
+        // gratuito, dormido por inactividad) el handshake SSL contra
+        // Azure SQL puede tardar más de lo normal.
+        config.setConnectionTimeout(30000); // 30s
 
         // Cuánto puede vivir una conexión antes de reciclarse (evita
         // conexiones "zombie" que el servidor cerró por inactividad).
@@ -43,6 +46,16 @@ public class DatabaseConnection {
         config.setIdleTimeout(600000);  // 10 min
 
         config.setPoolName("TiendaMonjarrezPool");
+
+        // 🔑 CLAVE: si la PRIMERA conexión falla al crear el pool (por
+        // ejemplo justo cuando Render despierta del sueño y el handshake
+        // SSL a Azure SQL es lento), NO lanzar excepción aquí. Sin esto,
+        // el bloque static falla, la clase queda "envenenada" con
+        // NoClassDefFoundError/ExceptionInInitializerError para SIEMPRE
+        // hasta el próximo reinicio del proceso, aunque la red se
+        // recupere segundos después. Con -1, el pool se crea igual y
+        // sigue reintentando conexiones en segundo plano.
+        config.setInitializationFailTimeout(-1);
 
         dataSource = new HikariDataSource(config);
     }
