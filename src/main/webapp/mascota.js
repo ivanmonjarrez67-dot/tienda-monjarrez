@@ -39,6 +39,7 @@
         { texto: "🔐 ¿Cómo cambio mi contraseña?", id: "cambiar_contrasena" },
         { texto: "🔑 Olvidé mi contraseña.", id: "olvide_contrasena" },
         { texto: "📞 ¿Cómo contacto a un vendedor?", id: "contactar_vendedor" },
+        { texto: "🚚 ¿Tienen servicio de envíos?", id: "servicio_envios" },
       ],
     },
     publicar_producto: {
@@ -109,6 +110,15 @@
       ],
       opciones: [
         { texto: "🛒 ¿Cómo publico un producto?", id: "publicar_producto" },
+        { texto: "❓ Hacer otra consulta", id: "inicio" },
+      ],
+    },
+    servicio_envios: {
+      respuestas: [
+        "🚚 Depende de la zona. Si el producto que te interesa está lejos, comunícate con nosotros al correo que aparece en el ícono de notificaciones (🔔) o directamente a <a href=\"mailto:tiendamonjarrez@gmail.com?subject=Informacion%20sobre%20envio%20de%20productos&body=Hola%2C%0A%0AQuisiera%20consultar%20si%20es%20posible%20coordinar%20el%20envio%20de%20un%20producto%20hasta%20mi%20zona.%0A%0AQuedo%20atento%20a%20su%20respuesta%2C%20muchas%20gracias.%0A%0ASaludos%20cordiales.\">tiendamonjarrez@gmail.com</a>, y con gusto validamos si podemos coordinar el envío hasta tu ubicación.",
+      ],
+      opciones: [
+        { texto: "📞 ¿Cómo contacto a un vendedor?", id: "contactar_vendedor" },
         { texto: "❓ Hacer otra consulta", id: "inicio" },
       ],
     },

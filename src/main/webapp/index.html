@@ -90,16 +90,21 @@
         100% { transform: scale(1); }
       }
 
-      /* 🆕 Transición profesional para los hero-banner al auto-ocultarse:
-         fade + deslizamiento suave hacia arriba, sin giros ni blur. */
-      .hero-banner.ocultando {
+      /* 🆕 Transición profesional al auto-ocultarse: fade + deslizamiento
+         suave hacia arriba, sin giros ni blur. Se aplica por separado a
+         la parte roja (.info-bar-main) y al aviso de envío
+         (.info-bar-row--shipping), para que cada una pueda
+         ocultarse/mostrarse de forma independiente. */
+      .info-bar-main.ocultando,
+      .info-bar-row--shipping.ocultando {
         animation: ocultarBanner 0.4s ease-in forwards;
       }
       @keyframes ocultarBanner {
         0%   { opacity: 1; transform: translateY(0); max-height: 200px; }
         100% { opacity: 0; transform: translateY(-12px); max-height: 0; }
       }
-      .hero-banner.reapareciendo {
+      .info-bar-main.reapareciendo,
+      .info-bar-row--shipping.reapareciendo {
         animation: reaparecerBanner 0.35s ease-out forwards;
       }
       @keyframes reaparecerBanner {
@@ -201,6 +206,50 @@
       .info-bar-row--cta {
         background: rgba(0, 0, 0, 0.22);
         border-top: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      /* 🆕 Aviso de envío a zonas alejadas: misma estructura que las
+         filas de arriba, pero con acento dorado/ámbar (en vez de vino)
+         para que se distinga y "destaque" como un aviso aparte dentro
+         de la misma tarjeta. Al vivir dentro de #heroBanner /
+         #heroBannerVendedor, hereda automáticamente la lógica de la
+         campana (notifBellBtn) y el auto-ocultado a los 8s ya
+         implementados en JS — no requiere lógica adicional. */
+      .info-bar-row--shipping {
+        background: rgba(90, 168, 158, 0.08);
+        border-top: 1px solid rgba(90, 168, 158, 0.28);
+      }
+
+      .info-bar-shipping-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: rgba(90, 168, 158, 0.18);
+        border: 1px solid rgba(90, 168, 158, 0.45);
+        color: #7fd0c4;
+        font-size: 12px;
+        flex-shrink: 0;
+      }
+
+      .info-bar-shipping-text {
+        color: #cfe6e2;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      .info-bar-shipping-text a {
+        color: #8fe0d3;
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        white-space: nowrap;
+      }
+
+      .info-bar-shipping-text a:hover {
+        color: #b0f0e5;
       }
 
       .info-bar-left {
@@ -341,10 +390,12 @@
           flex-wrap: wrap;
           gap: 10px;
         }
-        .info-bar-row--cta {
+        .info-bar-row--cta,
+        .info-bar-row--shipping {
           justify-content: center;
         }
-        .info-bar-cta-text {
+        .info-bar-cta-text,
+        .info-bar-shipping-text {
           text-align: center;
         }
         .cta-vender-btn {
@@ -362,6 +413,9 @@
         }
         .info-bar-cta-text {
           font-size: 12px;
+        }
+        .info-bar-shipping-text {
+          font-size: 11.5px;
         }
       }
 
@@ -1282,37 +1336,54 @@
   <!-- 🆕 Sección de confianza (barra ancha horizontal, estilo Temu) -->
   <div class="hero-banner" id="heroBanner">
     <div class="info-bar">
-      <div class="info-bar-row info-bar-row--main">
-        <div class="info-bar-left">
-          <span class="info-bar-shield"><i class="fa-solid fa-shield-halved"></i></span>
-          <span class="info-bar-title">
-            Compra y vende con confianza en
-            <span class="white-text">Tienda</span> <span class="red-text">Monjarrez</span>
-          </span>
+      <!-- 🆕 "info-bar-main" agrupa la parte roja (info + CTA) para que
+           pueda ocultarse/mostrarse de forma independiente del aviso de
+           envío que va debajo. -->
+      <div class="info-bar-main">
+        <div class="info-bar-row info-bar-row--main">
+          <div class="info-bar-left">
+            <span class="info-bar-shield"><i class="fa-solid fa-shield-halved"></i></span>
+            <span class="info-bar-title">
+              Compra y vende con confianza en
+              <span class="white-text">Tienda</span> <span class="red-text">Monjarrez</span>
+            </span>
+          </div>
+          <div class="info-bar-right">
+            <span class="info-bar-feature">Emprendedores/as verificados/as</span>
+            <span class="info-bar-sep">|</span>
+            <span class="info-bar-feature">Soporte personalizado</span>
+            <span class="info-bar-sep">|</span>
+            <span class="info-bar-feature">Productos en todo Costa Rica</span>
+            <span class="info-bar-sep">|</span>
+            <span class="info-bar-feature">Publicaciones 24 horas</span>
+          </div>
         </div>
-        <div class="info-bar-right">
-          <span class="info-bar-feature">Emprendedores/as verificados/as</span>
-          <span class="info-bar-sep">|</span>
-          <span class="info-bar-feature">Soporte personalizado</span>
-          <span class="info-bar-sep">|</span>
-          <span class="info-bar-feature">Productos en todo Costa Rica</span>
-          <span class="info-bar-sep">|</span>
-          <span class="info-bar-feature">Publicaciones 24 horas</span>
+
+        <div class="info-bar-row info-bar-row--cta">
+          <div class="info-bar-left">
+            <span class="info-bar-bell"><i class="fa-solid fa-bell"></i></span>
+            <span class="info-bar-cta-text">
+              Descubre productos de emprendedores de todo Costa Rica o publica los
+              tuyos y llega a miles de posibles clientes.
+            </span>
+          </div>
+          <button id="btnVenderHero" class="cta-vender-btn">
+            <span class="btn-shine"></span>
+            <span class="btn-label">¿Quieres vender? Publica tus productos</span>
+          </button>
         </div>
       </div>
 
-      <div class="info-bar-row info-bar-row--cta">
+      <!-- 🆕 Aviso de envío a zonas alejadas -->
+      <div class="info-bar-row info-bar-row--shipping">
         <div class="info-bar-left">
-          <span class="info-bar-bell"><i class="fa-solid fa-bell"></i></span>
-          <span class="info-bar-cta-text">
-            Descubre productos de emprendedores de todo Costa Rica o publica los
-            tuyos y llega a miles de posibles clientes.
+          <span class="info-bar-shipping-icon"><i class="fa-solid fa-truck-fast"></i></span>
+          <span class="info-bar-shipping-text">
+            ¿El producto que te interesa está en una zona alejada? Escríbenos a
+            <a href="mailto:tiendamonjarrez@gmail.com?subject=Informacion%20sobre%20envio%20de%20productos&body=Hola%2C%0A%0ALes%20escribo%20porque%20el%20producto%20que%20me%20interesa%20esta%20en%20una%20zona%20alejada.%20Quisiera%20consultar%20si%20es%20posible%20coordinar%20el%20envio%20hasta%20mi%20ubicacion.%0A%0AQuedo%20atento%20a%20su%20respuesta%2C%20muchas%20gracias.%0A%0ASaludos%20cordiales.">tiendamonjarrez@gmail.com</a>
+            y con gusto validamos si podemos coordinar el envío.
           </span>
         </div>
-        <button id="btnVenderHero" class="cta-vender-btn">
-          <span class="btn-shine"></span>
-          <span class="btn-label">¿Quieres vender? Publica tus productos</span>
-        </button>
       </div>
     </div>
   </div>
@@ -1324,37 +1395,51 @@
        tipo de usuario en sesión. -->
   <div class="hero-banner" id="heroBannerVendedor" style="display:none;">
     <div class="info-bar">
-      <div class="info-bar-row info-bar-row--main">
-        <div class="info-bar-left">
-          <span class="info-bar-shield"><i class="fa-solid fa-rocket"></i></span>
-          <span class="info-bar-title">
-            Haz crecer tu negocio con
-            <span class="white-text">Tienda</span> <span class="red-text">Monjarrez</span>
-          </span>
+      <div class="info-bar-main">
+        <div class="info-bar-row info-bar-row--main">
+          <div class="info-bar-left">
+            <span class="info-bar-shield"><i class="fa-solid fa-rocket"></i></span>
+            <span class="info-bar-title">
+              Haz crecer tu negocio con
+              <span class="white-text">Tienda</span> <span class="red-text">Monjarrez</span>
+            </span>
+          </div>
+          <div class="info-bar-right">
+            <span class="info-bar-feature">Miles de compradores activos</span>
+            <span class="info-bar-sep">|</span>
+            <span class="info-bar-feature">Publicaciones 24 horas</span>
+            <span class="info-bar-sep">|</span>
+            <span class="info-bar-feature">Soporte personalizado</span>
+            <span class="info-bar-sep">|</span>
+            <span class="info-bar-feature">Alcance en todo Costa Rica</span>
+          </div>
         </div>
-        <div class="info-bar-right">
-          <span class="info-bar-feature">Miles de compradores activos</span>
-          <span class="info-bar-sep">|</span>
-          <span class="info-bar-feature">Publicaciones 24 horas</span>
-          <span class="info-bar-sep">|</span>
-          <span class="info-bar-feature">Soporte personalizado</span>
-          <span class="info-bar-sep">|</span>
-          <span class="info-bar-feature">Alcance en todo Costa Rica</span>
+
+        <div class="info-bar-row info-bar-row--cta">
+          <div class="info-bar-left">
+            <span class="info-bar-bell"><i class="fa-solid fa-briefcase"></i></span>
+            <span class="info-bar-cta-text">
+              Cada producto que publicas es una oportunidad más de vender.
+              Mantén tu tienda activa y actualizada para llegar a más clientes.
+            </span>
+          </div>
+          <button id="btnPublicarHeroVendedor" class="cta-vender-btn">
+            <span class="btn-shine"></span>
+            <span class="btn-label"><i class="fa-solid fa-plus"></i> Publicar un nuevo producto</span>
+          </button>
         </div>
       </div>
 
-      <div class="info-bar-row info-bar-row--cta">
+      <!-- 🆕 Aviso de envío a zonas alejadas (también visible para vendedores) -->
+      <div class="info-bar-row info-bar-row--shipping">
         <div class="info-bar-left">
-          <span class="info-bar-bell"><i class="fa-solid fa-briefcase"></i></span>
-          <span class="info-bar-cta-text">
-            Cada producto que publicas es una oportunidad más de vender.
-            Mantén tu tienda activa y actualizada para llegar a más clientes.
+          <span class="info-bar-shipping-icon"><i class="fa-solid fa-truck-fast"></i></span>
+          <span class="info-bar-shipping-text">
+            ¿Un/a comprador/a en una zona alejada te consulta por envío? Escríbenos a
+            <a href="mailto:tiendamonjarrez@gmail.com?subject=Informacion%20sobre%20envio%20de%20productos&body=Hola%2C%0A%0ALes%20escribo%20porque%20un%20comprador%20me%20consulto%20por%20el%20envio%20de%20un%20producto%20a%20una%20zona%20alejada.%20Quisiera%20consultar%20si%20es%20posible%20coordinar%20el%20envio%20hasta%20esa%20ubicacion.%0A%0AQuedo%20atento%20a%20su%20respuesta%2C%20muchas%20gracias.%0A%0ASaludos%20cordiales.">tiendamonjarrez@gmail.com</a>
+            y validamos juntos las opciones de entrega.
           </span>
         </div>
-        <button id="btnPublicarHeroVendedor" class="cta-vender-btn">
-          <span class="btn-shine"></span>
-          <span class="btn-label"><i class="fa-solid fa-plus"></i> Publicar un nuevo producto</span>
-        </button>
       </div>
     </div>
   </div>
@@ -2609,15 +2694,19 @@ async function cargarMisProductos(usuarioId) {
           .map((id) => document.getElementById(id))
           .filter(Boolean);
 
-        // 🔧 Rediseñado como un interruptor simple: la campana YA NO
-        // desaparece nunca. "bannerActual" es el banner que le
-        // corresponde a la sesión de este usuario (el que
-        // actualizarMiTienda dejó sin display:none); "oculto" indica si
-        // ese banner está mostrándose o no en este momento. Cada clic en
-        // la campana alterna entre los dos estados.
+        // 🔧 Ahora cada banner tiene DOS partes independientes:
+        // "principal" (.info-bar-main, la franja roja) y "envio"
+        // (.info-bar-row--shipping, el aviso nuevo). Automáticamente la
+        // principal se oculta primero (a los 8s) y la de envío se queda
+        // activa 8s más (16s en total), para asegurar que el aviso de
+        // envío se alcance a ver. La campana, en cambio, siempre las
+        // maneja juntas: cada clic muestra u oculta las dos a la vez.
         let bannerActual = null;
+        let parteMain = null;
+        let parteEnvio = null;
         let oculto = false;
-        let hideTimer = null;
+        let hideTimerMain = null;
+        let hideTimerEnvio = null;
 
         function bannerDeSesion() {
           // De los dos banners (comprador/invitado y vendedor), script.js
@@ -2625,49 +2714,93 @@ async function cargarMisProductos(usuarioId) {
           return banners.find((b) => b.style.display !== "none");
         }
 
-        function ocultar() {
-          if (!bannerActual || oculto) return;
-          oculto = true;
-          bannerActual.classList.add("ocultando");
-          bannerActual.addEventListener(
+        function ocultarParte(el) {
+          if (!el || el.style.display === "none") return;
+          el.classList.add("ocultando");
+          el.addEventListener(
             "animationend",
             function () {
-              bannerActual.style.display = "none";
-              bannerActual.classList.remove("ocultando");
+              el.style.display = "none";
+              el.classList.remove("ocultando");
             },
             { once: true }
           );
+        }
+
+        function mostrarParte(el) {
+          if (!el || el.style.display !== "none") return;
+          el.style.display = "";
+          el.classList.add("reapareciendo");
+          el.addEventListener(
+            "animationend",
+            function () {
+              el.classList.remove("reapareciendo");
+            },
+            { once: true }
+          );
+        }
+
+        function ocultar() {
+          if (!bannerActual || oculto) return;
+          oculto = true;
+          clearTimeout(hideTimerMain);
+          clearTimeout(hideTimerEnvio);
+          ocultarParte(parteMain);
+          ocultarParte(parteEnvio);
           if (dot) dot.classList.add("activo");
         }
 
         function mostrar() {
           if (!bannerActual || !oculto) return;
           oculto = false;
-          bannerActual.style.display = "";
-          bannerActual.classList.add("reapareciendo");
-          bannerActual.addEventListener(
-            "animationend",
-            function () {
-              bannerActual.classList.remove("reapareciendo");
-            },
-            { once: true }
-          );
+          mostrarParte(parteMain);
+          mostrarParte(parteEnvio);
           if (dot) dot.classList.remove("activo");
+          // Al mostrarlas de nuevo con la campana, se reinicia el mismo
+          // ciclo automático: la principal a los 8s y la de envío 8s
+          // después de esa (16s en total).
+          hideTimerMain = setTimeout(function () {
+            ocultarParte(parteMain);
+          }, 8000);
+          hideTimerEnvio = setTimeout(function () {
+            ocultarParte(parteEnvio);
+            oculto = true;
+            if (dot) dot.classList.add("activo");
+          }, 16000);
         }
 
         // 🆕 (Re)inicializa cuál es "el" banner vigente y reprograma el
-        // auto-ocultado a los 8s. Se llama al cargar la página y también
-        // desde actualizarMiTienda() cada vez que cambia la sesión, para
-        // que la campana siempre apunte al banner correcto y nunca deje
-        // dos banners visibles a la vez.
+        // auto-ocultado. Se llama al cargar la página y también desde
+        // actualizarMiTienda() cada vez que cambia la sesión, para que la
+        // campana siempre apunte al banner correcto y nunca deje dos
+        // banners visibles a la vez.
         function iniciar() {
-          clearTimeout(hideTimer);
-          banners.forEach((b) => b.classList.remove("ocultando", "reapareciendo"));
+          clearTimeout(hideTimerMain);
+          clearTimeout(hideTimerEnvio);
+          banners.forEach((b) => {
+            b.querySelectorAll(".ocultando, .reapareciendo").forEach((el) =>
+              el.classList.remove("ocultando", "reapareciendo")
+            );
+          });
+
           bannerActual = bannerDeSesion();
+          parteMain = bannerActual ? bannerActual.querySelector(".info-bar-main") : null;
+          parteEnvio = bannerActual ? bannerActual.querySelector(".info-bar-row--shipping") : null;
+          if (parteMain) parteMain.style.display = "";
+          if (parteEnvio) parteEnvio.style.display = "";
+
           oculto = false;
           if (dot) dot.classList.remove("activo");
+
           if (bannerActual) {
-            hideTimer = setTimeout(ocultar, 8000);
+            hideTimerMain = setTimeout(function () {
+              ocultarParte(parteMain);
+            }, 8000);
+            hideTimerEnvio = setTimeout(function () {
+              ocultarParte(parteEnvio);
+              oculto = true;
+              if (dot) dot.classList.add("activo");
+            }, 16000);
           }
         }
         window.resetNotifBanner = iniciar;

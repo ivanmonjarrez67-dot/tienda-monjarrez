@@ -236,6 +236,19 @@
   color: #1a1a1a;
   border-bottom-left-radius: 4px;
 }
+
+/* Enlaces dentro de una respuesta del bot (ej. mailto de envíos):
+   se pintan en el rojo de marca en vez del azul por defecto del
+   navegador, para que combinen con el resto del widget. */
+.monji-fila.bot .monji-burbuja a {
+  color: #b0192a;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.monji-fila.bot .monji-burbuja a:hover {
+  color: #c81e1e;
+}
 .monji-fila.user .monji-burbuja {
   background: #c81e1e;
   color: #fff;
