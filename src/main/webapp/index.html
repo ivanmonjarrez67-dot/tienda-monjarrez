@@ -2966,6 +2966,22 @@ async function cargarMisProductos(usuarioId) {
               </a>`;
             }
 
+            // 🆕 Botón "Consultar posibilidad de envíos": mismo patrón
+            // que correoHtml, pero fijo a tiendamonjarrez@gmail.com y con
+            // asunto/cuerpo enfocados en logística de envío a zonas
+            // alejadas. Usa el mismo acento turquesa que el aviso de
+            // envío del hero-banner (rgb(90,168,158) / #5aa89e).
+            const asuntoEnvio = encodeURIComponent(
+              `Consulta por envío de "${nombre}" - Tienda Monjarrez`
+            );
+            const cuerpoEnvio = encodeURIComponent(
+              `Hola,\n\nLes escribo porque el producto "${nombre}" que me interesa esta en una zona alejada. Quisiera consultar si es posible coordinar el envio hasta mi ubicacion.\n\nQuedo atento a su respuesta, muchas gracias.\n\nSaludos cordiales.`
+            );
+            const envioHtml = `<a class="contacto-btn contacto-envio" href="mailto:tiendamonjarrez@gmail.com?subject=${asuntoEnvio}&body=${cuerpoEnvio}">
+              <svg viewBox="0 0 640 512" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M624 352h-16V243.9c0-12.7-5.1-24.9-14.1-33.9L494 110.1c-9-9-21.2-14.1-33.9-14.1H416V48c0-26.5-21.5-48-48-48H48C21.5 0 0 21.5 0 48v320c0 26.5 21.5 48 48 48h16c0 53 43 96 96 96s96-43 96-96h128c0 53 43 96 96 96s96-43 96-96h48c8.8 0 16-7.2 16-16v-32c0-8.8-7.2-16-16-16zM160 464c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48zm320 0c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48zm80-208H416V144h44.1l99.9 99.9V256z"/></svg>
+              Consultar posibilidad de envíos de este producto
+            </a>`;
+
             // 🔧 Se eliminó la línea que hacía
             // document.getElementById("infoEmpresa").textContent = ...
             // porque el <h2 id="infoEmpresa"> original se destruye justo
@@ -2986,6 +3002,9 @@ async function cargarMisProductos(usuarioId) {
         <p>${ubicacionHtml}</p>
         <h3>Contacto</h3>
         <p>${telefonoHtml}<br>${correoHtml}</p>
+        <h3>Opciones de envío</h3>
+        <p class="envio-alejado-texto">¿Este producto está en una zona alejada? Con gusto validamos si es posible coordinar el envío.</p>
+        <p>${envioHtml}</p>
         <p><strong>Precio:</strong> ₡${precio}</p>
       `;
 
@@ -3162,6 +3181,26 @@ async function cargarMisProductos(usuarioId) {
       #infoModalContent .contacto-correo:hover {
         background: #a13341;
         color: #fff;
+      }
+
+      /* 🆕 Botón "Consultar posibilidad de envíos" — mismo color
+         turquesa/verde-azulado que el aviso de envío del hero-banner
+         (rgb(90,168,158) / #5aa89e), para que se identifique como la
+         misma función en toda la tienda. */
+      #infoModalContent .contacto-envio {
+        background: transparent;
+        color: #5aa89e;
+        border: 2px solid #5aa89e;
+      }
+      #infoModalContent .contacto-envio:hover {
+        background: #5aa89e;
+        color: #fff;
+      }
+      #infoModalContent .envio-alejado-texto {
+        font-size: 13px;
+        color: #666;
+        margin: 0 0 8px;
+        line-height: 1.5;
       }
 
       /* Botón de ubicación → abre Google Maps */
