@@ -584,12 +584,24 @@ btnSiguienteUsuario?.addEventListener("click", async () => {
       body: formData.toString()
     });
     const data = await res.json();
+
+    // 🔧 Antes se avanzaba de paso sin revisar si el registro realmente
+    // funcionó. Si el correo ya existía, el servidor respondía con
+    // usuarioId -1 (o -2/-3/-4 para otros errores) y el flujo seguía de
+    // todas formas, arrastrando ese id inválido a /guardarSolicitud y
+    // /guardarSuscripcion, donde rompía con 500 por violar la llave
+    // foránea. Ahora se valida antes de continuar.
+    if (!res.ok || !data.usuarioId || data.usuarioId <= 0) {
+      alert(data.mensaje || "No se pudo registrar el usuario.");
+      return;
+    }
+
     usuarioId = data.usuarioId;
     usuarioIdVisible.textContent = "ID de usuario: " + usuarioId;
     pasoUsuario.style.display = "none";
     pasoSolicitud.style.display = "block";
   } catch (err) {
-    alert("Error al guardar usuario");
+    alert("Error al guardar usuario: " + err.message);
   }
 });
 
