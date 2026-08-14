@@ -333,19 +333,16 @@ fetch("/api/productos")
 
 const searchButton = document.getElementById("searchButton");
 const searchInput = document.getElementById("search");
-const provinciaInput = document.getElementById("provincia");
-const ciudadInput = document.getElementById("ciudad");
 
+// Búsqueda por texto único: el servlet ya compara nombre, descripción,
+// empresa y provincia contra este mismo valor, así que aquí solo se
+// manda "q". Los #provincia/#ciudad son del form "Agregar Producto",
+// no se tocan desde aquí.
 function buscarProductos() {
   const query = searchInput.value.trim();
-  const provincia = provinciaInput.value.trim();
-  const ciudad = ciudadInput.value.trim();
-  let url = `/api/busqueda-productos?`;
-  const params = [];
-  if (query) params.push(`q=${encodeURIComponent(query)}`);
-  if (provincia) params.push(`provincia=${encodeURIComponent(provincia)}`);
-  if (ciudad) params.push(`ciudad=${encodeURIComponent(ciudad)}`);
-  url += params.join("&");
+  const url = query
+    ? `/api/busqueda-productos?q=${encodeURIComponent(query)}`
+    : `/api/busqueda-productos`;
 
   fetch(url)
     .then((response) => response.json())
@@ -364,18 +361,6 @@ function buscarProductos() {
 if (searchButton) searchButton.addEventListener("click", buscarProductos);
 searchInput.addEventListener("keypress", (e) => {
   if (e.key === "Enter") { e.preventDefault(); buscarProductos(); }
-});
-provinciaInput.addEventListener("change", buscarProductos);
-ciudadInput.addEventListener("input", buscarProductos);
-
-searchButton.addEventListener("click", buscarProductos);
-searchInput.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") { e.preventDefault(); buscarProductos(); }
-});
-provinciaInput.addEventListener("change", buscarProductos);
-ciudadInput.addEventListener("input", buscarProductos);
-searchInput.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") { e.preventDefault(); searchButton.click(); }
 });
 
 let filtroPrincipal = null;

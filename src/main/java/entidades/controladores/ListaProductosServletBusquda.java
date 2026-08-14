@@ -20,27 +20,17 @@ public class ListaProductosServletBusquda extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.setContentType("application/json;charset=UTF-8");
         String busqueda = request.getParameter("q");
-        String provincia = request.getParameter("provincia");
-        String ciudad = request.getParameter("ciudad");
 
         List<String> condiciones = new ArrayList<>();
         List<String> parametros = new ArrayList<>();
 
         if (busqueda != null && !busqueda.trim().isEmpty()) {
-            condiciones.add("(nombre LIKE ? OR descripcion LIKE ?)");
+            condiciones.add("(nombre LIKE ? OR descripcion LIKE ? OR Nombre_Empresa LIKE ? OR provincia LIKE ?)");
             String valor = "%" + busqueda.trim() + "%";
             parametros.add(valor);
             parametros.add(valor);
-        }
-
-        if (provincia != null && !provincia.trim().isEmpty()) {
-            condiciones.add("LOWER(provincia) LIKE LOWER(?)");
-            parametros.add("%" + provincia.trim() + "%");
-        }
-
-        if (ciudad != null && !ciudad.trim().isEmpty()) {
-            condiciones.add("LOWER(ciudad) LIKE LOWER(?)");
-            parametros.add("%" + ciudad.trim() + "%");
+            parametros.add(valor);
+            parametros.add(valor);
         }
 
         String sql = "SELECT nombre, descripcion, imagen, precio, Nombre_Empresa, telefono, correo, provincia, ciudad FROM Productos";
@@ -64,8 +54,7 @@ public class ListaProductosServletBusquda extends HttpServlet {
             boolean first = true;
 
             while (rs.next()) {
-                if (!first)
-                    out.println(",");
+                if (!first) out.println(",");
                 first = false;
 
                 out.print("  {");
