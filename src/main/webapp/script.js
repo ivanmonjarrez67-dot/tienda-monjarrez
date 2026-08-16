@@ -328,6 +328,25 @@ function mostrarEsqueletoCarga(grid, cantidad = 8) {
   }
 }
 
+// 🆕 Si la página se abrió desde un enlace compartido
+// (tiendamonjarrez.com/index.html?producto=123, a donde redirige
+// ProductoServlet después de servir los metadatos Open Graph), abre
+// automáticamente el panel "Ver detalles" de ese producto para que la
+// persona no tenga que buscarlo a mano en el catálogo.
+function abrirProductoDesdeUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const idProducto = params.get("producto");
+  if (!idProducto) return;
+  const btn = document.querySelector(`.more-info-btn[data-id="${idProducto}"]`);
+  if (btn) {
+    btn.click();
+    btn.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  // Limpiar el parámetro de la URL para que no se reabra el panel si el
+  // usuario navega y regresa, sin necesidad de recargar la página.
+  window.history.replaceState({}, document.title, window.location.pathname);
+}
+
 const gridProductosInicial = document.getElementById("productGrid");
 mostrarEsqueletoCarga(gridProductosInicial);
 
@@ -337,6 +356,7 @@ fetch("/api/productos")
     const grid = document.getElementById("productGrid");
     grid.classList.remove("skeleton-grid");
     pintarMosaico(grid, productos, construirTarjetaProductoHTML);
+    abrirProductoDesdeUrl();
   })
   .catch((error) => {
     console.error("Error al cargar productos:", error);
