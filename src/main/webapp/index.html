@@ -1560,6 +1560,8 @@
   </div>
     <button id="addProductButton"><i class="fa-solid fa-plus"></i> Agregar Producto</button>
     <div class="separator-vertical"></div>
+    <button id="editProductButton"><i class="fa-solid fa-pen"></i> Editar Producto</button>
+    <div class="separator-vertical"></div>
     <button id="deleteProductButton"><i class="fa-solid fa-trash-can"></i> Eliminar Producto</button>
   </div>
 
@@ -1888,7 +1890,75 @@ async function cargarMisProductos(usuarioId) {
         </div>
       </div>
 
+      <!-- 🆕 Modal "Editar Producto": mismo patrón que "Agregar Producto",
+           pero precargado con los datos del producto seleccionado en
+           #misProductosGrid. Todos los campos son editables, incluida
+           la imagen (se puede dejar la actual o subir una nueva). -->
+      <div id="editProductModal" class="modal">
+        <div class="modal-content">
+          <span class="close" id="cerrarEditProductModal">&times;</span>
+          <h2>Editar Producto</h2>
+          <form id="editProductForm">
+            <input type="hidden" id="editProductId" name="id" />
 
+            <label for="editName">Nombre:</label>
+            <input type="text" id="editName" name="nombre" required placeholder="Nombre del producto (ej. Tenis)" />
+
+            <label for="editCategoria">Categoría:</label>
+            <select id="editCategoria" name="categoria" required>
+              <option value="">Seleccione...</option>
+              <option value="Damas">Damas</option>
+              <option value="Caballeros">Caballeros</option>
+              <option value="Niños">Niños</option>
+              <option value="Servicios">Servicios</option>
+            </select>
+
+            <label for="editDescription">Descripción:</label>
+            <input type="text" id="editDescription" name="descripcion" required placeholder="Descripción del producto (ej. Marca Nike..)" />
+
+            <label for="editImageUrl">URL de la Imagen:</label>
+            <input type="text" id="editImageUrl" name="imagen" required placeholder="Dirección de la imagen" />
+
+            <!-- Contenedor del botón y preview -->
+            <div class="subir-preview">
+              <label for="editImagenProducto" class="btn-subir">
+                Cambiar imagen desde mi dispositivo
+              </label>
+              <input type="file" id="editImagenProducto" name="imagenProducto" accept="image/*">
+              <img id="editPreviewImagen" class="preview-img" alt="Preview" />
+            </div>
+
+            <label for="editTelefono">Teléfono:</label>
+            <input type="tel" id="editTelefono" name="telefono" required placeholder="Ej. 8888-8888" />
+
+            <label for="editCorreoProducto">Correo:</label>
+            <input type="email" id="editCorreoProducto" name="correo" required placeholder="Ej. ejemplo@email.com" />
+
+            <label for="editProvincia">Provincia:</label>
+            <select id="editProvincia" name="provincia" required>
+              <option value="">Seleccione provincia...</option>
+              <option value="San José">San José</option>
+              <option value="Alajuela">Alajuela</option>
+              <option value="Cartago">Cartago</option>
+              <option value="Heredia">Heredia</option>
+              <option value="Guanacaste">Guanacaste</option>
+              <option value="Puntarenas">Puntarenas</option>
+              <option value="Limón">Limón</option>
+            </select>
+
+            <label for="editCiudad">Ciudad/Barrio/Distrito:</label>
+            <input type="text" id="editCiudad" name="ciudad" required placeholder="Ej. San Pedro, Hatillo, Liberia..." />
+
+            <label for="editPrice">Precio ₡:</label>
+            <input type="number" id="editPrice" name="precio" required placeholder="Precio del producto (ej. 25000)" />
+
+            <label for="editEmpresa">Nombre de Empresa:</label>
+            <input type="text" id="editEmpresa" name="empresa" placeholder="Ej. TechMóvil" title="Nombre de su emprendimiento" />
+
+            <button type="submit">Guardar Cambios</button>
+          </form>
+        </div>
+      </div>
 
     </div>
 
@@ -2899,6 +2969,7 @@ async function cargarMisProductos(usuarioId) {
         document.addEventListener("click", function (e) {
           const target = e.target;
           if (target.classList && target.classList.contains("more-info-btn")) {
+            const idProducto = target.dataset.id || "";
             const empresa = target.dataset.empresa || "Empresa no disponible";
             const imagen = target.dataset.imagen || "";
             const nombre = target.dataset.nombre || "";
@@ -2982,6 +3053,26 @@ async function cargarMisProductos(usuarioId) {
               Consultar posibilidad de envíos de este producto
             </a>`;
 
+            // 🆕 Botón "Compartir": genera el enlace individual del
+            // producto (https://tiendamonjarrez.com/producto?id=123) y,
+            // en dispositivos compatibles, abre el menú nativo de
+            // compartir (WhatsApp, Facebook, Telegram, etc.). Si el
+            // navegador no soporta la Web Share API (ej. escritorio),
+            // se copia el enlace al portapapeles como alternativa.
+            // IMPORTANTE: para que la vista previa muestre imagen y
+            // nombre del producto (metadatos Open Graph), la ruta
+            // /producto?id=... debe ser resuelta por el servidor (ver
+            // ProductoServlet), no solo por este index.html estático.
+            let compartirHtml = "";
+            if (idProducto) {
+              const shareUrl = `${window.location.origin}/producto?id=${encodeURIComponent(idProducto)}`;
+              compartirHtml = `<button type="button" class="contacto-btn contacto-compartir" id="btnCompartirProducto"
+                data-share-url="${shareUrl}" data-share-title="${nombre.replace(/"/g, '&quot;')}">
+                <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L7.04 9.81C6.5 9.31 5.79 9 5 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+                Compartir
+              </button>`;
+            }
+
             // 🔧 Se eliminó la línea que hacía
             // document.getElementById("infoEmpresa").textContent = ...
             // porque el <h2 id="infoEmpresa"> original se destruye justo
@@ -3006,6 +3097,7 @@ async function cargarMisProductos(usuarioId) {
         <p class="envio-alejado-texto">¿Este producto está en una zona alejada? Con gusto validamos si es posible coordinar el envío.</p>
         <p>${envioHtml}</p>
         <p><strong>Precio:</strong> ₡${precio}</p>
+        ${compartirHtml ? `<h3>Compartir</h3><p>${compartirHtml}</p>` : ""}
       `;
 
             // Reasignar listener para cerrar después de crear contenido nuevo
@@ -3014,6 +3106,37 @@ async function cargarMisProductos(usuarioId) {
             );
             if (closeBtnNew) {
               closeBtnNew.addEventListener("click", closePanel);
+            }
+
+            // 🆕 Listener del botón "Compartir": usa el menú nativo del
+            // dispositivo (navigator.share) cuando está disponible; si
+            // no, copia el enlace al portapapeles (o, como último
+            // respaldo, lo muestra en un prompt para copiarlo a mano).
+            const btnCompartir = document.getElementById("btnCompartirProducto");
+            if (btnCompartir) {
+              btnCompartir.addEventListener("click", async () => {
+                const shareUrl = btnCompartir.dataset.shareUrl;
+                const shareTitle = btnCompartir.dataset.shareTitle || "Producto";
+                const shareData = {
+                  title: `${shareTitle} - Tienda Monjarrez`,
+                  text: `Mira este producto en Tienda Monjarrez: ${shareTitle}`,
+                  url: shareUrl,
+                };
+                if (navigator.share) {
+                  try {
+                    await navigator.share(shareData);
+                  } catch (err) {
+                    // El usuario canceló el menú de compartir; no hacer nada.
+                  }
+                  return;
+                }
+                try {
+                  await navigator.clipboard.writeText(shareUrl);
+                  alert("Enlace copiado al portapapeles.");
+                } catch (err) {
+                  window.prompt("Copia este enlace para compartir:", shareUrl);
+                }
+              });
             }
 
             openPanel();
@@ -3211,6 +3334,22 @@ async function cargarMisProductos(usuarioId) {
       }
       #infoModalContent .contacto-ubicacion:hover {
         background: #4285F4;
+        color: #fff;
+      }
+
+      /* 🆕 Botón "Compartir": es un <button>, no un <a>, así que se
+         resetean estilos por defecto de botón para que se vea igual
+         que el resto de .contacto-btn. Color morado para diferenciarlo
+         de los botones de contacto directo con el vendedor. */
+      #infoModalContent .contacto-compartir {
+        background: transparent;
+        color: #6b3fa0;
+        border: 2px solid #6b3fa0;
+        font-family: inherit;
+        cursor: pointer;
+      }
+      #infoModalContent .contacto-compartir:hover {
+        background: #6b3fa0;
         color: #fff;
       }
     </style>

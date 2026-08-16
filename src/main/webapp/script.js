@@ -3,9 +3,17 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("addProductModal").style.display = "block";
   };
 
-  document.querySelector(".close").onclick = function () {
-    document.getElementById("addProductModal").style.display = "none";
-  };
+  // 🔧 Antes solo tomaba el PRIMER ".close" del documento (querySelector),
+  // así que al agregar el modal "Editar Producto" (que también usa la
+  // clase .close) el botón de cerrar de "Agregar Producto" dejaba de
+  // funcionar bien / cerraba el modal equivocado. Ahora cada botón
+  // .close cierra el modal que lo contiene.
+  document.querySelectorAll(".modal .close").forEach((btn) => {
+    btn.onclick = function () {
+      const modal = btn.closest(".modal");
+      if (modal) modal.style.display = "none";
+    };
+  });
 
 const themeToggle = document.getElementById('themeToggle');
 const productGrid = document.getElementById('productGrid');
@@ -18,34 +26,44 @@ themeToggle.addEventListener('change', () => {
   }
 });
 
-const inputFile = document.getElementById("imagenProducto");
-const inputUrl = document.getElementById("imageUrl");
-const previewImg = document.getElementById("previewImagen");
+// 🔧 Refactorizado a función reutilizable: antes solo servía para el
+// formulario "Agregar Producto". La usamos también para "Editar
+// Producto", que tiene sus propios inputs (editImagenProducto, etc.)
+// pero necesita exactamente la misma lógica de subida a Cloudinary.
+function conectarSubidaImagen(inputFileId, inputUrlId, previewImgId) {
+  const inputFile = document.getElementById(inputFileId);
+  const inputUrl = document.getElementById(inputUrlId);
+  const previewImg = document.getElementById(previewImgId);
+  if (!inputFile || !inputUrl || !previewImg) return;
 
-inputFile.addEventListener("change", () => {
-  if (inputFile.files.length === 0) return;
-  const file = inputFile.files[0];
-  previewImg.src = URL.createObjectURL(file);
-  previewImg.style.display = "inline-block";
-  const formData = new FormData();
-  formData.append("imagenProducto", file);
-  fetch("/GuardarProductoArchivo", {
-    method: "POST",
-    body: formData
-  })
-  .then(resp => {
-    if (!resp.ok)
-      return resp.text().then(msg => { throw new Error(msg); });
-    return resp.text();
-  })
-  .then(data => {
-    const imageUrl = data.trim();
-    inputUrl.value = imageUrl;
-  })
-  .catch(err => {
-    alert("Error al subir la imagen: " + err.message);
+  inputFile.addEventListener("change", () => {
+    if (inputFile.files.length === 0) return;
+    const file = inputFile.files[0];
+    previewImg.src = URL.createObjectURL(file);
+    previewImg.style.display = "inline-block";
+    const formData = new FormData();
+    formData.append("imagenProducto", file);
+    fetch("/GuardarProductoArchivo", {
+      method: "POST",
+      body: formData
+    })
+    .then(resp => {
+      if (!resp.ok)
+        return resp.text().then(msg => { throw new Error(msg); });
+      return resp.text();
+    })
+    .then(data => {
+      const imageUrl = data.trim();
+      inputUrl.value = imageUrl;
+    })
+    .catch(err => {
+      alert("Error al subir la imagen: " + err.message);
+    });
   });
-});
+}
+
+conectarSubidaImagen("imagenProducto", "imageUrl", "previewImagen");
+conectarSubidaImagen("editImagenProducto", "editImageUrl", "editPreviewImagen");
 
 function cargarProductosMiTienda() {
   const idDiv = document.getElementById("usuarioIdVisibleMitienda");
@@ -277,6 +295,7 @@ function construirTarjetaProductoHTML(producto) {
         <h3>${producto.nombre || ''}</h3>
         ${precioHtml}
         <button class="more-info-btn"
+          data-id="${producto.id || ''}"
           data-empresa="${producto.empresa || ''}"
           data-imagen="${producto.imagen || ''}"
           data-nombre="${producto.nombre || ''}"
@@ -469,11 +488,145 @@ document.getElementById("misProductosGrid").addEventListener("click", (e) => {
   document.querySelectorAll("#misProductosGrid .producto").forEach(p => p.classList.remove("selected"));
   card.classList.add("selected");
   const btn = card.querySelector(".more-info-btn");
+  // 🆕 Se guardan todos los campos del producto (antes solo id/nombre/
+  // descripción, suficiente para "Eliminar" pero no para precargar el
+  // formulario de "Editar Producto").
   productoSeleccionado = {
     id: btn.dataset.id,
     nombre: btn.dataset.nombre,
-    descripcion: btn.dataset.descripcion
+    descripcion: btn.dataset.descripcion,
+    empresa: btn.dataset.empresa,
+    imagen: btn.dataset.imagen,
+    provincia: btn.dataset.provincia,
+    ciudad: btn.dataset.ciudad,
+    telefono: btn.dataset.telefono,
+    correo: btn.dataset.correo,
+    precio: btn.dataset.precio,
+    categoria: btn.dataset.categoria
   };
+});
+
+// 🆕 "Editar Producto": reutiliza el mismo producto seleccionado en
+// #misProductosGrid (igual que "Eliminar Producto") y precarga el
+// modal de edición con sus datos actuales para que el vendedor pueda
+// cambiar cualquier campo, incluida la imagen.
+document.getElementById("editProductButton").addEventListener("click", () => {
+  if (!productoSeleccionado) {
+    alert("Seleccione un producto para editar.");
+    return;
+  }
+  document.getElementById("editProductId").value = productoSeleccionado.id || "";
+  document.getElementById("editName").value = productoSeleccionado.nombre || "";
+  document.getElementById("editCategoria").value = productoSeleccionado.categoria || "";
+  document.getElementById("editDescription").value = productoSeleccionado.descripcion || "";
+  document.getElementById("editImageUrl").value = productoSeleccionado.imagen || "";
+  document.getElementById("editTelefono").value = productoSeleccionado.telefono || "";
+  document.getElementById("editCorreoProducto").value = productoSeleccionado.correo || "";
+  document.getElementById("editProvincia").value = productoSeleccionado.provincia || "";
+  document.getElementById("editCiudad").value = productoSeleccionado.ciudad || "";
+  document.getElementById("editPrice").value = productoSeleccionado.precio || "";
+  document.getElementById("editEmpresa").value = productoSeleccionado.empresa || "";
+
+  const preview = document.getElementById("editPreviewImagen");
+  if (preview) {
+    if (productoSeleccionado.imagen) {
+      preview.src = productoSeleccionado.imagen;
+      preview.style.display = "inline-block";
+    } else {
+      preview.removeAttribute("src");
+      preview.style.display = "none";
+    }
+  }
+
+  document.getElementById("editProductModal").style.display = "flex";
+});
+
+document.getElementById("cerrarEditProductModal").addEventListener("click", () => {
+  document.getElementById("editProductModal").style.display = "none";
+});
+
+document.getElementById("editProductForm").addEventListener("submit", function (event) {
+  event.preventDefault();
+
+  const id = document.getElementById("editProductId").value.trim();
+  const name = document.getElementById("editName").value.trim();
+  const categoria = document.getElementById("editCategoria").value;
+  const description = document.getElementById("editDescription").value.trim();
+  const price = document.getElementById("editPrice").value.trim();
+  const imageUrl = document.getElementById("editImageUrl").value.trim();
+  const empresa = document.getElementById("editEmpresa").value.trim();
+  const telefono = document.getElementById("editTelefono").value.trim();
+  const correo = document.getElementById("editCorreoProducto").value.trim();
+  const provincia = document.getElementById("editProvincia").value;
+  const ciudad = document.getElementById("editCiudad").value.trim();
+
+  // 🆕 El backend ahora exige usuario_id para verificar que el producto
+  // le pertenece a quien intenta editarlo (mismo dueño que lo publicó),
+  // igual que ya se hace para "Agregar Producto".
+  const idTextEdit = document.getElementById("usuarioIdVisibleMitienda").textContent.trim();
+  const usuarioIdEdit = idTextEdit.replace("ID de usuario:", "").trim();
+
+  if (!id) {
+    alert("No se pudo identificar el producto a editar. Cierre el modal e intente de nuevo.");
+    return;
+  }
+  if (!usuarioIdEdit || isNaN(usuarioIdEdit)) {
+    alert("No se pudo obtener el ID del usuario. Vuelva a iniciar sesión.");
+    return;
+  }
+  if (!empresa || empresa.length < 2) {
+    alert("Por favor, ingrese un nombre válido para su empresa (mínimo 2 caracteres).");
+    return;
+  }
+  if (!correo) {
+    alert("Por favor, ingrese un correo electrónico válido.");
+    return;
+  }
+  const correoRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!correoRegex.test(correo)) {
+    alert("El correo ingresado no tiene un formato válido.");
+    return;
+  }
+  if (!price || isNaN(price) || Number(price) <= 0) {
+    alert("Por favor, ingrese un precio válido mayor que 0.");
+    return;
+  }
+  if (!imageUrl) {
+    alert("Por favor, ingrese o suba una imagen del producto.");
+    return;
+  }
+
+  fetch("/EditarProducto", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      id: id,
+      usuario_id: usuarioIdEdit,
+      nombre: name,
+      categoria: categoria,
+      descripcion: description,
+      precio: price,
+      imagen: imageUrl,
+      empresa: empresa,
+      telefono: telefono,
+      correo: correo,
+      provincia: provincia,
+      ciudad: ciudad,
+    }),
+  })
+    .then((response) => {
+      if (!response.ok) {
+        return response.text().then((msg) => { throw new Error("Error del servidor: " + msg); });
+      }
+      cargarProductosMiTienda();
+      alert("Producto actualizado con éxito.");
+      document.getElementById("editProductModal").style.display = "none";
+      document.getElementById("editProductForm").reset();
+      productoSeleccionado = null;
+    })
+    .catch((error) => {
+      alert("Error al conectar con el servidor: " + error.message);
+    });
 });
 
 document.getElementById("deleteProductButton").addEventListener("click", () => {
@@ -699,7 +852,11 @@ registroFormComprador?.addEventListener("submit", async (e) => {
     const usuarioId = await res.text();
     if (!usuarioId || parseInt(usuarioId) <= 0) throw new Error("No se pudo registrar el usuario");
     usuarioIdVisible.textContent = "ID de usuario: " + usuarioId;
-    alert("¡Comprador registrado con éxito! ID: " + usuarioId);
+    // 🔧 Antes el alert mostraba el ID de usuario ("...ID: " + usuarioId),
+    // exponiendo un dato interno innecesario para el comprador. El ID
+    // ya se guarda en el DOM/sessionStorage para las peticiones; el
+    // usuario solo necesita saber que el registro fue exitoso.
+    alert("¡Registro exitoso! Ya puedes empezar a comprar.");
     ["registroModal", "loginModal", "formularioComprador", "rolesContainer", "pasoUsuario", "pasoSolicitud", "pasoSuscripcion"].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = "none";
@@ -778,7 +935,9 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 cancelarBtn?.addEventListener("click", () => hideModal(loginModal));
-continuarBtn?.addEventListener("click", () => { alert("Has continuado con tu selección"); hideModal(loginModal); });
+// 🔧 Se quitó el alert("Has continuado con tu selección"): no aportaba
+// información útil, solo interrumpía con un clic extra.
+continuarBtn?.addEventListener("click", () => { hideModal(loginModal); });
 
 registrarseBtn?.addEventListener("click", () => {
   hideModal(loginModal);
@@ -840,7 +999,10 @@ document.getElementById("btnAccederVendedor")?.addEventListener("click", functio
   })
   .then(response => {
     if (response.ok) {
-      alert("Inicio de sesión exitoso");
+      // 🔧 Se quitó el alert("Inicio de sesión exitoso"): la pantalla ya
+      // cambia inmediatamente al panel del vendedor, así que el mensaje
+      // era un clic extra innecesario. Los errores sí se siguen
+      // mostrando (ver el .catch de abajo).
       ocultarTodo();
       document.getElementById("modalVendedor")?.style.setProperty("display", "none");
       actualizarMiTienda("vendedor");
@@ -863,7 +1025,9 @@ document.getElementById("btnAccederComprador")?.addEventListener("click", functi
   })
   .then(response => {
     if (response.ok) {
-      alert("Inicio de sesión exitoso");
+      // 🔧 Se quitó el alert("Inicio de sesión exitoso") por la misma
+      // razón que en el login de vendedor: la pantalla ya refleja el
+      // cambio al instante.
       ocultarTodo();
       document.getElementById("modalComprador")?.style.setProperty("display", "none");
       document.getElementById("contenidoCompradorActivo").style.display = "block";
