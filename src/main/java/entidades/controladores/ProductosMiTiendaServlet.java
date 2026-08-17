@@ -22,7 +22,9 @@ public class ProductosMiTiendaServlet extends HttpServlet {
         String cedula = request.getParameter("cedula");
         response.setContentType("application/json;charset=UTF-8");
 
-        String sql = "SELECT nombre, descripcion, imagen, precio, Nombre_Empresa, telefono, correo, provincia, ciudad " +
+        // 🔧 Se agregó "id" al SELECT y al JSON de salida (mismo motivo
+        // que en los otros servlets de listado de productos).
+        String sql = "SELECT id, nombre, descripcion, imagen, precio, Nombre_Empresa, telefono, correo, provincia, ciudad " +
                      "FROM Productos WHERE Cedula_Vendedor=?";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -40,6 +42,7 @@ public class ProductosMiTiendaServlet extends HttpServlet {
                 first = false;
 
                 out.print("  {");
+                out.print("\"id\":" + rs.getInt("id") + ",");
                 out.print("\"nombre\":\"" + rs.getString("nombre") + "\",");
                 out.print("\"descripcion\":\"" + rs.getString("descripcion") + "\",");
                 out.print("\"imagen\":\"" + rs.getString("imagen") + "\",");
@@ -58,4 +61,3 @@ public class ProductosMiTiendaServlet extends HttpServlet {
         }
     }
 }
-

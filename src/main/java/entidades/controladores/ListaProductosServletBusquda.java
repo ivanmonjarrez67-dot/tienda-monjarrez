@@ -33,7 +33,10 @@ public class ListaProductosServletBusquda extends HttpServlet {
             parametros.add(valor);
         }
 
-        String sql = "SELECT nombre, descripcion, imagen, precio, Nombre_Empresa, telefono, correo, provincia, ciudad FROM Productos";
+        // 🔧 Se agregó "id" al SELECT y al JSON de salida (mismo motivo
+        // que en ListaProductosServlet: sin esto el botón "Compartir" no
+        // se genera para los productos que aparecen tras una búsqueda).
+        String sql = "SELECT id, nombre, descripcion, imagen, precio, Nombre_Empresa, telefono, correo, provincia, ciudad FROM Productos";
 
         if (!condiciones.isEmpty()) {
             sql += " WHERE " + String.join(" AND ", condiciones);
@@ -58,6 +61,7 @@ public class ListaProductosServletBusquda extends HttpServlet {
                 first = false;
 
                 out.print("  {");
+                out.print("\"id\":" + rs.getInt("id") + ",");
                 out.print("\"nombre\":\"" + JsonUtils.escapar(rs.getString("nombre")) + "\",");
                 out.print("\"descripcion\":\"" + JsonUtils.escapar(rs.getString("descripcion")) + "\",");
                 out.print("\"imagen\":\"" + JsonUtils.escapar(rs.getString("imagen")) + "\",");

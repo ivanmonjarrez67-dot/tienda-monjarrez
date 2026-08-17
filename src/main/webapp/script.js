@@ -101,7 +101,7 @@ function cargarProductosMiTienda() {
           <h3>${producto.nombre || ''} (ID: ${producto.id})</h3>
           ${precioHtml}
           <button class="more-info-btn"
-            data-id="${producto.id}"
+            data-id="${producto.id ?? ''}"
             data-empresa="${producto.empresa || ''}"
             data-imagen="${producto.imagen || ''}"
             data-nombre="${producto.nombre || ''}"
@@ -295,7 +295,7 @@ function construirTarjetaProductoHTML(producto) {
         <h3>${producto.nombre || ''}</h3>
         ${precioHtml}
         <button class="more-info-btn"
-          data-id="${producto.id || ''}"
+          data-id="${producto.id ?? ''}"
           data-empresa="${producto.empresa || ''}"
           data-imagen="${producto.imagen || ''}"
           data-nombre="${producto.nombre || ''}"
