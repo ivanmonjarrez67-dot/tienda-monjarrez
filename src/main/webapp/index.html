@@ -37,6 +37,19 @@
       .filter.filter-mi-tienda.active {
         box-shadow: 0 0 0 2px #1a1a1a inset;
       }
+      /* 🆕 Candado del botón "Mi tienda" para invitados/compradores:
+         antes el botón quedaba con `disabled`, lo que impedía hasta el
+         clic y no dejaba explicarle a la persona por qué esa sección no
+         está disponible para ella. Ahora sigue siendo clickeable (ver
+         script.js), solo se ve apagado y con el candado; al hacer clic
+         se le avisa el motivo. */
+      .candado-mi-tienda {
+        margin-left: 4px;
+        font-size: 0.82em;
+      }
+      .filter.filter-mi-tienda[data-bloqueado="true"] {
+        cursor: not-allowed;
+      }
 
       /* 🆕 Íconos de editar/eliminar en cada tarjeta de "Mi tienda"
          (antes eran botones de texto únicos arriba de toda la sección). */
@@ -1324,7 +1337,7 @@
 
     <!-- Filtros a la derecha -->
     <div class="toolbar-group">
-      <button class="filter filter-mi-tienda" data-category="Mi tienda"><i class="fa-solid fa-star"></i> Mi tienda</button>
+      <button class="filter filter-mi-tienda" data-category="Mi tienda" data-bloqueado="true"><i class="fa-solid fa-star"></i> Mi tienda <i class="fa-solid fa-lock candado-mi-tienda"></i></button>
       <button class="filter" data-category="Todo">Todo</button>
       <button class="filter" data-category="Servicios">Servicios</button>
 

@@ -423,7 +423,20 @@ document.querySelectorAll(".main").forEach((btn) => {
 });
 
 document.querySelectorAll(".filter").forEach((btn) => {
-  btn.addEventListener("click", () => {
+  btn.addEventListener("click", (e) => {
+    // 🆕 "Mi tienda" bloqueada para invitados/compradores: antes el
+    // botón quedaba con `disabled`, así que ni siquiera llegaba a
+    // dispararse este clic. Ahora sí llega, y en vez de aplicar el
+    // filtro se le explica a la persona por qué esa sección es
+    // exclusiva para vendedores — con stopImmediatePropagation() para
+    // que tampoco se dispare el otro listener de ".filter" que solo
+    // marca la clase "active" (ver index.html), y así el botón no
+    // quede marcado como seleccionado sin haber entrado realmente.
+    if (btn.dataset.category === "Mi tienda" && btn.dataset.bloqueado === "true") {
+      e.stopImmediatePropagation();
+      alert("La sección \"Mi tienda\" es exclusiva para vendedores registrados en Tienda Monjarrez. Regístrate o inicia sesión como vendedor para publicar y administrar tus propios productos.");
+      return;
+    }
     categoriaSeleccionada = btn.dataset.category;
     document.querySelectorAll(".filter").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
@@ -1024,13 +1037,17 @@ function actualizarMiTienda(usuario) {
   if (typeof window.resetNotifBanner === "function") window.resetNotifBanner();
   const miTiendaBtn = document.querySelector('.filter[data-category="Mi tienda"]');
   if (!miTiendaBtn) return;
-  if (usuario === "vendedor" || usuario === "vendedor-recién-registrado") {
-    miTiendaBtn.disabled = false;
-    miTiendaBtn.style.opacity = 1;
-  } else {
-    miTiendaBtn.disabled = true;
-    miTiendaBtn.style.opacity = 0.5;
-  }
+  const candado = miTiendaBtn.querySelector(".candado-mi-tienda");
+  const puedeEntrar = usuario === "vendedor" || usuario === "vendedor-recién-registrado";
+  // 🆕 Antes se usaba `disabled = true`, pero un botón deshabilitado no
+  // recibe clics en absoluto — así que a un invitado/comprador nunca se
+  // le explicaba por qué "Mi tienda" no estaba disponible. Ahora sigue
+  // siendo clickeable; el candado 🔒 y el aviso los maneja el listener
+  // de ".filter" (ver script.js, bloque "Mi tienda bloqueada").
+  miTiendaBtn.dataset.bloqueado = puedeEntrar ? "false" : "true";
+  miTiendaBtn.style.opacity = puedeEntrar ? 1 : 0.6;
+  miTiendaBtn.title = puedeEntrar ? "" : "Exclusivo para vendedores de Tienda Monjarrez";
+  if (candado) candado.style.display = puedeEntrar ? "none" : "inline-block";
 }
 window.actualizarMiTienda = actualizarMiTienda;
 
