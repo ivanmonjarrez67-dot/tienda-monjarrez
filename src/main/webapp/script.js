@@ -100,20 +100,28 @@ function cargarProductosMiTienda() {
           <img src="${producto.imagen || ''}" alt="${producto.nombre || ''}" style="width:150px;height:150px;object-fit:cover;border-radius:8px;">
           <h3>${producto.nombre || ''} (ID: ${producto.id})</h3>
           ${precioHtml}
-          <button class="more-info-btn"
-            data-id="${producto.id ?? ''}"
-            data-empresa="${producto.empresa || ''}"
-            data-imagen="${producto.imagen || ''}"
-            data-nombre="${producto.nombre || ''}"
-            data-descripcion="${producto.descripcion || ''}"
-            data-provincia="${producto.provincia || ''}"
-            data-ciudad="${producto.ciudad || ''}"
-            data-telefono="${producto.telefono || ''}"
-            data-correo="${producto.correo || ''}"
-            data-precio="${producto.precio || ''}"
-            data-categoria="${producto.categoria || ''}">
-            Ver detalles
-          </button>
+          <div class="producto-mitienda-acciones">
+            <button class="more-info-btn"
+              data-id="${producto.id ?? ''}"
+              data-empresa="${producto.empresa || ''}"
+              data-imagen="${producto.imagen || ''}"
+              data-nombre="${producto.nombre || ''}"
+              data-descripcion="${producto.descripcion || ''}"
+              data-provincia="${producto.provincia || ''}"
+              data-ciudad="${producto.ciudad || ''}"
+              data-telefono="${producto.telefono || ''}"
+              data-correo="${producto.correo || ''}"
+              data-precio="${producto.precio || ''}"
+              data-categoria="${producto.categoria || ''}">
+              Ver detalles
+            </button>
+            <button type="button" class="icon-btn editar-producto-btn" title="Editar producto" aria-label="Editar producto">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+            <button type="button" class="icon-btn eliminar-producto-btn" title="Eliminar producto" aria-label="Eliminar producto">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
         `;
         grid.appendChild(card);
       });
@@ -524,13 +532,28 @@ document.getElementById("misProductosGrid").addEventListener("click", (e) => {
     precio: btn.dataset.precio,
     categoria: btn.dataset.categoria
   };
+
+  // 🆕 Íconos de editar (lápiz) y eliminar (tacho) de ESTA tarjeta: como
+  // productoSeleccionado ya quedó armado arriba con los datos de esta
+  // misma tarjeta, basta con llamar la acción correspondiente — no hace
+  // falta abrir "Ver detalles" primero.
+  if (e.target.closest(".editar-producto-btn")) {
+    abrirModalEdicionProducto();
+    return;
+  }
+  if (e.target.closest(".eliminar-producto-btn")) {
+    eliminarProductoSeleccionado();
+    return;
+  }
 });
 
-// 🆕 "Editar Producto": reutiliza el mismo producto seleccionado en
-// #misProductosGrid (igual que "Eliminar Producto") y precarga el
-// modal de edición con sus datos actuales para que el vendedor pueda
-// cambiar cualquier campo, incluida la imagen.
-document.getElementById("editProductButton").addEventListener("click", () => {
+// 🆕 "Editar producto": antes era un botón único arriba de "Mi tienda"
+// que operaba sobre el último producto abierto con "Ver detalles".
+// Ahora es el ícono de lápiz de cada tarjeta, así que se llama
+// directamente con el producto de ESA tarjeta (ver click delegado más
+// arriba en #misProductosGrid) y precarga el modal de edición con sus
+// datos actuales, incluida la imagen.
+function abrirModalEdicionProducto() {
   if (!productoSeleccionado) {
     alert("Seleccione un producto para editar.");
     return;
@@ -559,7 +582,7 @@ document.getElementById("editProductButton").addEventListener("click", () => {
   }
 
   document.getElementById("editProductModal").style.display = "flex";
-});
+}
 
 document.getElementById("cerrarEditProductModal").addEventListener("click", () => {
   document.getElementById("editProductModal").style.display = "none";
@@ -649,7 +672,9 @@ document.getElementById("editProductForm").addEventListener("submit", function (
     });
 });
 
-document.getElementById("deleteProductButton").addEventListener("click", () => {
+// 🆕 "Eliminar producto": mismo cambio que "Editar producto" — ahora es
+// el ícono de tacho de cada tarjeta en vez de un botón único arriba.
+function eliminarProductoSeleccionado() {
   if (!productoSeleccionado) {
     alert("Seleccione un producto para eliminar.");
     return;
@@ -672,7 +697,7 @@ document.getElementById("deleteProductButton").addEventListener("click", () => {
     }
   })
   .catch(err => console.error(err));
-});
+}
 
 const rolesContainer = document.getElementById("rolesContainer");
 const formularioComprador = document.getElementById("formularioComprador");

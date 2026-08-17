@@ -19,6 +19,64 @@
       referrerpolicy="no-referrer"
     />
     <style>
+      /* 🆕 "Mi tienda" casi no se diferenciaba de los otros filtros
+         (Caballeros, Damas, Todo...). Le damos el mismo dorado que usa
+         la insignia "⭐ Vendedor/a Destacado/a" del perfil (#perfilBadge)
+         para que resalte como una sección propia, no un filtro más. El
+         !important es necesario porque .filter ya trae sus colores base
+         desde styles.css y necesitamos ganarle la especificidad. */
+      .filter.filter-mi-tienda {
+        background: linear-gradient(135deg, #f6c445, #e69b0c) !important;
+        border-color: #e69b0c !important;
+        color: #1a1a1a !important;
+        font-weight: bold;
+      }
+      .filter.filter-mi-tienda:hover {
+        filter: brightness(1.06);
+      }
+      .filter.filter-mi-tienda.active {
+        box-shadow: 0 0 0 2px #1a1a1a inset;
+      }
+
+      /* 🆕 Íconos de editar/eliminar en cada tarjeta de "Mi tienda"
+         (antes eran botones de texto únicos arriba de toda la sección). */
+      .producto-mitienda-acciones {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 6px;
+      }
+      .icon-btn {
+        width: 34px;
+        height: 34px;
+        border: none;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        cursor: pointer;
+        background: #f0f0f0;
+        color: #333;
+        transition: background 0.15s ease, transform 0.1s ease;
+      }
+      .icon-btn:hover {
+        transform: scale(1.06);
+      }
+      .editar-producto-btn {
+        color: #1a6fb0;
+      }
+      .editar-producto-btn:hover {
+        background: #d8ecfb;
+      }
+      .eliminar-producto-btn {
+        color: #c0392b;
+      }
+      .eliminar-producto-btn:hover {
+        background: #fbdcd8;
+      }
       body {
         /* 🆕 Tipografía Poppins (Google Fonts) en vez de la fuente del
            sistema/Arial por defecto — le da personalidad, se ve menos
@@ -967,7 +1025,7 @@
         </div>
         <div class="input-icon-wrap">
           <i class="fa-solid fa-lock"></i>
-          <input type="password" id="contraseñaC" name="contraseña" placeholder="Contraseña" required />
+          <input type="password" id="contraseñaC" name="contraseña" placeholder="Crear contraseña" required />
         </div>
         <label class="aceptar-terminos">
           <input type="checkbox" id="aceptaTerminosComprador" name="aceptaTerminos" required />
@@ -998,7 +1056,7 @@
         </div>
         <div class="input-icon-wrap">
           <i class="fa-solid fa-lock"></i>
-          <input type="password" name="contraseña" id="contraseñaV" placeholder="Contraseña" required/>
+          <input type="password" name="contraseña" id="contraseñaV" placeholder="Crear contraseña" required/>
         </div>
         <button type="button" id="btnSiguienteUsuario"><i class="fa-solid fa-arrow-right"></i> Siguiente</button>
         <button type="button" id="btnAtrasVendedor" class="volver-btn" style="margin-bottom:10px;"><i class="fa-solid fa-arrow-left"></i> Atrás</button>
@@ -1266,7 +1324,7 @@
 
     <!-- Filtros a la derecha -->
     <div class="toolbar-group">
-      <button class="filter" data-category="Mi tienda">Mi tienda</button>
+      <button class="filter filter-mi-tienda" data-category="Mi tienda"><i class="fa-solid fa-star"></i> Mi tienda</button>
       <button class="filter" data-category="Todo">Todo</button>
       <button class="filter" data-category="Servicios">Servicios</button>
 
@@ -1559,10 +1617,6 @@
     ID de usuario: ---
   </div>
     <button id="addProductButton"><i class="fa-solid fa-plus"></i> Agregar Producto</button>
-    <div class="separator-vertical"></div>
-    <button id="editProductButton"><i class="fa-solid fa-pen"></i> Editar Producto</button>
-    <div class="separator-vertical"></div>
-    <button id="deleteProductButton"><i class="fa-solid fa-trash-can"></i> Eliminar Producto</button>
   </div>
 
   <!-- 🆕 Contenedor dedicado para las tarjetas de "Mis Productos".
