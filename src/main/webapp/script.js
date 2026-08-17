@@ -1,3 +1,12 @@
+// 🆕 Se detecta ACÁ ARRIBA, apenas carga el script, si la página se
+// abrió desde un enlace de producto compartido (?producto=ID). Tiene
+// que guardarse en esta bandera global antes de que cualquier otra
+// parte del código limpie ese parámetro de la URL con
+// history.replaceState (ver abrirProductoDesdeUrl más abajo) — si se
+// leyera la URL más tarde (por ejemplo en window.addEventListener("load")
+// de index.html), podría ya no estar el parámetro.
+window.__llegaDesdeProductoCompartido = new URLSearchParams(window.location.search).has("producto");
+
 document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("addProductButton").onclick = function () {
     document.getElementById("addProductModal").style.display = "block";

@@ -4,6 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tienda Monjarrez</title>
+    <!-- 🆕 Favicon con fondo transparente (logo recortado y sin el
+         cuadro blanco que salía en Google). Todos estos archivos van en
+         la RAÍZ del proyecto, junto a index.html — no dentro de
+         /imagenes. -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <meta property="og:title" content="Tienda Monjarrez" />
+    <meta property="og:description" content="Descubre productos de emprendedores de todo Costa Rica o publica los tuyos y llega a miles de posibles clientes." />
+    <meta property="og:image" content="https://tiendamonjarrez.com/icon-512.png" />
+    <meta property="og:url" content="https://tiendamonjarrez.com" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tienda Monjarrez" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -3954,6 +3970,14 @@ window.addEventListener("load", () => {
   if (tipo) {
     mostrarContenido(tipo, false); // Sesión activa → mostrar contenido
     actualizarMiTienda(tipo);      // 🔹 Ajustar "Mi tienda" según tipo
+  } else if (window.__llegaDesdeProductoCompartido) {
+    // 🆕 Si la persona llegó desde un enlace de producto compartido
+    // (tiendamonjarrez.com/index.html?producto=123, el que genera el
+    // botón "Compartir" vía ProductoServlet), no tiene sentido tapársela
+    // con el login — se le deja entrar directo como Invitado, igual que
+    // si hubiera tocado el botón "Invitado" a mano, para que vea el
+    // producto de una vez.
+    document.querySelector(".role-btn.invitado")?.click();
   } else {
     mostrarLogin();                // No hay sesión → mostrar login
     actualizarMiTienda("invitado"); // 🔹 Bloquear por defecto
