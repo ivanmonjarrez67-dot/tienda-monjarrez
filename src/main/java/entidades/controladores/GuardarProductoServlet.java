@@ -41,6 +41,13 @@ public class GuardarProductoServlet extends HttpServlet {
         String provincia = request.getParameter("provincia");
         String ciudad = request.getParameter("ciudad");
 
+        // 🆕 Campos opcionales: precio anterior (rebaja) e imágenes
+        // adicionales (2 y 3). Si vienen vacíos, simplemente no se crea
+        // fila en las tablas Descuentos / ImagenesAdicionalesProducto.
+        String precioAnteriorStr = request.getParameter("precio_anterior");
+        String imagen2 = request.getParameter("imagen2");
+        String imagen3 = request.getParameter("imagen3");
+
         // ✅ Obtener usuarioId directamente desde el parámetro
         String usuarioIdParam = request.getParameter("usuario_id");
         if (usuarioIdParam == null || usuarioIdParam.isEmpty()) {
@@ -55,7 +62,8 @@ public class GuardarProductoServlet extends HttpServlet {
         // solo si viene mal formada, cosa que tampoco queremos).
         if (!esTextoSeguro(nombre) || !esTextoSeguro(descripcion) || !esTextoSeguro(empresa)
                 || !esTextoSeguro(categoria) || !esTextoSeguro(telefono) || !esTextoSeguro(correo)
-                || !esTextoSeguro(provincia) || !esTextoSeguro(ciudad) || !esTextoSeguro(imagen)) {
+                || !esTextoSeguro(provincia) || !esTextoSeguro(ciudad) || !esTextoSeguro(imagen)
+                || !esTextoSeguro(imagen2) || !esTextoSeguro(imagen3)) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST,
                     "Uno o más campos contienen caracteres no permitidos (HTML o código). "
                     + "Por favor usa solo texto normal.");
@@ -72,12 +80,27 @@ public class GuardarProductoServlet extends HttpServlet {
                 precio = Double.parseDouble(precioStr.trim());
             }
 
-            // Insertar producto
+            // 🆕 Validar precio anterior (opcional): solo se guarda si viene
+            // y además es mayor al precio real (si no, no tendría sentido
+            // mostrarlo tachado como rebaja).
+            Double precioAnterior = null;
+            if (precioAnteriorStr != null && !precioAnteriorStr.trim().isEmpty()) {
+                double valor = Double.parseDouble(precioAnteriorStr.trim());
+                if (valor > precio) {
+                    precioAnterior = valor;
+                }
+            }
+
+            int nuevoProductoId;
+
+            // Insertar producto (con RETURN_GENERATED_KEYS para poder
+            // insertar después en Descuentos / ImagenesAdicionalesProducto,
+            // que dependen del id recién creado).
             String sql = "INSERT INTO Productos "
                        + "(usuario_id, nombre, descripcion, imagen, precio, Nombre_Empresa, categoria, telefono, correo, provincia, ciudad) "
                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 stmt.setInt(1, usuarioId);        // ✅ ID recibido del formulario
                 stmt.setString(2, nombre);
                 stmt.setString(3, descripcion);
@@ -91,9 +114,41 @@ public class GuardarProductoServlet extends HttpServlet {
                 stmt.setString(11, ciudad);
 
                 stmt.executeUpdate();
-                response.setStatus(HttpServletResponse.SC_OK);
-                response.getWriter().write("✅ Producto guardado correctamente");
+
+                try (ResultSet keys = stmt.getGeneratedKeys()) {
+                    if (keys.next()) {
+                        nuevoProductoId = keys.getInt(1);
+                    } else {
+                        throw new SQLException("No se pudo obtener el ID del producto recién creado.");
+                    }
+                }
             }
+
+            // 🆕 Si viene precio anterior válido, guardar la rebaja.
+            if (precioAnterior != null) {
+                try (PreparedStatement stmtDescuento = conn.prepareStatement(
+                        "INSERT INTO Descuentos (producto_id, precio_anterior) VALUES (?, ?)")) {
+                    stmtDescuento.setInt(1, nuevoProductoId);
+                    stmtDescuento.setDouble(2, precioAnterior);
+                    stmtDescuento.executeUpdate();
+                }
+            }
+
+            // 🆕 Si viene al menos una imagen adicional, guardar la fila.
+            boolean hayImagen2 = imagen2 != null && !imagen2.trim().isEmpty();
+            boolean hayImagen3 = imagen3 != null && !imagen3.trim().isEmpty();
+            if (hayImagen2 || hayImagen3) {
+                try (PreparedStatement stmtImagenes = conn.prepareStatement(
+                        "INSERT INTO ImagenesAdicionalesProducto (producto_id, imagen2, imagen3) VALUES (?, ?, ?)")) {
+                    stmtImagenes.setInt(1, nuevoProductoId);
+                    if (hayImagen2) stmtImagenes.setString(2, imagen2.trim()); else stmtImagenes.setNull(2, Types.NVARCHAR);
+                    if (hayImagen3) stmtImagenes.setString(3, imagen3.trim()); else stmtImagenes.setNull(3, Types.NVARCHAR);
+                    stmtImagenes.executeUpdate();
+                }
+            }
+
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.getWriter().write("✅ Producto guardado correctamente");
 
             // 📩 Avisar solo a los usuarios (Compradores O Vendedores — un
             // vendedor también puede comprar) que marcaron esta categoría
@@ -137,7 +192,7 @@ public class GuardarProductoServlet extends HttpServlet {
 
         } catch (NumberFormatException e) {
             e.printStackTrace();
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Precio o ID inválido");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Precio, precio anterior o ID inválido");
         } catch (SQLException e) {
             e.printStackTrace();
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error en base de datos: " + e.getMessage());

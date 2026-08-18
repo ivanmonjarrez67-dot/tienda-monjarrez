@@ -73,6 +73,13 @@ function conectarSubidaImagen(inputFileId, inputUrlId, previewImgId) {
 
 conectarSubidaImagen("imagenProducto", "imageUrl", "previewImagen");
 conectarSubidaImagen("editImagenProducto", "editImageUrl", "editPreviewImagen");
+// 🆕 Imágenes adicionales (opcionales, hasta 2 extra): mismo mecanismo de
+// subida, reutilizando conectarSubidaImagen con los ids de los nuevos
+// inputs del formulario.
+conectarSubidaImagen("imagenProducto2", "imageUrl2", "previewImagen2");
+conectarSubidaImagen("imagenProducto3", "imageUrl3", "previewImagen3");
+conectarSubidaImagen("editImagenProducto2", "editImageUrl2", "editPreviewImagen2");
+conectarSubidaImagen("editImagenProducto3", "editImageUrl3", "editPreviewImagen3");
 
 function cargarProductosMiTienda() {
   const idDiv = document.getElementById("usuarioIdVisibleMitienda");
@@ -102,11 +109,22 @@ function cargarProductosMiTienda() {
         const precioFormateado = !isNaN(precioNumerico)
           ? precioNumerico.toLocaleString("es-CR", { maximumFractionDigits: 0 })
           : null;
-        const precioHtml = precioFormateado
-          ? `<p class="producto-precio">₡${precioFormateado}</p>`
+        const precioAnteriorNumerico = parseFloat(producto.precio_anterior);
+        const tieneDescuento = !isNaN(precioAnteriorNumerico) && precioAnteriorNumerico > precioNumerico;
+        const precioAnteriorHtml = tieneDescuento
+          ? `<span class="producto-precio-anterior">₡${precioAnteriorNumerico.toLocaleString("es-CR", { maximumFractionDigits: 0 })}</span>
+             <span class="producto-descuento-badge">-${Math.round((1 - precioNumerico / precioAnteriorNumerico) * 100)}%</span>`
           : "";
+        const precioHtml = precioFormateado
+          ? `<p class="producto-precio">₡${precioFormateado} ${precioAnteriorHtml}</p>`
+          : "";
+        const galeriaHtml = construirGaleriaHTML(
+          [producto.imagen, producto.imagen2, producto.imagen3],
+          producto.nombre || "",
+          "width:150px;height:150px;object-fit:cover;border-radius:8px;"
+        );
         card.innerHTML = `
-          <img src="${producto.imagen || ''}" alt="${producto.nombre || ''}" style="width:150px;height:150px;object-fit:cover;border-radius:8px;">
+          ${galeriaHtml}
           <h3>${producto.nombre || ''} (ID: ${producto.id})</h3>
           ${precioHtml}
           <div class="producto-mitienda-acciones">
@@ -114,6 +132,8 @@ function cargarProductosMiTienda() {
               data-id="${producto.id ?? ''}"
               data-empresa="${producto.empresa || ''}"
               data-imagen="${producto.imagen || ''}"
+              data-imagen2="${producto.imagen2 || ''}"
+              data-imagen3="${producto.imagen3 || ''}"
               data-nombre="${producto.nombre || ''}"
               data-descripcion="${producto.descripcion || ''}"
               data-provincia="${producto.provincia || ''}"
@@ -121,6 +141,7 @@ function cargarProductosMiTienda() {
               data-telefono="${producto.telefono || ''}"
               data-correo="${producto.correo || ''}"
               data-precio="${producto.precio || ''}"
+              data-precio-anterior="${producto.precio_anterior || ''}"
               data-categoria="${producto.categoria || ''}">
               Ver detalles
             </button>
@@ -198,6 +219,14 @@ document.getElementById("addProductForm").onsubmit = function (event) {
   const provincia = document.getElementById("provincia").value;
   const ciudad = document.getElementById("ciudad").value.trim();
 
+  // 🆕 Opcionales: precio anterior (rebaja) e imágenes adicionales 2 y 3.
+  const precioAnteriorInput = document.getElementById("precioAnterior");
+  const precioAnterior = precioAnteriorInput ? precioAnteriorInput.value.trim() : "";
+  const imageUrl2Input = document.getElementById("imageUrl2");
+  const imageUrl2 = imageUrl2Input ? imageUrl2Input.value.trim() : "";
+  const imageUrl3Input = document.getElementById("imageUrl3");
+  const imageUrl3 = imageUrl3Input ? imageUrl3Input.value.trim() : "";
+
   if (!usuarioId || isNaN(usuarioId)) {
     alert("No se pudo obtener el ID del usuario. Vuelva a iniciar sesión o revise el campo.");
     return;
@@ -245,6 +274,9 @@ document.getElementById("addProductForm").onsubmit = function (event) {
       correo: correo,
       provincia: provincia,
       ciudad: ciudad,
+      precio_anterior: precioAnterior,
+      imagen2: imageUrl2,
+      imagen3: imageUrl3,
     }),
   })
     .then((response) => {
@@ -291,6 +323,49 @@ function pintarMosaico(grid, productos, construirTarjetaHTML) {
   return true;
 }
 
+// 🆕 Arma la galería de una tarjeta: 1 sola imagen (imagen base) si no hay
+// fotos adicionales, o un mini carrusel con puntitos si hay imagen2 y/o
+// imagen3. Las imágenes viajan en data-imagenes (JSON) para que el click
+// delegado de los puntos (ver listener global más abajo) sepa a qué
+// imagen cambiar sin tener que reconstruir la tarjeta entera.
+function construirGaleriaHTML(imagenes, alt, estiloImg) {
+  const validas = imagenes.filter(Boolean);
+  if (validas.length === 0) {
+    return `<img src="" alt="${alt}" style="${estiloImg}">`;
+  }
+  const jsonImagenes = JSON.stringify(validas).replace(/"/g, "&quot;");
+  if (validas.length === 1) {
+    return `<div class="producto-galeria" data-imagenes="${jsonImagenes}">
+      <img class="galeria-img" src="${validas[0]}" alt="${alt}" style="${estiloImg}">
+    </div>`;
+  }
+  const dotsHtml = validas
+    .map((_, i) => `<span class="galeria-dot${i === 0 ? " active" : ""}" data-index="${i}"></span>`)
+    .join("");
+  return `<div class="producto-galeria" data-imagenes="${jsonImagenes}">
+    <img class="galeria-img" src="${validas[0]}" alt="${alt}" style="${estiloImg}">
+    <div class="galeria-dots">${dotsHtml}</div>
+  </div>`;
+}
+
+// 🆕 Click delegado (una sola vez, a nivel de documento) para los puntitos
+// de cualquier galería de la página: catálogo, "Mi tienda" y panel de
+// detalle. Cambia la imagen mostrada sin recargar ni reconstruir la
+// tarjeta.
+document.addEventListener("click", (e) => {
+  const dot = e.target.closest(".galeria-dot");
+  if (!dot) return;
+  const galeria = dot.closest(".producto-galeria");
+  if (!galeria) return;
+  let imagenes = [];
+  try { imagenes = JSON.parse(galeria.dataset.imagenes || "[]"); } catch (err) { imagenes = []; }
+  const idx = parseInt(dot.dataset.index, 10);
+  const img = galeria.querySelector(".galeria-img");
+  if (img && imagenes[idx]) img.src = imagenes[idx];
+  galeria.querySelectorAll(".galeria-dot").forEach((d) => d.classList.remove("active"));
+  dot.classList.add("active");
+});
+
 function construirTarjetaProductoHTML(producto) {
   // 🆕 Precio visible directo en la tarjeta (antes solo vivía dentro de
   // data-precio, oculto hasta abrir "Ver detalles"). Se formatea con
@@ -299,22 +374,41 @@ function construirTarjetaProductoHTML(producto) {
   const precioFormateado = !isNaN(precioNumerico)
     ? precioNumerico.toLocaleString("es-CR", { maximumFractionDigits: 0 })
     : null;
+
+  // 🆕 Precio anterior tachado (rebaja): viene de la tabla Descuentos vía
+  // el JSON del backend (producto.precio_anterior). Solo se muestra si es
+  // mayor al precio real.
+  const precioAnteriorNumerico = parseFloat(producto.precio_anterior);
+  const tieneDescuento = !isNaN(precioAnteriorNumerico) && precioAnteriorNumerico > precioNumerico;
+  const precioAnteriorHtml = tieneDescuento
+    ? `<span class="producto-precio-anterior">₡${precioAnteriorNumerico.toLocaleString("es-CR", { maximumFractionDigits: 0 })}</span>
+       <span class="producto-descuento-badge">-${Math.round((1 - precioNumerico / precioAnteriorNumerico) * 100)}%</span>`
+    : "";
+
   const precioHtml = precioFormateado
-    ? `<p class="producto-precio">₡${precioFormateado}</p>`
+    ? `<p class="producto-precio">₡${precioFormateado} ${precioAnteriorHtml}</p>`
     : "";
   const badgeHtml = producto.empresa
     ? `<span class="producto-badge">${producto.empresa}</span>`
     : "";
 
+  const galeriaHtml = construirGaleriaHTML(
+    [producto.imagen, producto.imagen2, producto.imagen3],
+    producto.nombre || "",
+    "width:150px;height:150px;object-fit:cover;"
+  );
+
   return `
         ${badgeHtml}
-        <img src="${producto.imagen || ''}" alt="${producto.nombre || ''}" style="width:150px;height:150px;">
+        ${galeriaHtml}
         <h3>${producto.nombre || ''}</h3>
         ${precioHtml}
         <button class="more-info-btn"
           data-id="${producto.id ?? ''}"
           data-empresa="${producto.empresa || ''}"
           data-imagen="${producto.imagen || ''}"
+          data-imagen2="${producto.imagen2 || ''}"
+          data-imagen3="${producto.imagen3 || ''}"
           data-nombre="${producto.nombre || ''}"
           data-descripcion="${producto.descripcion || ''}"
           data-provincia="${producto.provincia || ''}"
@@ -322,6 +416,7 @@ function construirTarjetaProductoHTML(producto) {
           data-telefono="${producto.telefono || ''}"
           data-correo="${producto.correo || ''}"
           data-precio="${producto.precio || ''}"
+          data-precio-anterior="${producto.precio_anterior || ''}"
         >
           Ver detalles
         </button>
@@ -547,11 +642,14 @@ document.getElementById("misProductosGrid").addEventListener("click", (e) => {
     descripcion: btn.dataset.descripcion,
     empresa: btn.dataset.empresa,
     imagen: btn.dataset.imagen,
+    imagen2: btn.dataset.imagen2,
+    imagen3: btn.dataset.imagen3,
     provincia: btn.dataset.provincia,
     ciudad: btn.dataset.ciudad,
     telefono: btn.dataset.telefono,
     correo: btn.dataset.correo,
     precio: btn.dataset.precio,
+    precioAnterior: btn.dataset.precioAnterior,
     categoria: btn.dataset.categoria
   };
 
@@ -592,6 +690,15 @@ function abrirModalEdicionProducto() {
   document.getElementById("editPrice").value = productoSeleccionado.precio || "";
   document.getElementById("editEmpresa").value = productoSeleccionado.empresa || "";
 
+  // 🆕 Precio anterior (rebaja) e imágenes adicionales — opcionales, se
+  // dejan vacíos si el producto no tenía ninguno.
+  const editPrecioAnteriorInput = document.getElementById("editPrecioAnterior");
+  if (editPrecioAnteriorInput) editPrecioAnteriorInput.value = productoSeleccionado.precioAnterior || "";
+  const editImageUrl2Input = document.getElementById("editImageUrl2");
+  if (editImageUrl2Input) editImageUrl2Input.value = productoSeleccionado.imagen2 || "";
+  const editImageUrl3Input = document.getElementById("editImageUrl3");
+  if (editImageUrl3Input) editImageUrl3Input.value = productoSeleccionado.imagen3 || "";
+
   const preview = document.getElementById("editPreviewImagen");
   if (preview) {
     if (productoSeleccionado.imagen) {
@@ -600,6 +707,26 @@ function abrirModalEdicionProducto() {
     } else {
       preview.removeAttribute("src");
       preview.style.display = "none";
+    }
+  }
+  const preview2 = document.getElementById("editPreviewImagen2");
+  if (preview2) {
+    if (productoSeleccionado.imagen2) {
+      preview2.src = productoSeleccionado.imagen2;
+      preview2.style.display = "inline-block";
+    } else {
+      preview2.removeAttribute("src");
+      preview2.style.display = "none";
+    }
+  }
+  const preview3 = document.getElementById("editPreviewImagen3");
+  if (preview3) {
+    if (productoSeleccionado.imagen3) {
+      preview3.src = productoSeleccionado.imagen3;
+      preview3.style.display = "inline-block";
+    } else {
+      preview3.removeAttribute("src");
+      preview3.style.display = "none";
     }
   }
 
@@ -624,6 +751,15 @@ document.getElementById("editProductForm").addEventListener("submit", function (
   const correo = document.getElementById("editCorreoProducto").value.trim();
   const provincia = document.getElementById("editProvincia").value;
   const ciudad = document.getElementById("editCiudad").value.trim();
+
+  // 🆕 Opcionales: precio anterior (rebaja) e imágenes adicionales 2 y 3.
+  // Si el vendedor los deja vacíos, el backend borra lo que hubiera antes.
+  const editPrecioAnteriorInput = document.getElementById("editPrecioAnterior");
+  const precioAnterior = editPrecioAnteriorInput ? editPrecioAnteriorInput.value.trim() : "";
+  const editImageUrl2Input = document.getElementById("editImageUrl2");
+  const imageUrl2 = editImageUrl2Input ? editImageUrl2Input.value.trim() : "";
+  const editImageUrl3Input = document.getElementById("editImageUrl3");
+  const imageUrl3 = editImageUrl3Input ? editImageUrl3Input.value.trim() : "";
 
   // 🆕 El backend ahora exige usuario_id para verificar que el producto
   // le pertenece a quien intenta editarlo (mismo dueño que lo publicó),
@@ -677,6 +813,9 @@ document.getElementById("editProductForm").addEventListener("submit", function (
       correo: correo,
       provincia: provincia,
       ciudad: ciudad,
+      precio_anterior: precioAnterior,
+      imagen2: imageUrl2,
+      imagen3: imageUrl3,
     }),
   })
     .then((response) => {

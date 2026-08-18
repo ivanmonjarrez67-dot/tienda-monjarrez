@@ -212,6 +212,47 @@
         color: darkred;
         display: inline;
       }
+
+      /* 🆕 Precio anterior tachado + insignia de descuento (rebajas) */
+      .producto-precio-anterior {
+        text-decoration: line-through;
+        color: #999;
+        font-size: 0.82em;
+        margin-left: 6px;
+      }
+      .producto-descuento-badge {
+        display: inline-block;
+        background: darkred;
+        color: #fff;
+        font-size: 0.72em;
+        font-weight: bold;
+        padding: 1px 6px;
+        border-radius: 4px;
+        margin-left: 4px;
+        vertical-align: middle;
+      }
+
+      /* 🆕 Mini carrusel de fotos (imagen base + hasta 2 adicionales) */
+      .producto-galeria {
+        position: relative;
+      }
+      .galeria-dots {
+        display: flex;
+        justify-content: center;
+        gap: 5px;
+        margin-top: 4px;
+      }
+      .galeria-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+      .galeria-dot.active {
+        background: #fff;
+      }
       
 
       .icon {
@@ -1910,8 +1951,27 @@ async function cargarMisProductos(usuarioId) {
   <img id="previewImagen" class="preview-img" alt="Preview" />
 </div>
 
+<!-- 🆕 Fotos adicionales (opcionales, hasta 2 extra: ángulos, colores, diseños) -->
+<label for="imageUrl2">Foto adicional 1 (opcional):</label>
+<input type="text" id="imageUrl2" name="imagen2" placeholder="URL de otra foto (opcional)" />
+<div class="subir-preview">
+  <label for="imagenProducto2" class="btn-subir">Agregar foto adicional 1</label>
+  <input type="file" id="imagenProducto2" name="imagenProducto2" accept="image/*">
+  <img id="previewImagen2" class="preview-img" alt="Preview foto adicional 1" />
+</div>
 
+<label for="imageUrl3">Foto adicional 2 (opcional):</label>
+<input type="text" id="imageUrl3" name="imagen3" placeholder="URL de otra foto (opcional)" />
+<div class="subir-preview">
+  <label for="imagenProducto3" class="btn-subir">Agregar foto adicional 2</label>
+  <input type="file" id="imagenProducto3" name="imagenProducto3" accept="image/*">
+  <img id="previewImagen3" class="preview-img" alt="Preview foto adicional 2" />
+</div>
 
+<!-- 🆕 Precio anterior (opcional): si se llena y es mayor al precio real,
+     se muestra tachado debajo del precio en el catálogo (estilo rebaja). -->
+<label for="precioAnterior">Precio anterior / de referencia ₡ (opcional):</label>
+<input type="number" id="precioAnterior" name="precio_anterior" placeholder="Ej. 30000 (déjelo vacío si no hay rebaja)" />
 
 
 
@@ -2019,6 +2079,27 @@ async function cargarMisProductos(usuarioId) {
               <input type="file" id="editImagenProducto" name="imagenProducto" accept="image/*">
               <img id="editPreviewImagen" class="preview-img" alt="Preview" />
             </div>
+
+            <!-- 🆕 Fotos adicionales (opcionales, hasta 2 extra) -->
+            <label for="editImageUrl2">Foto adicional 1 (opcional):</label>
+            <input type="text" id="editImageUrl2" name="imagen2" placeholder="URL de otra foto (opcional)" />
+            <div class="subir-preview">
+              <label for="editImagenProducto2" class="btn-subir">Cambiar foto adicional 1</label>
+              <input type="file" id="editImagenProducto2" name="imagenProducto2" accept="image/*">
+              <img id="editPreviewImagen2" class="preview-img" alt="Preview foto adicional 1" />
+            </div>
+
+            <label for="editImageUrl3">Foto adicional 2 (opcional):</label>
+            <input type="text" id="editImageUrl3" name="imagen3" placeholder="URL de otra foto (opcional)" />
+            <div class="subir-preview">
+              <label for="editImagenProducto3" class="btn-subir">Cambiar foto adicional 2</label>
+              <input type="file" id="editImagenProducto3" name="imagenProducto3" accept="image/*">
+              <img id="editPreviewImagen3" class="preview-img" alt="Preview foto adicional 2" />
+            </div>
+
+            <!-- 🆕 Precio anterior (opcional): dejarlo vacío quita la rebaja. -->
+            <label for="editPrecioAnterior">Precio anterior / de referencia ₡ (opcional):</label>
+            <input type="number" id="editPrecioAnterior" name="precio_anterior" placeholder="Ej. 30000 (déjelo vacío si no hay rebaja)" />
 
             <label for="editTelefono">Teléfono:</label>
             <input type="tel" id="editTelefono" name="telefono" required placeholder="Ej. 8888-8888" />
@@ -3071,11 +3152,34 @@ async function cargarMisProductos(usuarioId) {
             const telefono = target.dataset.telefono || "—";
             const correo = target.dataset.correo || "—";
             const precio = target.dataset.precio || "—";
+            // 🆕 Precio anterior (rebaja) e imágenes adicionales, opcionales.
+            const precioAnterior = target.dataset.precioAnterior || "";
+            const imagen2 = target.dataset.imagen2 || "";
+            const imagen3 = target.dataset.imagen3 || "";
 
-            // Construir HTML del modal
-            let imagenHtml = imagen
-              ? `<img src="${imagen}" alt="Imagen de empresa" style="width:100%; margin:10px 0; border-radius:8px;">`
-              : "";
+            // 🆕 Precio anterior tachado, solo si viene y es mayor al precio real.
+            let precioAnteriorHtml = "";
+            const precioNum = parseFloat(precio);
+            const precioAnteriorNum = parseFloat(precioAnterior);
+            if (!isNaN(precioAnteriorNum) && !isNaN(precioNum) && precioAnteriorNum > precioNum) {
+              const porcentaje = Math.round((1 - precioNum / precioAnteriorNum) * 100);
+              precioAnteriorHtml = ` <span class="producto-precio-anterior">₡${precioAnteriorNum.toLocaleString("es-CR", { maximumFractionDigits: 0 })}</span>
+                <span class="producto-descuento-badge">-${porcentaje}%</span>`;
+            }
+
+            // 🆕 Galería: imagen base + hasta 2 adicionales, con puntitos
+            // si hay más de una (mismo helper y mismo listener global de
+            // clicks en ".galeria-dot" que usa el catálogo, ver script.js).
+            let imagenHtml = "";
+            if (typeof construirGaleriaHTML === "function") {
+              imagenHtml = construirGaleriaHTML(
+                [imagen, imagen2, imagen3],
+                nombre,
+                "width:100%; margin:10px 0; border-radius:8px;"
+              );
+            } else if (imagen) {
+              imagenHtml = `<img src="${imagen}" alt="Imagen de empresa" style="width:100%; margin:10px 0; border-radius:8px;">`;
+            }
 
             // 🆕 Botón de ubicación → abre Google Maps con la búsqueda de
             // provincia + ciudad
@@ -3189,7 +3293,7 @@ async function cargarMisProductos(usuarioId) {
         <h3>Opciones de envío</h3>
         <p class="envio-alejado-texto">¿Este producto está en una zona alejada? Con gusto validamos si es posible coordinar el envío.</p>
         <p>${envioHtml}</p>
-        <p><strong>Precio:</strong> ₡${precio}</p>
+        <p><strong>Precio:</strong> ₡${precio}${precioAnteriorHtml}</p>
         ${compartirHtml ? `<h3>Compartir</h3><p>${compartirHtml}</p>` : ""}
       `;
 

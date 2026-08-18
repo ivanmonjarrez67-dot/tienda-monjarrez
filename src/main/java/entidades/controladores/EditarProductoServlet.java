@@ -42,6 +42,14 @@ public class EditarProductoServlet extends HttpServlet {
         String provincia = request.getParameter("provincia");
         String ciudad = request.getParameter("ciudad");
 
+        // 🆕 Igual que en GuardarProductoServlet: precio anterior (rebaja)
+        // e imágenes adicionales (2 y 3), todos opcionales. Si el vendedor
+        // los deja vacíos en el formulario, se borra lo que hubiera antes
+        // (así puede "quitar" una rebaja o una foto extra editando).
+        String precioAnteriorStr = request.getParameter("precio_anterior");
+        String imagen2 = request.getParameter("imagen2");
+        String imagen3 = request.getParameter("imagen3");
+
         if (idStr == null || idStr.isEmpty()) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Falta el ID del producto.");
             return;
@@ -55,7 +63,8 @@ public class EditarProductoServlet extends HttpServlet {
         // texto libre puede traer etiquetas HTML/código.
         if (!esTextoSeguro(nombre) || !esTextoSeguro(descripcion) || !esTextoSeguro(empresa)
                 || !esTextoSeguro(categoria) || !esTextoSeguro(telefono) || !esTextoSeguro(correo)
-                || !esTextoSeguro(provincia) || !esTextoSeguro(ciudad) || !esTextoSeguro(imagen)) {
+                || !esTextoSeguro(provincia) || !esTextoSeguro(ciudad) || !esTextoSeguro(imagen)
+                || !esTextoSeguro(imagen2) || !esTextoSeguro(imagen3)) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST,
                     "Uno o más campos contienen caracteres no permitidos (HTML o código). "
                     + "Por favor usa solo texto normal.");
@@ -73,6 +82,17 @@ public class EditarProductoServlet extends HttpServlet {
                     : 0;
         } catch (NumberFormatException e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "ID, usuario_id o precio inválido.");
+            return;
+        }
+
+        Double precioAnterior = null;
+        try {
+            if (precioAnteriorStr != null && !precioAnteriorStr.trim().isEmpty()) {
+                double valor = Double.parseDouble(precioAnteriorStr.trim());
+                if (valor > precio) precioAnterior = valor;
+            }
+        } catch (NumberFormatException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Precio anterior inválido.");
             return;
         }
 
@@ -127,7 +147,64 @@ public class EditarProductoServlet extends HttpServlet {
                 }
             }
 
-            // 3️⃣ Si la imagen cambió y la anterior era un archivo local
+            // 3️⃣ Rebaja (Descuentos): si viene precio anterior válido,
+            // UPSERT (actualiza si ya había fila, inserta si no). Si NO
+            // viene, se borra cualquier fila existente — así el vendedor
+            // puede quitar la rebaja dejando el campo vacío al editar.
+            if (precioAnterior != null) {
+                try (PreparedStatement psUpdate = conn.prepareStatement(
+                        "UPDATE Descuentos SET precio_anterior = ? WHERE producto_id = ?")) {
+                    psUpdate.setDouble(1, precioAnterior);
+                    psUpdate.setInt(2, id);
+                    int filas = psUpdate.executeUpdate();
+                    if (filas == 0) {
+                        try (PreparedStatement psInsert = conn.prepareStatement(
+                                "INSERT INTO Descuentos (producto_id, precio_anterior) VALUES (?, ?)")) {
+                            psInsert.setInt(1, id);
+                            psInsert.setDouble(2, precioAnterior);
+                            psInsert.executeUpdate();
+                        }
+                    }
+                }
+            } else {
+                try (PreparedStatement psDelete = conn.prepareStatement(
+                        "DELETE FROM Descuentos WHERE producto_id = ?")) {
+                    psDelete.setInt(1, id);
+                    psDelete.executeUpdate();
+                }
+            }
+
+            // 4️⃣ Imágenes adicionales: mismo patrón UPSERT/DELETE. Si no
+            // viene ni imagen2 ni imagen3, se borra la fila (el vendedor
+            // quitó ambas fotos extra al editar).
+            boolean hayImagen2 = imagen2 != null && !imagen2.trim().isEmpty();
+            boolean hayImagen3 = imagen3 != null && !imagen3.trim().isEmpty();
+            if (hayImagen2 || hayImagen3) {
+                try (PreparedStatement psUpdate = conn.prepareStatement(
+                        "UPDATE ImagenesAdicionalesProducto SET imagen2 = ?, imagen3 = ? WHERE producto_id = ?")) {
+                    if (hayImagen2) psUpdate.setString(1, imagen2.trim()); else psUpdate.setNull(1, Types.NVARCHAR);
+                    if (hayImagen3) psUpdate.setString(2, imagen3.trim()); else psUpdate.setNull(2, Types.NVARCHAR);
+                    psUpdate.setInt(3, id);
+                    int filas = psUpdate.executeUpdate();
+                    if (filas == 0) {
+                        try (PreparedStatement psInsert = conn.prepareStatement(
+                                "INSERT INTO ImagenesAdicionalesProducto (producto_id, imagen2, imagen3) VALUES (?, ?, ?)")) {
+                            psInsert.setInt(1, id);
+                            if (hayImagen2) psInsert.setString(2, imagen2.trim()); else psInsert.setNull(2, Types.NVARCHAR);
+                            if (hayImagen3) psInsert.setString(3, imagen3.trim()); else psInsert.setNull(3, Types.NVARCHAR);
+                            psInsert.executeUpdate();
+                        }
+                    }
+                }
+            } else {
+                try (PreparedStatement psDelete = conn.prepareStatement(
+                        "DELETE FROM ImagenesAdicionalesProducto WHERE producto_id = ?")) {
+                    psDelete.setInt(1, id);
+                    psDelete.executeUpdate();
+                }
+            }
+
+            // 5️⃣ Si la imagen cambió y la anterior era un archivo local
             // subido por GuardarProductoArchivo (mismo esquema de URL que
             // usa EliminarProductoServlet, con "=" antes del nombre del
             // archivo), borrar el archivo viejo para no dejar imágenes

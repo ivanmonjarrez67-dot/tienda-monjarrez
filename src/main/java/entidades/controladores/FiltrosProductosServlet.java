@@ -23,29 +23,38 @@ public class FiltrosProductosServlet extends HttpServlet {
 
         response.setContentType("application/json;charset=UTF-8");
 
-        String sql = "SELECT nombre, descripcion, imagen, precio, Nombre_Empresa, telefono, correo, provincia, ciudad FROM Productos";
+        // 🆕 Se agregó "p.id" (faltaba en el SELECT original, y sin él no
+        // se puede armar el botón "Compartir" ni abrirProductoDesdeUrl()
+        // para los productos que llegan filtrados). También se agrega el
+        // mismo LEFT JOIN que los demás listados de productos.
+        String sql = "SELECT p.id, p.nombre, p.descripcion, p.imagen, p.precio, p.Nombre_Empresa, "
+                   + "p.telefono, p.correo, p.provincia, p.ciudad, "
+                   + "d.precio_anterior, ia.imagen2, ia.imagen3 "
+                   + "FROM Productos p "
+                   + "LEFT JOIN Descuentos d ON d.producto_id = p.id "
+                   + "LEFT JOIN ImagenesAdicionalesProducto ia ON ia.producto_id = p.id";
 
         List<String> condiciones = new ArrayList<>();
         List<String> parametros = new ArrayList<>();
 
         if (categoria != null && !categoria.equalsIgnoreCase("Todo") && !categoria.trim().isEmpty()) {
-            condiciones.add("categoria = ?");
+            condiciones.add("p.categoria = ?");
             parametros.add(categoria);
         }
 
         // Agrega ORDER BY según el filtro seleccionado
         if ("Novedades".equalsIgnoreCase(filtro)) {
-            sql += condiciones.isEmpty() ? " ORDER BY id DESC"
-                    : " WHERE " + String.join(" AND ", condiciones) + " ORDER BY id DESC";
+            sql += condiciones.isEmpty() ? " ORDER BY p.id DESC"
+                    : " WHERE " + String.join(" AND ", condiciones) + " ORDER BY p.id DESC";
         } else if ("Descuentos".equalsIgnoreCase(filtro)) {
-            sql += condiciones.isEmpty() ? " ORDER BY precio ASC"
-                    : " WHERE " + String.join(" AND ", condiciones) + " ORDER BY precio ASC";
+            sql += condiciones.isEmpty() ? " ORDER BY p.precio ASC"
+                    : " WHERE " + String.join(" AND ", condiciones) + " ORDER BY p.precio ASC";
         } else if ("Recomendados".equalsIgnoreCase(filtro)) {
-            sql += condiciones.isEmpty() ? " ORDER BY precio DESC"
-                    : " WHERE " + String.join(" AND ", condiciones) + " ORDER BY precio DESC";
+            sql += condiciones.isEmpty() ? " ORDER BY p.precio DESC"
+                    : " WHERE " + String.join(" AND ", condiciones) + " ORDER BY p.precio DESC";
         } else {
-            sql += condiciones.isEmpty() ? " ORDER BY nombre"
-                    : " WHERE " + String.join(" AND ", condiciones) + " ORDER BY nombre";
+            sql += condiciones.isEmpty() ? " ORDER BY p.nombre"
+                    : " WHERE " + String.join(" AND ", condiciones) + " ORDER BY p.nombre";
         }
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -66,6 +75,7 @@ public class FiltrosProductosServlet extends HttpServlet {
                 first = false;
 
                 out.print("  {");
+                out.print("\"id\":" + rs.getInt("id") + ",");
                 out.print("\"nombre\":\"" + JsonUtils.escapar(rs.getString("nombre")) + "\",");
                 out.print("\"descripcion\":\"" + JsonUtils.escapar(rs.getString("descripcion")) + "\",");
                 out.print("\"imagen\":\"" + JsonUtils.escapar(rs.getString("imagen")) + "\",");
@@ -74,7 +84,15 @@ public class FiltrosProductosServlet extends HttpServlet {
                 out.print("\"telefono\":\"" + JsonUtils.escapar(rs.getString("telefono")) + "\",");
                 out.print("\"correo\":\"" + JsonUtils.escapar(rs.getString("correo")) + "\",");
                 out.print("\"provincia\":\"" + JsonUtils.escapar(rs.getString("provincia")) + "\",");
-                out.print("\"ciudad\":\"" + JsonUtils.escapar(rs.getString("ciudad")) + "\"");
+                out.print("\"ciudad\":\"" + JsonUtils.escapar(rs.getString("ciudad")) + "\",");
+
+                double precioAnterior = rs.getDouble("precio_anterior");
+                out.print("\"precio_anterior\":" + (rs.wasNull() ? "null" : precioAnterior) + ",");
+                String imagen2 = rs.getString("imagen2");
+                out.print("\"imagen2\":" + (imagen2 == null ? "null" : "\"" + JsonUtils.escapar(imagen2) + "\"") + ",");
+                String imagen3 = rs.getString("imagen3");
+                out.print("\"imagen3\":" + (imagen3 == null ? "null" : "\"" + JsonUtils.escapar(imagen3) + "\""));
+
                 out.print("}");
             }
             out.println("]");

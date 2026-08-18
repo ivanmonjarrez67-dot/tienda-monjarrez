@@ -25,7 +25,7 @@ public class ListaProductosServletBusquda extends HttpServlet {
         List<String> parametros = new ArrayList<>();
 
         if (busqueda != null && !busqueda.trim().isEmpty()) {
-            condiciones.add("(nombre LIKE ? OR descripcion LIKE ? OR Nombre_Empresa LIKE ? OR provincia LIKE ?)");
+            condiciones.add("(p.nombre LIKE ? OR p.descripcion LIKE ? OR p.Nombre_Empresa LIKE ? OR p.provincia LIKE ?)");
             String valor = "%" + busqueda.trim() + "%";
             parametros.add(valor);
             parametros.add(valor);
@@ -33,16 +33,20 @@ public class ListaProductosServletBusquda extends HttpServlet {
             parametros.add(valor);
         }
 
-        // 🔧 Se agregó "id" al SELECT y al JSON de salida (mismo motivo
-        // que en ListaProductosServlet: sin esto el botón "Compartir" no
-        // se genera para los productos que aparecen tras una búsqueda).
-        String sql = "SELECT id, nombre, descripcion, imagen, precio, Nombre_Empresa, telefono, correo, provincia, ciudad FROM Productos";
+        // 🆕 Mismo LEFT JOIN que ListaProductosServlet, para traer también
+        // precio_anterior/imagen2/imagen3 en los resultados de búsqueda.
+        String sql = "SELECT p.id, p.nombre, p.descripcion, p.imagen, p.precio, p.Nombre_Empresa, "
+                   + "p.telefono, p.correo, p.provincia, p.ciudad, "
+                   + "d.precio_anterior, ia.imagen2, ia.imagen3 "
+                   + "FROM Productos p "
+                   + "LEFT JOIN Descuentos d ON d.producto_id = p.id "
+                   + "LEFT JOIN ImagenesAdicionalesProducto ia ON ia.producto_id = p.id";
 
         if (!condiciones.isEmpty()) {
             sql += " WHERE " + String.join(" AND ", condiciones);
         }
 
-        sql += " ORDER BY nombre";
+        sql += " ORDER BY p.nombre";
 
         try (Connection conn = DatabaseConnection.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -70,7 +74,15 @@ public class ListaProductosServletBusquda extends HttpServlet {
                 out.print("\"telefono\":\"" + JsonUtils.escapar(rs.getString("telefono")) + "\",");
                 out.print("\"correo\":\"" + JsonUtils.escapar(rs.getString("correo")) + "\",");
                 out.print("\"provincia\":\"" + JsonUtils.escapar(rs.getString("provincia")) + "\",");
-                out.print("\"ciudad\":\"" + JsonUtils.escapar(rs.getString("ciudad")) + "\"");
+                out.print("\"ciudad\":\"" + JsonUtils.escapar(rs.getString("ciudad")) + "\",");
+
+                double precioAnterior = rs.getDouble("precio_anterior");
+                out.print("\"precio_anterior\":" + (rs.wasNull() ? "null" : precioAnterior) + ",");
+                String imagen2 = rs.getString("imagen2");
+                out.print("\"imagen2\":" + (imagen2 == null ? "null" : "\"" + JsonUtils.escapar(imagen2) + "\"") + ",");
+                String imagen3 = rs.getString("imagen3");
+                out.print("\"imagen3\":" + (imagen3 == null ? "null" : "\"" + JsonUtils.escapar(imagen3) + "\""));
+
                 out.print("}");
             }
 

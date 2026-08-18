@@ -18,14 +18,21 @@ public class ListaProductosServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.setContentType("application/json;charset=UTF-8");
 
-        // 🔧 Se agregó "id" al SELECT y al JSON de salida: sin este campo
-        // el frontend no puede armar el enlace individual del producto
-        // (botón "Compartir"), ni el listener de abrirProductoDesdeUrl()
-        // puede encontrar la tarjeta correcta al volver de un enlace
-        // compartido.
+        // 🆕 LEFT JOIN con Descuentos (precio_anterior, para el tachado de
+        // rebajas) e ImagenesAdicionalesProducto (imagen2/imagen3, hasta 2
+        // fotos extra). Son LEFT JOIN a propósito: la enorme mayoría de
+        // productos no van a tener fila en ninguna de las 2 tablas nuevas,
+        // y en ese caso los campos simplemente llegan NULL.
+        String sql = "SELECT p.id, p.nombre, p.descripcion, p.imagen, p.precio, p.Nombre_Empresa, "
+                   + "p.telefono, p.correo, p.provincia, p.ciudad, "
+                   + "d.precio_anterior, ia.imagen2, ia.imagen3 "
+                   + "FROM Productos p "
+                   + "LEFT JOIN Descuentos d ON d.producto_id = p.id "
+                   + "LEFT JOIN ImagenesAdicionalesProducto ia ON ia.producto_id = p.id";
+
         try (Connection conn = DatabaseConnection.getConnection();
              Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT id, nombre, descripcion, imagen, precio, Nombre_Empresa, telefono, correo, provincia, ciudad FROM Productos")) {
+             ResultSet rs = stmt.executeQuery(sql)) {
 
             PrintWriter out = response.getWriter();
             out.println("[");
@@ -45,9 +52,16 @@ public class ListaProductosServlet extends HttpServlet {
                 out.print("\"telefono\":\"" + JsonUtils.escapar(rs.getString("telefono")) + "\",");
                 out.print("\"correo\":\"" + JsonUtils.escapar(rs.getString("correo")) + "\",");
                 out.print("\"provincia\":\"" + JsonUtils.escapar(rs.getString("provincia")) + "\",");
-                out.print("\"ciudad\":\"" + JsonUtils.escapar(rs.getString("ciudad")) + "\"");
-                out.print("}");
+                out.print("\"ciudad\":\"" + JsonUtils.escapar(rs.getString("ciudad")) + "\",");
 
+                double precioAnterior = rs.getDouble("precio_anterior");
+                out.print("\"precio_anterior\":" + (rs.wasNull() ? "null" : precioAnterior) + ",");
+                String imagen2 = rs.getString("imagen2");
+                out.print("\"imagen2\":" + (imagen2 == null ? "null" : "\"" + JsonUtils.escapar(imagen2) + "\"") + ",");
+                String imagen3 = rs.getString("imagen3");
+                out.print("\"imagen3\":" + (imagen3 == null ? "null" : "\"" + JsonUtils.escapar(imagen3) + "\""));
+
+                out.print("}");
             }
 
             out.println("]");
