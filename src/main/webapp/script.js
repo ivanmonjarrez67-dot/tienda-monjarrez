@@ -356,6 +356,20 @@ function construirGaleriaHTML(imagenes, alt, estiloImg) {
 // caía al <img> simple sin carrusel ni puntos.
 window.construirGaleriaHTML = construirGaleriaHTML;
 
+// 🆕 Cambia la imagen activa de una galería dado un índice destino (usada
+// tanto por el clic en los puntos como por el swipe). Se encarga de
+// actualizar la imagen mostrada y qué punto queda "active".
+function irAImagenGaleria(galeria, idx) {
+  let imagenes = [];
+  try { imagenes = JSON.parse(galeria.dataset.imagenes || "[]"); } catch (err) { imagenes = []; }
+  if (!imagenes.length) return;
+  const idxSeguro = ((idx % imagenes.length) + imagenes.length) % imagenes.length; // wrap-around
+  const img = galeria.querySelector(".galeria-img");
+  if (img && imagenes[idxSeguro]) img.src = imagenes[idxSeguro];
+  const dots = galeria.querySelectorAll(".galeria-dot");
+  dots.forEach((d, i) => d.classList.toggle("active", i === idxSeguro));
+}
+
 // 🆕 Click delegado (una sola vez, a nivel de documento) para los puntitos
 // de cualquier galería de la página: catálogo, "Mi tienda" y panel de
 // detalle. Cambia la imagen mostrada sin recargar ni reconstruir la
@@ -365,14 +379,44 @@ document.addEventListener("click", (e) => {
   if (!dot) return;
   const galeria = dot.closest(".producto-galeria");
   if (!galeria) return;
-  let imagenes = [];
-  try { imagenes = JSON.parse(galeria.dataset.imagenes || "[]"); } catch (err) { imagenes = []; }
-  const idx = parseInt(dot.dataset.index, 10);
-  const img = galeria.querySelector(".galeria-img");
-  if (img && imagenes[idx]) img.src = imagenes[idx];
-  galeria.querySelectorAll(".galeria-dot").forEach((d) => d.classList.remove("active"));
-  dot.classList.add("active");
+  irAImagenGaleria(galeria, parseInt(dot.dataset.index, 10));
 });
+
+// 🆕 Deslizar para cambiar de imagen (swipe táctil en celular, o
+// arrastrar con el cursor en escritorio). Se usan Pointer Events porque
+// unifican mouse y touch en un solo set de listeners: no hace falta
+// duplicar la lógica para touchstart/touchend y mousedown/mouseup.
+// Solo se activa si el arrastre fue mayormente HORIZONTAL y superó un
+// mínimo de píxeles (UMBRAL_SWIPE), para no interferir con el scroll
+// vertical normal de la página ni con un simple clic/tap.
+const UMBRAL_SWIPE = 30;
+let swipeGaleria = null;
+let swipeInicioX = 0;
+let swipeInicioY = 0;
+
+document.addEventListener("pointerdown", (e) => {
+  const galeria = e.target.closest(".producto-galeria");
+  if (!galeria || !galeria.querySelector(".galeria-dots")) return; // solo si hay más de 1 imagen
+  swipeGaleria = galeria;
+  swipeInicioX = e.clientX;
+  swipeInicioY = e.clientY;
+});
+
+document.addEventListener("pointerup", (e) => {
+  if (!swipeGaleria) return;
+  const galeria = swipeGaleria;
+  swipeGaleria = null;
+  const deltaX = e.clientX - swipeInicioX;
+  const deltaY = e.clientY - swipeInicioY;
+  if (Math.abs(deltaX) < UMBRAL_SWIPE || Math.abs(deltaX) < Math.abs(deltaY)) return;
+  const dots = galeria.querySelectorAll(".galeria-dot");
+  let idxActual = 0;
+  dots.forEach((d, i) => { if (d.classList.contains("active")) idxActual = i; });
+  // Deslizar hacia la izquierda (deltaX negativo) = siguiente imagen;
+  // hacia la derecha (deltaX positivo) = imagen anterior.
+  irAImagenGaleria(galeria, idxActual + (deltaX < 0 ? 1 : -1));
+});
+
 
 function construirTarjetaProductoHTML(producto) {
   // 🆕 Precio visible directo en la tarjeta (antes solo vivía dentro de

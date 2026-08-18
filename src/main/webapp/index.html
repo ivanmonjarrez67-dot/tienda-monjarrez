@@ -236,6 +236,15 @@
       .producto-galeria {
         position: relative;
       }
+      .galeria-img {
+        /* 🆕 Necesario para que el swipe (deslizar) funcione: sin esto,
+           el navegador intenta arrastrar la imagen como si fuera un
+           archivo (cursor de "prohibido"/fantasma de imagen) en vez de
+           dejar que nuestro código detecte el gesto horizontal. */
+        -webkit-user-drag: none;
+        user-select: none;
+        touch-action: pan-y;
+      }
       .galeria-dots {
         display: flex;
         justify-content: center;
@@ -3390,6 +3399,14 @@ async function cargarMisProductos(usuarioId) {
         const content = document.getElementById("infoModalContent");
         if (content) {
           content.addEventListener("click", function (e) {
+            // 🔧 Antes este stopPropagation era total y bloqueaba TODO
+            // clic dentro del panel de que llegara a document — incluido
+            // el de los puntitos del carrusel (.galeria-dot), cuyo
+            // listener vive en document (ver script.js). Por eso, en el
+            // panel "Ver detalles", los puntos se veían pero no
+            // reaccionaban al clic. Ahora se deja pasar específicamente
+            // el clic sobre un punto de galería.
+            if (e.target.closest(".galeria-dot")) return;
             e.stopPropagation();
           });
         }
