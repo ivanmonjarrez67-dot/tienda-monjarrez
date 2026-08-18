@@ -3171,7 +3171,8 @@ async function cargarMisProductos(usuarioId) {
         <h2>${empresa}</h2>
         ${imagenHtml}
         <p><strong>Nombre:</strong> ${nombre}</p>
-        <p><strong>Descripción:</strong> ${descripcion}</p>
+        <p id="descripcionProducto" class="descripcion-texto"><strong>Descripción:</strong> ${descripcion}</p>
+        <button type="button" id="btnLeerMasDescripcion" class="btn-leer-mas" style="display:none;">Leer más</button>
         <h3>Ubicación</h3>
         <p>${ubicacionHtml}</p>
         <h3>Contacto</h3>
@@ -3189,6 +3190,43 @@ async function cargarMisProductos(usuarioId) {
             );
             if (closeBtnNew) {
               closeBtnNew.addEventListener("click", closePanel);
+            }
+
+            // 🆕 "Leer más / Leer menos" en la descripción del producto:
+            // se recorta a 4 líneas por defecto (clase "truncada") y el
+            // botón solo aparece si el texto realmente desborda esas 4
+            // líneas (comparando scrollHeight vs clientHeight). Se usa
+            // un pequeño setTimeout para que el navegador ya haya
+            // calculado el layout antes de medir.
+            const descripcionEl = document.getElementById(
+              "descripcionProducto"
+            );
+            const btnLeerMas = document.getElementById(
+              "btnLeerMasDescripcion"
+            );
+            if (descripcionEl && btnLeerMas) {
+              descripcionEl.classList.add("truncada");
+              btnLeerMas.style.display = "none";
+              btnLeerMas.textContent = "Leer más";
+              setTimeout(() => {
+                const desborda =
+                  descripcionEl.scrollHeight > descripcionEl.clientHeight + 1;
+                if (desborda) {
+                  btnLeerMas.style.display = "inline-block";
+                }
+              }, 0);
+              btnLeerMas.addEventListener("click", () => {
+                const expandido = !descripcionEl.classList.contains(
+                  "truncada"
+                );
+                if (expandido) {
+                  descripcionEl.classList.add("truncada");
+                  btnLeerMas.textContent = "Leer más";
+                } else {
+                  descripcionEl.classList.remove("truncada");
+                  btnLeerMas.textContent = "Leer menos";
+                }
+              });
             }
 
             // 🆕 Listener del botón "Compartir": usa el menú nativo del
@@ -3434,6 +3472,36 @@ async function cargarMisProductos(usuarioId) {
       #infoModalContent .contacto-compartir:hover {
         background: #6b3fa0;
         color: #fff;
+      }
+
+      /* 🆕 Descripción del producto con "Leer más / Leer menos": por
+         defecto se recorta a 4 líneas con -webkit-line-clamp (funciona
+         en todos los navegadores modernos, incluido Firefox reciente).
+         El botón solo se agrega vía JS cuando el texto realmente
+         desborda esas 4 líneas. */
+      #infoModalContent .descripcion-texto {
+        margin: 0;
+      }
+      #infoModalContent .descripcion-texto.truncada {
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      #infoModalContent .btn-leer-mas {
+        display: inline-block;
+        margin-top: 4px;
+        background: none;
+        border: none;
+        padding: 0;
+        color: #a13341;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      #infoModalContent .btn-leer-mas:hover {
+        text-decoration: underline;
       }
     </style>
     <div id="ayudaModal">
