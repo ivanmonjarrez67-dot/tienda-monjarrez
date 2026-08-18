@@ -347,6 +347,14 @@ function construirGaleriaHTML(imagenes, alt, estiloImg) {
     <div class="galeria-dots">${dotsHtml}</div>
   </div>`;
 }
+// 🆕 construirGaleriaHTML se define DENTRO del callback de
+// DOMContentLoaded, así que por defecto es una función local a ese
+// bloque y no existe en window. El panel "Ver detalles" de index.html
+// vive en un <script> aparte y depende de encontrarla como
+// window.construirGaleriaHTML (ver el "typeof construirGaleriaHTML"
+// ahí) — sin esta línea, ese chequeo siempre daba false y el panel
+// caía al <img> simple sin carrusel ni puntos.
+window.construirGaleriaHTML = construirGaleriaHTML;
 
 // 🆕 Click delegado (una sola vez, a nivel de documento) para los puntitos
 // de cualquier galería de la página: catálogo, "Mi tienda" y panel de

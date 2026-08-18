@@ -47,8 +47,12 @@ public class FiltrosProductosServlet extends HttpServlet {
             sql += condiciones.isEmpty() ? " ORDER BY p.id DESC"
                     : " WHERE " + String.join(" AND ", condiciones) + " ORDER BY p.id DESC";
         } else if ("Descuentos".equalsIgnoreCase(filtro)) {
-            sql += condiciones.isEmpty() ? " ORDER BY p.precio ASC"
-                    : " WHERE " + String.join(" AND ", condiciones) + " ORDER BY p.precio ASC";
+            // 🆕 Prioriza primero los productos que sí tienen fila en la tabla
+            // Descuentos (d.precio_anterior no es NULL); como criterio
+            // secundario, se mantiene el orden por precio ascendente.
+            String ordenDescuentos = " ORDER BY CASE WHEN d.precio_anterior IS NULL THEN 1 ELSE 0 END, p.precio ASC";
+            sql += condiciones.isEmpty() ? ordenDescuentos
+                    : " WHERE " + String.join(" AND ", condiciones) + ordenDescuentos;
         } else if ("Recomendados".equalsIgnoreCase(filtro)) {
             sql += condiciones.isEmpty() ? " ORDER BY p.precio DESC"
                     : " WHERE " + String.join(" AND ", condiciones) + " ORDER BY p.precio DESC";
