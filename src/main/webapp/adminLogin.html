@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acceso admin — Tienda Monjarrez</title>
+<link rel="icon" href="icon-512.png" type="image/png">
+<style>
+  :root{
+    --bg:#101314;
+    --panel:#171b1c;
+    --line:#2a3133;
+    --text:#e9edee;
+    --muted:#8a969a;
+    --accent:#3fae82;
+    --danger:#c65b4e;
+    --mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+    --sans:'Inter','Segoe UI',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+  }
+  .box{
+    width:100%;
+    max-width:340px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:32px 28px;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .icon{
+    width:34px;
+    height:34px;
+    border-radius:8px;
+    display:block;
+    object-fit:cover;
+  }
+  .tag{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--accent);
+    background:rgba(63,174,130,0.12);
+    border:1px solid rgba(63,174,130,0.35);
+    padding:2px 8px;
+    border-radius:20px;
+    display:inline-block;
+  }
+  h1{
+    font-size:18px;
+    font-weight:600;
+    margin:0 0 24px;
+    letter-spacing:0.2px;
+  }
+  label{
+    display:block;
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--muted);
+    margin-bottom:6px;
+    margin-top:16px;
+  }
+  input{
+    width:100%;
+    background:#0d1010;
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:var(--sans);
+    font-size:14px;
+    padding:10px 12px;
+    border-radius:7px;
+    outline:none;
+    transition:border-color .15s;
+  }
+  input:focus{border-color:var(--accent);}
+  button{
+    width:100%;
+    margin-top:24px;
+    background:var(--accent);
+    color:#0c1211;
+    border:none;
+    font-family:var(--sans);
+    font-size:14px;
+    font-weight:600;
+    padding:11px;
+    border-radius:7px;
+    cursor:pointer;
+    transition:filter .15s, transform .1s;
+  }
+  button:hover{filter:brightness(1.08);}
+  button:active{transform:scale(0.98);}
+  button:disabled{opacity:0.6;cursor:default;}
+  .error{
+    margin-top:14px;
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--danger);
+    display:none;
+  }
+  .error.show{display:block;}
+</style>
+</head>
+<body>
+
+<div class="box">
+  <div class="brand">
+    <img src="icon-512.png" alt="Icono" class="icon" />
+    <span class="tag">admin</span>
+  </div>
+  <h1>Acceso al panel</h1>
+  <form id="loginForm">
+    <label for="cedula">Cédula</label>
+    <input type="text" id="cedula" name="cedula" autocomplete="username" required>
+
+    <label for="password">Contraseña</label>
+    <input type="password" id="password" name="password" autocomplete="current-password" required>
+
+    <button type="submit" id="submitBtn">Entrar</button>
+    <div class="error" id="errorMsg"></div>
+  </form>
+</div>
+
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('submitBtn');
+  const errorMsg = document.getElementById('errorMsg');
+  const cedula = document.getElementById('cedula').value.trim();
+  const password = document.getElementById('password').value;
+
+  btn.disabled = true;
+  btn.textContent = 'Verificando…';
+  errorMsg.classList.remove('show');
+
+  try {
+    const res = await fetch('/admin/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: `cedula=${encodeURIComponent(cedula)}&password=${encodeURIComponent(password)}`
+    });
+    const text = await res.text();
+
+    if (res.ok) {
+      // Si el backend responde con JSON incluyendo el nombre del admin,
+      // lo guardamos para mostrar "Bienvenido [nombre]" en el panel.
+      // Si responde con texto plano (como hasta ahora), simplemente no pasa nada
+      // y el panel intentará obtener el nombre por su cuenta.
+      try{
+        const data = JSON.parse(text);
+        if(data && data.nombre){
+          sessionStorage.setItem('adminNombre', data.nombre);
+        }
+      }catch(_){ /* respuesta no era JSON, se ignora */ }
+
+      window.location.href = 'panelAdmin.html';
+    } else {
+      errorMsg.textContent = text || 'Credenciales incorrectas';
+      errorMsg.classList.add('show');
+    }
+  } catch (err) {
+    errorMsg.textContent = 'No se pudo contactar al servidor.';
+    errorMsg.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+});
+</script>
+
+</body>
+</html>

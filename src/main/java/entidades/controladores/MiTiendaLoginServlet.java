@@ -51,9 +51,11 @@ public class MiTiendaLoginServlet extends HttpServlet {
                                u.nombre AS nombre_vendedor,
                                u.correo,
                                v.suscrito,
-                               v.tipo_suscripcion
+                               v.tipo_suscripcion,
+                               sv.fecha_vencimiento
                         FROM Vendedores v
                         INNER JOIN Usuarios u ON v.usuario_id = u.id
+                        LEFT JOIN SuscripcionVendedor sv ON sv.usuario_id = v.usuario_id
                         WHERE v.cedula = ?
                           AND u.contraseña = ?
                           AND u.tipo = 'Vendedor'
@@ -67,11 +69,31 @@ public class MiTiendaLoginServlet extends HttpServlet {
                     if (rs.next()) {
                         int suscrito = rs.getInt("suscrito");
                         int usuarioId = rs.getInt("usuario_id");
+                        java.sql.Date fechaVencimiento = rs.getDate("fecha_vencimiento");
 
                         // Login con credenciales correctas: se limpia el contador de fallos
                         intentosFallidos.remove(cedula);
 
-                        if (suscrito == 1) {
+                        // Revisión perezosa: si estaba suscrito pero ya pasó la fecha de
+                        // vencimiento, se revierte aquí mismo antes de dejarlo entrar
+                        boolean vencida = false;
+                        if (suscrito == 1 && fechaVencimiento != null
+                                && !java.time.LocalDate.now().isBefore(fechaVencimiento.toLocalDate())) {
+                            vencida = true;
+                            try (PreparedStatement stmtVencer = conn.prepareStatement(
+                                    "UPDATE Vendedores SET suscrito = 0 WHERE usuario_id = ?")) {
+                                stmtVencer.setInt(1, usuarioId);
+                                stmtVencer.executeUpdate();
+                            }
+                            try (PreparedStatement stmtEstado = conn.prepareStatement(
+                                    "UPDATE SolicitudesDeVendedor SET estado = 'Pendiente' WHERE usuario_id = ?")) {
+                                stmtEstado.setInt(1, usuarioId);
+                                stmtEstado.executeUpdate();
+                            }
+                            System.out.println("[MiTiendaLoginServlet] ⏳ Suscripción vencida para usuario " + usuarioId + ", revertida a pendiente");
+                        }
+
+                        if (suscrito == 1 && !vencida) {
                             HttpSession session = request.getSession();
                             session.setAttribute("vendedorId", rs.getInt("id_vendedor"));
                             session.setAttribute("usuarioId", usuarioId);
@@ -86,6 +108,11 @@ public class MiTiendaLoginServlet extends HttpServlet {
 
                             System.out.println("[MiTiendaLoginServlet] ✅ Login exitoso. Usuario ID: " + usuarioId);
 
+                        } else if (vencida) {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.getWriter().write(
+                                    "Tu suscripción venció. Debes renovar el pago para volver a acceder a 'Mi Tienda'.\n\n" +
+                                            "📩 Para consultas puede escribirnos a: tiendamonjarrez@gmail.com");
                         } else {
                             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                             response.getWriter().write(
