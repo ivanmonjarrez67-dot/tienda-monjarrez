@@ -1513,11 +1513,20 @@ function activarOscuro(guardar = true) {
 const welcomeContainer = document.querySelector('.welcome-container');
 if (welcomeContainer) {
   setTimeout(() => {
-    welcomeContainer.style.transition = 'opacity 0.6s ease, max-height 0.6s ease, margin 0.6s ease';
+    // 🔧 Antes se pasaba de max-height "auto" a "0" directamente: como no
+    // había un valor numérico de partida, el navegador no podía animarlo
+    // y el espacio se colapsaba de golpe (los productos de abajo subían
+    // de un salto aunque la opacidad sí se veía desvanecer). Ahora se fija
+    // primero el alto real en píxeles y se fuerza un reflow antes de
+    // animar a 0, para que el colapso sea progresivo.
+    welcomeContainer.style.overflow = 'hidden';
+    welcomeContainer.style.maxHeight = welcomeContainer.scrollHeight + 'px';
+    void welcomeContainer.offsetHeight;
+    welcomeContainer.style.transition = 'opacity 0.6s ease, max-height 0.6s ease, margin 0.6s ease, padding 0.6s ease';
     welcomeContainer.style.opacity = '0';
     welcomeContainer.style.maxHeight = '0';
     welcomeContainer.style.margin = '0';
-    welcomeContainer.style.overflow = 'hidden';
+    welcomeContainer.style.padding = '0';
     setTimeout(() => { welcomeContainer.style.display = 'none'; }, 650);
   },25000);
 }
@@ -1848,14 +1857,45 @@ document.getElementById("btnCambiarPassword")?.addEventListener("click", async (
   if (!contenidoInvitado) return;
 
   let timeoutInvitado = null;
+  let ocultando = false;
+
+  // 🆕 En vez de display="none" de golpe, se anima un colapso suave
+  // (opacidad + alto máximo) antes de ocultarlo, para que los productos
+  // de abajo suban de forma progresiva y no de un salto brusco.
+  function ocultarSuave() {
+    if (ocultando) return;
+    ocultando = true;
+
+    contenidoInvitado.style.overflow = "hidden";
+    contenidoInvitado.style.maxHeight = contenidoInvitado.scrollHeight + "px";
+    // Fuerza al navegador a registrar el maxHeight inicial antes de animar a 0.
+    void contenidoInvitado.offsetHeight;
+    contenidoInvitado.style.transition =
+      "opacity 0.5s ease, max-height 0.5s ease, margin 0.5s ease, padding 0.5s ease";
+    contenidoInvitado.style.opacity = "0";
+    contenidoInvitado.style.maxHeight = "0";
+    contenidoInvitado.style.margin = "0";
+    contenidoInvitado.style.padding = "0";
+
+    setTimeout(() => {
+      contenidoInvitado.style.display = "none";
+      contenidoInvitado.style.removeProperty("opacity");
+      contenidoInvitado.style.removeProperty("max-height");
+      contenidoInvitado.style.removeProperty("margin");
+      contenidoInvitado.style.removeProperty("padding");
+      contenidoInvitado.style.removeProperty("overflow");
+      contenidoInvitado.style.removeProperty("transition");
+      ocultando = false;
+    }, 520);
+  }
 
   const observer = new MutationObserver(() => {
     const visible = contenidoInvitado.style.display === "block";
 
-    if (visible && !timeoutInvitado) {
+    if (visible && !timeoutInvitado && !ocultando) {
       timeoutInvitado = setTimeout(() => {
-        contenidoInvitado.style.display = "none";
         timeoutInvitado = null;
+        ocultarSuave();
       }, 25000);
     } else if (!visible && timeoutInvitado) {
       clearTimeout(timeoutInvitado);
