@@ -120,14 +120,89 @@
     border:1px solid var(--line);
     border-radius:10px;
     padding:18px 20px;
-    display:grid;
-    grid-template-columns:1.3fr 1fr 1fr auto;
-    gap:18px;
-    align-items:center;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
     transition:border-color .15s;
   }
   .card.vencida{border-color:rgba(214,109,80,0.5);}
   .card:hover{border-color:#394142;}
+
+  .card-top{
+    display:grid;
+    grid-template-columns:1.3fr 1fr 1fr auto;
+    gap:18px;
+    align-items:center;
+  }
+
+  .producto{
+    border-top:1px solid var(--line);
+    padding-top:12px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .producto .producto-desc{
+    font-size:13px;
+    color:var(--text);
+    line-height:1.4;
+  }
+  .producto .producto-desc.vacia{color:var(--muted);font-style:italic;}
+  .producto .producto-meta{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{
+    font-family:var(--mono);
+    font-size:11px;
+    padding:3px 9px;
+    border-radius:20px;
+    background:rgba(138,150,154,0.12);
+    color:var(--muted);
+    border:1px solid var(--line);
+    white-space:nowrap;
+  }
+  .chip.precio{color:var(--accent);border-color:rgba(63,174,130,0.35);background:rgba(63,174,130,0.1);}
+  .chip.pago{color:var(--warn);border-color:rgba(217,138,61,0.35);background:rgba(217,138,61,0.1);}
+
+  .notas{
+    border-top:1px solid var(--line);
+    padding-top:12px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .notas label{
+    font-family:var(--mono);
+    font-size:10.5px;
+    color:var(--muted);
+  }
+  .notas textarea{
+    width:100%;
+    min-height:52px;
+    resize:vertical;
+    background:#0d1010;
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:var(--sans);
+    font-size:13px;
+    padding:9px 11px;
+    border-radius:6px;
+    outline:none;
+    transition:border-color .15s;
+  }
+  .notas textarea:focus{border-color:var(--accent);}
+  .notas-actions{display:flex;align-items:center;gap:10px;}
+  .btn.nota{
+    background:transparent;
+    color:var(--accent);
+    border:1px solid rgba(63,174,130,0.4);
+    padding:6px 13px;
+    font-size:12.5px;
+  }
+  .btn.nota:hover{background:rgba(63,174,130,0.1);}
+  .nota-estado{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--muted);
+  }
 
   .who .name{font-weight:600;font-size:14.5px;letter-spacing:0.1px;}
   .who .mail{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:3px;}
@@ -469,32 +544,59 @@ function render(items){
     const pillClass = esVencida ? 'vencida' : 'pendiente';
     const pillText = esVencida ? 'vencida' : 'pendiente';
 
+    const tieneDescripcion = i.descripcion && i.descripcion.trim().length > 0;
+    const precioTexto = fmtPrecio(i.precio_promedio);
+
     return `
     <div class="card ${esVencida ? 'vencida' : ''}">
-      <div class="who">
-        <div class="name">${esc(i.nombre)}</div>
-        <div class="mail">${esc(i.correo)}</div>
-        <div class="loc">${esc(i.canton)}, ${esc(i.provincia)}</div>
+      <div class="card-top">
+        <div class="who">
+          <div class="name">${esc(i.nombre)}</div>
+          <div class="mail">${esc(i.correo)}</div>
+          <div class="loc">${esc(i.canton)}, ${esc(i.provincia)}</div>
+        </div>
+        <div class="plan">
+          <div class="row"><span>tipo:</span> ${esc(i.tipo_suscripcion || '—')}</div>
+          <div class="row"><span>tel:</span> ${esc(i.telefono || '—')}</div>
+          <div class="cedula">céd. ${esc(i.cedula || '—')}</div>
+        </div>
+        <div class="status">
+          <span class="pill ${pillClass}">${pillText}</span>
+          <span class="venc-date">${esVencida ? 'venció ' + fmtFecha(i.fecha_vencimiento) : 'sin activar'}</span>
+        </div>
+        <div class="actions">
+          <button class="btn aprobar" onclick="accionar(${i.usuario_id}, 'aprobar', this)">
+            ${esVencida ? 'Renovar' : 'Aprobar'}
+          </button>
+          ${i.suscrito === 1 ? `<button class="btn revertir" onclick="accionar(${i.usuario_id}, 'revertir', this)">Revertir</button>` : ''}
+        </div>
       </div>
-      <div class="plan">
-        <div class="row"><span>tipo:</span> ${esc(i.tipo_suscripcion || '—')}</div>
-        <div class="row"><span>tel:</span> ${esc(i.telefono || '—')}</div>
-        <div class="cedula">céd. ${esc(i.cedula || '—')}</div>
+      <div class="producto">
+        <div class="producto-desc ${tieneDescripcion ? '' : 'vacia'}">${tieneDescripcion ? esc(i.descripcion) : 'sin descripción de productos'}</div>
+        <div class="producto-meta">
+          <span class="chip pago">pago: ${esc(i.metodo_pago || '—')}</span>
+          <span class="chip precio">precio promedio: ${precioTexto}</span>
+        </div>
       </div>
-      <div class="status">
-        <span class="pill ${pillClass}">${pillText}</span>
-        <span class="venc-date">${esVencida ? 'venció ' + fmtFecha(i.fecha_vencimiento) : 'sin activar'}</span>
-      </div>
-      <div class="actions">
-        <button class="btn aprobar" onclick="accionar(${i.usuario_id}, 'aprobar', this)">
-          ${esVencida ? 'Renovar' : 'Aprobar'}
-        </button>
-        ${i.suscrito === 1 ? `<button class="btn revertir" onclick="accionar(${i.usuario_id}, 'revertir', this)">Revertir</button>` : ''}
+      <div class="notas">
+        <label for="nota-${i.solicitud_id}">notas / observaciones</label>
+        <textarea id="nota-${i.solicitud_id}" placeholder="ej: quedó en enviar más fotos, acordó bajar el precio, etc.">${esc(i.notas || '')}</textarea>
+        <div class="notas-actions">
+          <button class="btn nota" onclick="guardarNota(${i.solicitud_id}, this)">Guardar nota</button>
+          <span class="nota-estado" id="nota-estado-${i.solicitud_id}"></span>
+        </div>
       </div>
     </div>`;
   }).join('');
 
   contenido.innerHTML = `<div class="cards">${cards}</div>`;
+}
+
+function fmtPrecio(p){
+  if(p === null || p === undefined || p === '') return '—';
+  const n = Number(p);
+  if(Number.isNaN(n)) return '—';
+  return '₡' + n.toLocaleString('es-CR', {maximumFractionDigits: 0});
 }
 
 async function accionar(usuarioId, accion, btn){
@@ -525,6 +627,34 @@ function esc(s){
   const div = document.createElement('div');
   div.textContent = s;
   return div.innerHTML;
+}
+
+async function guardarNota(solicitudId, btn){
+  const textarea = document.getElementById('nota-' + solicitudId);
+  const estado = document.getElementById('nota-estado-' + solicitudId);
+  const nota = textarea.value;
+  btn.disabled = true;
+  estado.textContent = 'guardando…';
+  try{
+    const res = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: `solicitud_id=${encodeURIComponent(solicitudId)}&accion=nota&nota=${encodeURIComponent(nota)}`
+    });
+    if(res.status === 401){
+      window.location.href = 'adminLogin.html';
+      return;
+    }
+    const data = await res.json();
+    if(!res.ok || data.error) throw new Error(data.error || 'error desconocido');
+    estado.textContent = 'guardado ✓';
+    setTimeout(() => { estado.textContent = ''; }, 2000);
+  }catch(e){
+    estado.textContent = 'error al guardar';
+    toast('Error: ' + e.message, true);
+  }finally{
+    btn.disabled = false;
+  }
 }
 
 // --- Modal de gestión de admins ---
