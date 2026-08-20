@@ -103,42 +103,41 @@
         background: rgba(255, 255, 255, 0.14) !important;
         transform: translateY(-1px);
       }
+      /* 🆕 Antes el filtro seleccionado se ponía dorado (igual que "Mi
+         tienda"), lo cual confundía ambas cosas. Ahora solo se marca con
+         un borde rojo + un ícono de check rojo; el fondo y el color de
+         texto se quedan igual que en estado normal. */
       .toolbar .category-track .filter.active {
-        background: linear-gradient(135deg, #f6c445, #e69b0c) !important;
-        border-color: #e69b0c !important;
-        color: #1a1a1a !important;
-        font-weight: 700;
+        border-color: #e02424 !important;
       }
-      .carousel-arrow {
-        flex: 0 0 auto;
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        border: 1px solid rgba(255, 255, 255, 0.22);
-        background: rgba(255, 255, 255, 0.06);
-        color: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.72rem;
-        cursor: pointer;
-        transition: background 0.15s ease, transform 0.1s ease;
+      .filter-check-icon {
+        display: none;
+        margin-left: 5px;
+        color: #e02424;
+        font-size: 0.85em;
       }
-      .carousel-arrow:hover {
-        background: rgba(255, 255, 255, 0.18);
+      .toolbar .category-track .filter.active .filter-check-icon {
+        display: inline-block;
       }
-      .carousel-arrow:active {
-        transform: scale(0.9);
+
+      /* 🆕 Carrusel deslizable con el cursor/dedo (antes tenía flechas
+         laterales clicables; ahora se desliza igual que en el celular:
+         arrastrando con el mouse en computadora o con el dedo en
+         táctil). */
+      .category-track {
+        cursor: grab;
       }
-      .carousel-arrow.oculta {
-        visibility: hidden;
+      .category-track.arrastrando {
+        cursor: grabbing;
+        scroll-behavior: auto;
       }
 
       /* 🆕 En pantallas chicas el .toolbar intentaba meter categorías +
          Novedades/Colección/etc. + Mi tienda/menú en una sola fila, y
          el carrusel (al ser más flexible que los botones fijos) se
          encogía hasta desaparecer. Se fuerza a que el carrusel ocupe su
-         propia fila completa arriba, y el resto de botones debajo. */
+         propia fila completa, siguiendo el mismo orden del resto de
+         botones (ya no se adelanta al principio). */
       @media (max-width: 640px) {
         .toolbar {
           display: flex !important;
@@ -146,7 +145,6 @@
           row-gap: 8px;
         }
         .category-carousel {
-          order: -1;
           flex: 1 1 100% !important;
           width: 100%;
           min-width: 100%;
@@ -1488,104 +1486,99 @@
        roja, justo después de la barra de búsqueda, como una sola fila
        plana y deslizable en vez de aparecer más abajo tras los banners. -->
   <div class="toolbar">
-    <!-- 🆕 Carrusel de categorías: todas las categorías (incluyendo
-         "Todo" y "Servicios") van juntas en una sola fila deslizable,
-         con flechas a los costados para moverla con clic (antes solo
-         se podía arrastrar con el cursor, lo cual no es intuitivo en
-         computadora). Los botones .filter mantienen sus mismos
-         atributos data-category y clases, así que el listener de
-         script.js sigue funcionando igual sin cambios. -->
-    <div class="category-carousel">
-      <button type="button" class="carousel-arrow carousel-arrow-left" id="catArrowLeft" aria-label="Ver categorías anteriores">
-        <i class="fa-solid fa-chevron-left"></i>
-      </button>
-      <div class="category-track" id="categoryTrack">
-        <button class="filter" data-category="Todo">Todo</button>
-        <button class="filter" data-category="Damas">Damas</button>
-        <button class="filter" data-category="Caballeros">Caballeros</button>
-        <button class="filter" data-category="Niños">Niños</button>
-        <button class="filter" data-category="Hogar y Decoración">Hogar y Decoración</button>
-        <button class="filter" data-category="Tecnología y Electrónica">Tecnología y Electrónica</button>
-        <button class="filter" data-category="Joyería y Accesorios">Joyería y Accesorios</button>
-        <button class="filter" data-category="Alimentos">Alimentos</button>
-        <button class="filter" data-category="Deportes">Deportes</button>
-        <button class="filter" data-category="Servicios">Servicios</button>
-      </div>
-      <button type="button" class="carousel-arrow carousel-arrow-right" id="catArrowRight" aria-label="Ver más categorías">
-        <i class="fa-solid fa-chevron-right"></i>
-      </button>
+    <!-- 🆕 Orden fijo solicitado: Mi tienda, Novedades, Descuentos,
+         Colección, Recomendados, luego el carrusel con todas las
+         categorías, y al final el menú de 3 puntitos y la campana de
+         notificaciones. -->
+    <div class="toolbar-group">
+      <button class="filter filter-mi-tienda" data-category="Mi tienda" data-bloqueado="true"><i class="fa-solid fa-star"></i> Mi tienda <i class="fa-solid fa-lock candado-mi-tienda"></i></button>
     </div>
 
     <!-- Botones destacados al centro -->
     <div class="toolbar-center">
       <button class="main" data-main="Novedades">Novedades</button>
-      <button class="main" data-main="Colección">Colección</button>
       <button class="main" data-main="Descuentos">Descuentos</button>
+      <button class="main" data-main="Colección">Colección</button>
       <button class="main" data-main="Recomendados">Recomendados</button>
     </div>
 
-    <!-- "Mi tienda" queda fija y destacada (no entra al carrusel) -->
-    <div class="toolbar-group">
-      <button class="filter filter-mi-tienda" data-category="Mi tienda" data-bloqueado="true"><i class="fa-solid fa-star"></i> Mi tienda <i class="fa-solid fa-lock candado-mi-tienda"></i></button>
+    <!-- 🆕 Menú de 3 puntitos y campana de notificaciones: van aquí,
+         justo después de "Recomendados", para aprovechar el espacio
+         vacío que queda en esa fila en vez de bajar a su propia fila
+         suelta debajo del carrusel de categorías. -->
+    <div class="menu-container">
+      <button class="menu-btn" id="menuBtn"></button>
+      <div class="menu-content" id="menuContent">
 
-      <!-- 🆕 Menú de 3 puntitos: se movió aquí, al final de los filtros,
-           para dejar el header libre solo con la barra de búsqueda y la
-           campana de notificaciones. -->
-      <div class="menu-container">
-        <button class="menu-btn" id="menuBtn"></button>
-        <div class="menu-content" id="menuContent">
-
-          <!-- Logo en la parte superior -->
-          <div class="menu-logo">
-            <img src="icon-512.png" alt="Logo Tienda" />
-          </div>
-
-          <!-- Botón de Perfil -->
-          <div class="menu-item">
-            <button class="btn-perfil" id="btnAbrirPerfil"><i class="fa-solid fa-user"></i> Perfil</button>
-          </div>
-
-          <!-- Toggle con texto -->
-          <div class="menu-item">
-            <span><i class="fa-solid fa-circle-half-stroke"></i> Tema</span>
-            <label class="switch">
-              <input type="checkbox" id="themeToggle">
-              <span class="slider round"></span>
-            </label>
-          </div>
-
-          <div class="menu-item">
-            <span><i class="fa-solid fa-star"></i> Estrellado</span>
-            <button id="starThemeBtn" class="star-theme-btn" title="Activar tema Estrellado"><i class="fa-solid fa-meteor"></i></button>
-          </div>
-
-          <div class="menu-item">
-            <span><i class="fa-solid fa-palette"></i> Rosado</span>
-            <button id="pinkThemeBtn" class="pink-theme-btn" title="Activar tema Rosado"><i class="fa-solid fa-heart"></i></button>
-          </div>
-
-          <!-- Botón de ayuda -->
-          <button class="btn-ayuda" onclick="mostrarAyuda()">
-            <i class="fa-regular fa-circle-question"></i> Ayuda
-          </button>
-
-          <!-- Botón de cerrar sesión -->
-          <button onclick="cerrarSesion()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</button>
+        <!-- Logo en la parte superior -->
+        <div class="menu-logo">
+          <img src="icon-512.png" alt="Logo Tienda" />
         </div>
-      </div>
 
-      <!-- 🆕 Ícono de notificaciones: se movió aquí, justo después del
-           menú de 3 puntitos, en la misma fila de filtros. Al hacerle
-           clic, muestra u oculta (según el estado actual) el aviso de
-           arriba (hero-banner). El puntito rojo indica que el aviso
-           está oculto y hay algo por ver. -->
-      <button id="notifBellBtn" class="notif-bell-btn" title="Mostrar u ocultar el aviso">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-        </svg>
-        <span class="notif-dot"></span>
-      </button>
+        <!-- Botón de Perfil -->
+        <div class="menu-item">
+          <button class="btn-perfil" id="btnAbrirPerfil"><i class="fa-solid fa-user"></i> Perfil</button>
+        </div>
+
+        <!-- Toggle con texto -->
+        <div class="menu-item">
+          <span><i class="fa-solid fa-circle-half-stroke"></i> Tema</span>
+          <label class="switch">
+            <input type="checkbox" id="themeToggle">
+            <span class="slider round"></span>
+          </label>
+        </div>
+
+        <div class="menu-item">
+          <span><i class="fa-solid fa-star"></i> Estrellado</span>
+          <button id="starThemeBtn" class="star-theme-btn" title="Activar tema Estrellado"><i class="fa-solid fa-meteor"></i></button>
+        </div>
+
+        <div class="menu-item">
+          <span><i class="fa-solid fa-palette"></i> Rosado</span>
+          <button id="pinkThemeBtn" class="pink-theme-btn" title="Activar tema Rosado"><i class="fa-solid fa-heart"></i></button>
+        </div>
+
+        <!-- Botón de ayuda -->
+        <button class="btn-ayuda" onclick="mostrarAyuda()">
+          <i class="fa-regular fa-circle-question"></i> Ayuda
+        </button>
+
+        <!-- Botón de cerrar sesión -->
+        <button onclick="cerrarSesion()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</button>
+      </div>
+    </div>
+
+    <button id="notifBellBtn" class="notif-bell-btn" title="Mostrar u ocultar el aviso">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+      </svg>
+      <span class="notif-dot"></span>
+    </button>
+
+    <!-- 🆕 Carrusel de categorías: todas las categorías (incluyendo
+         "Todo" y "Servicios") van juntas en una sola fila que se
+         desliza arrastrando con el mouse (computadora) o con el dedo
+         (táctil) — ya no tiene flechas. Los botones .filter mantienen
+         sus mismos atributos data-category y clases, así que el
+         listener de script.js sigue funcionando igual sin cambios. El
+         ícono de check (oculto salvo cuando el botón está ".active")
+         es lo único que indica cuál categoría está seleccionada, junto
+         con el borde rojo. -->
+    <div class="category-carousel">
+      <div class="category-track" id="categoryTrack">
+        <button class="filter" data-category="Todo">Todo<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
+        <button class="filter" data-category="Damas">Damas<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
+        <button class="filter" data-category="Caballeros">Caballeros<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
+        <button class="filter" data-category="Niños">Niños<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
+        <button class="filter" data-category="Hogar y Decoración">Hogar y Decoración<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
+        <button class="filter" data-category="Tecnología y Electrónica">Tecnología y Electrónica<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
+        <button class="filter" data-category="Joyería y Accesorios">Joyería y Accesorios<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
+        <button class="filter" data-category="Alimentos">Alimentos<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
+        <button class="filter" data-category="Deportes">Deportes<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
+        <button class="filter" data-category="Servicios">Servicios<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
+      </div>
     </div>
   </div>
 
@@ -3227,27 +3220,57 @@ async function cargarMisProductos(usuarioId) {
           });
         });
 
-        // 🆕 Flechas del carrusel de categorías: al hacer clic desplazan
-        // la fila un tramo (equivalente a "una pantalla" de pills), y se
-        // ocultan solas cuando ya no hay más para deslizar de ese lado.
+        // 🆕 Carrusel de categorías deslizable con el mouse: en táctil el
+        // scroll horizontal ya funciona solo (overflow-x: auto), pero en
+        // computadora no había forma de "arrastrar" con el cursor. Este
+        // bloque agrega ese arrastre; hace clic + mover = desliza, y un
+        // clic normal (sin arrastrar) sigue seleccionando la categoría
+        // con normalidad porque no se dispara si el mouse casi no se
+        // movió.
         const categoryTrack = document.getElementById("categoryTrack");
-        const catArrowLeft = document.getElementById("catArrowLeft");
-        const catArrowRight = document.getElementById("catArrowRight");
-        if (categoryTrack && catArrowLeft && catArrowRight) {
-          const actualizarFlechas = () => {
-            const maxScroll = categoryTrack.scrollWidth - categoryTrack.clientWidth - 1;
-            catArrowLeft.classList.toggle("oculta", categoryTrack.scrollLeft <= 0);
-            catArrowRight.classList.toggle("oculta", categoryTrack.scrollLeft >= maxScroll);
+        if (categoryTrack) {
+          let arrastrando = false;
+          let arrastroReal = false;
+          let inicioX = 0;
+          let scrollInicial = 0;
+
+          categoryTrack.addEventListener("mousedown", (e) => {
+            arrastrando = true;
+            arrastroReal = false;
+            inicioX = e.pageX;
+            scrollInicial = categoryTrack.scrollLeft;
+            categoryTrack.classList.add("arrastrando");
+          });
+
+          window.addEventListener("mousemove", (e) => {
+            if (!arrastrando) return;
+            const delta = e.pageX - inicioX;
+            if (Math.abs(delta) > 5) arrastroReal = true;
+            categoryTrack.scrollLeft = scrollInicial - delta;
+          });
+
+          const terminarArrastre = () => {
+            arrastrando = false;
+            categoryTrack.classList.remove("arrastrando");
           };
-          catArrowLeft.addEventListener("click", () => {
-            categoryTrack.scrollBy({ left: -180, behavior: "smooth" });
+          window.addEventListener("mouseup", terminarArrastre);
+          categoryTrack.addEventListener("mouseleave", () => {
+            if (arrastrando) terminarArrastre();
           });
-          catArrowRight.addEventListener("click", () => {
-            categoryTrack.scrollBy({ left: 180, behavior: "smooth" });
-          });
-          categoryTrack.addEventListener("scroll", actualizarFlechas);
-          window.addEventListener("resize", actualizarFlechas);
-          actualizarFlechas();
+
+          // Si hubo arrastre real, se cancela el clic para que no
+          // seleccione por accidente la categoría al soltar.
+          categoryTrack.addEventListener(
+            "click",
+            (e) => {
+              if (arrastroReal) {
+                e.preventDefault();
+                e.stopPropagation();
+                arrastroReal = false;
+              }
+            },
+            true
+          );
         }
 
         // Activación de botones .main (botones del centro)
