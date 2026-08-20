@@ -55,6 +55,8 @@
         border-color: #e69b0c !important;
         color: #1a1a1a !important;
         font-weight: bold;
+        flex: 0 0 auto;
+        white-space: nowrap;
       }
       .filter.filter-mi-tienda:hover {
         filter: brightness(1.06);
@@ -86,7 +88,7 @@
       .category-track::-webkit-scrollbar {
         display: none;
       }
-      .toolbar .category-track .filter {
+      .toolbar .category-track .filter:not(.filter-mi-tienda) {
         flex: 0 0 auto;
         white-space: nowrap;
         padding: 6px 14px !important;
@@ -99,15 +101,17 @@
         font-weight: 500;
         transition: background 0.15s ease, transform 0.1s ease, color 0.15s ease;
       }
-      .toolbar .category-track .filter:hover {
+      .toolbar .category-track .filter:not(.filter-mi-tienda):hover {
         background: rgba(255, 255, 255, 0.14) !important;
         transform: translateY(-1px);
       }
       /* 🆕 Antes el filtro seleccionado se ponía dorado (igual que "Mi
          tienda"), lo cual confundía ambas cosas. Ahora solo se marca con
          un borde rojo + un ícono de check rojo; el fondo y el color de
-         texto se quedan igual que en estado normal. */
-      .toolbar .category-track .filter.active {
+         texto se quedan igual que en estado normal. "Mi tienda" nunca
+         entra en esta regla (queda siempre dorado, sin importar si está
+         seleccionada o no). */
+      .toolbar .category-track .filter.active:not(.filter-mi-tienda) {
         border-color: #e02424 !important;
       }
       .filter-check-icon {
@@ -118,6 +122,19 @@
       }
       .toolbar .category-track .filter.active .filter-check-icon {
         display: inline-block;
+      }
+
+      /* 🆕 Ahora "Mi tienda", los 4 botones destacados (Novedades,
+         Descuentos, Colección, Recomendados), el menú y la campana
+         también viven dentro de la misma fila deslizable (.category-
+         track). Esta regla solo evita que se encojan o partan en varias
+         líneas — no toca ningún color, así que "Mi tienda" se queda
+         dorado y los otros 4 se quedan con su blanco de siempre. */
+      .category-track > .main,
+      .category-track > .menu-container,
+      .category-track > .notif-bell-btn {
+        flex: 0 0 auto;
+        white-space: nowrap;
       }
 
       /* 🆕 Carrusel deslizable con el cursor/dedo (antes tenía flechas
@@ -1486,88 +1503,21 @@
        roja, justo después de la barra de búsqueda, como una sola fila
        plana y deslizable en vez de aparecer más abajo tras los banners. -->
   <div class="toolbar">
-    <!-- 🆕 Orden fijo solicitado: Mi tienda, Novedades, Descuentos,
-         Colección, Recomendados, luego el carrusel con todas las
-         categorías, y al final el menú de 3 puntitos y la campana de
-         notificaciones. -->
-    <div class="toolbar-group">
-      <button class="filter filter-mi-tienda" data-category="Mi tienda" data-bloqueado="true"><i class="fa-solid fa-star"></i> Mi tienda <i class="fa-solid fa-lock candado-mi-tienda"></i></button>
-    </div>
-
-    <!-- Botones destacados al centro -->
-    <div class="toolbar-center">
-      <button class="main" data-main="Novedades">Novedades</button>
-      <button class="main" data-main="Descuentos">Descuentos</button>
-      <button class="main" data-main="Colección">Colección</button>
-      <button class="main" data-main="Recomendados">Recomendados</button>
-    </div>
-
-    <!-- 🆕 Menú de 3 puntitos y campana de notificaciones: van aquí,
-         justo después de "Recomendados", para aprovechar el espacio
-         vacío que queda en esa fila en vez de bajar a su propia fila
-         suelta debajo del carrusel de categorías. -->
-    <div class="menu-container">
-      <button class="menu-btn" id="menuBtn"></button>
-      <div class="menu-content" id="menuContent">
-
-        <!-- Logo en la parte superior -->
-        <div class="menu-logo">
-          <img src="icon-512.png" alt="Logo Tienda" />
-        </div>
-
-        <!-- Botón de Perfil -->
-        <div class="menu-item">
-          <button class="btn-perfil" id="btnAbrirPerfil"><i class="fa-solid fa-user"></i> Perfil</button>
-        </div>
-
-        <!-- Toggle con texto -->
-        <div class="menu-item">
-          <span><i class="fa-solid fa-circle-half-stroke"></i> Tema</span>
-          <label class="switch">
-            <input type="checkbox" id="themeToggle">
-            <span class="slider round"></span>
-          </label>
-        </div>
-
-        <div class="menu-item">
-          <span><i class="fa-solid fa-star"></i> Estrellado</span>
-          <button id="starThemeBtn" class="star-theme-btn" title="Activar tema Estrellado"><i class="fa-solid fa-meteor"></i></button>
-        </div>
-
-        <div class="menu-item">
-          <span><i class="fa-solid fa-palette"></i> Rosado</span>
-          <button id="pinkThemeBtn" class="pink-theme-btn" title="Activar tema Rosado"><i class="fa-solid fa-heart"></i></button>
-        </div>
-
-        <!-- Botón de ayuda -->
-        <button class="btn-ayuda" onclick="mostrarAyuda()">
-          <i class="fa-regular fa-circle-question"></i> Ayuda
-        </button>
-
-        <!-- Botón de cerrar sesión -->
-        <button onclick="cerrarSesion()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</button>
-      </div>
-    </div>
-
-    <button id="notifBellBtn" class="notif-bell-btn" title="Mostrar u ocultar el aviso">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
-        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-      </svg>
-      <span class="notif-dot"></span>
-    </button>
-
-    <!-- 🆕 Carrusel de categorías: todas las categorías (incluyendo
-         "Todo" y "Servicios") van juntas en una sola fila que se
-         desliza arrastrando con el mouse (computadora) o con el dedo
-         (táctil) — ya no tiene flechas. Los botones .filter mantienen
-         sus mismos atributos data-category y clases, así que el
-         listener de script.js sigue funcionando igual sin cambios. El
-         ícono de check (oculto salvo cuando el botón está ".active")
-         es lo único que indica cuál categoría está seleccionada, junto
-         con el borde rojo. -->
+    <!-- 🆕 Todo en una sola fila deslizable (un solo carrusel): Mi
+         tienda, Novedades, Descuentos, Colección, Recomendados, todas
+         las categorías, y al final el menú de 3 puntitos y la campana
+         de notificaciones. Se desliza arrastrando con el mouse
+         (computadora) o con el dedo (táctil). Los colores de "Mi
+         tienda" (dorado) y de los otros 4 botones destacados (blanco)
+         no cambian por estar dentro del carrusel — solo las categorías
+         (Todo, Damas, etc.) usan borde rojo + check al seleccionarse. -->
     <div class="category-carousel">
       <div class="category-track" id="categoryTrack">
+        <button class="filter filter-mi-tienda" data-category="Mi tienda" data-bloqueado="true"><i class="fa-solid fa-star"></i> Mi tienda <i class="fa-solid fa-lock candado-mi-tienda"></i></button>
+        <button class="main" data-main="Novedades">Novedades</button>
+        <button class="main" data-main="Descuentos">Descuentos</button>
+        <button class="main" data-main="Colección">Colección</button>
+        <button class="main" data-main="Recomendados">Recomendados</button>
         <button class="filter" data-category="Todo">Todo<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
         <button class="filter" data-category="Damas">Damas<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
         <button class="filter" data-category="Caballeros">Caballeros<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
@@ -1575,9 +1525,62 @@
         <button class="filter" data-category="Hogar y Decoración">Hogar y Decoración<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
         <button class="filter" data-category="Tecnología y Electrónica">Tecnología y Electrónica<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
         <button class="filter" data-category="Joyería y Accesorios">Joyería y Accesorios<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
-        <button class="filter" data-category="Alimentos">Alimentos<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
         <button class="filter" data-category="Deportes">Deportes<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
         <button class="filter" data-category="Servicios">Servicios<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
+        <button class="filter" data-category="Alimentos">Alimentos<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
+
+        <!-- Menú de 3 puntitos: de último en la fila -->
+        <div class="menu-container">
+          <button class="menu-btn" id="menuBtn"></button>
+          <div class="menu-content" id="menuContent">
+
+            <!-- Logo en la parte superior -->
+            <div class="menu-logo">
+              <img src="icon-512.png" alt="Logo Tienda" />
+            </div>
+
+            <!-- Botón de Perfil -->
+            <div class="menu-item">
+              <button class="btn-perfil" id="btnAbrirPerfil"><i class="fa-solid fa-user"></i> Perfil</button>
+            </div>
+
+            <!-- Toggle con texto -->
+            <div class="menu-item">
+              <span><i class="fa-solid fa-circle-half-stroke"></i> Tema</span>
+              <label class="switch">
+                <input type="checkbox" id="themeToggle">
+                <span class="slider round"></span>
+              </label>
+            </div>
+
+            <div class="menu-item">
+              <span><i class="fa-solid fa-star"></i> Estrellado</span>
+              <button id="starThemeBtn" class="star-theme-btn" title="Activar tema Estrellado"><i class="fa-solid fa-meteor"></i></button>
+            </div>
+
+            <div class="menu-item">
+              <span><i class="fa-solid fa-palette"></i> Rosado</span>
+              <button id="pinkThemeBtn" class="pink-theme-btn" title="Activar tema Rosado"><i class="fa-solid fa-heart"></i></button>
+            </div>
+
+            <!-- Botón de ayuda -->
+            <button class="btn-ayuda" onclick="mostrarAyuda()">
+              <i class="fa-regular fa-circle-question"></i> Ayuda
+            </button>
+
+            <!-- Botón de cerrar sesión -->
+            <button onclick="cerrarSesion()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</button>
+          </div>
+        </div>
+
+        <!-- Campana de notificaciones: de último en la fila -->
+        <button id="notifBellBtn" class="notif-bell-btn" title="Mostrar u ocultar el aviso">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span class="notif-dot"></span>
+        </button>
       </div>
     </div>
   </div>
