@@ -133,6 +133,25 @@
       .carousel-arrow.oculta {
         visibility: hidden;
       }
+
+      /* 🆕 En pantallas chicas el .toolbar intentaba meter categorías +
+         Novedades/Colección/etc. + Mi tienda/menú en una sola fila, y
+         el carrusel (al ser más flexible que los botones fijos) se
+         encogía hasta desaparecer. Se fuerza a que el carrusel ocupe su
+         propia fila completa arriba, y el resto de botones debajo. */
+      @media (max-width: 640px) {
+        .toolbar {
+          display: flex !important;
+          flex-wrap: wrap !important;
+          row-gap: 8px;
+        }
+        .category-carousel {
+          order: -1;
+          flex: 1 1 100% !important;
+          width: 100%;
+          min-width: 100%;
+        }
+      }
       /* 🆕 Candado del botón "Mi tienda" para invitados/compradores:
          antes el botón quedaba con `disabled`, lo que impedía hasta el
          clic y no dejaba explicarle a la persona por qué esa sección no
