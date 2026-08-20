@@ -62,6 +62,77 @@
       .filter.filter-mi-tienda.active {
         box-shadow: 0 0 0 2px #1a1a1a inset;
       }
+
+      /* 🆕 Carrusel de categorías estilo Temu: fila deslizable con
+         flechas laterales clicables (antes solo se podía arrastrar con
+         el cursor, lo cual no es intuitivo en computadora) y pills más
+         chicos y prolijos en vez de los botones grandes de antes. */
+      .category-carousel {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .category-track {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        padding: 2px 2px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+      .category-track::-webkit-scrollbar {
+        display: none;
+      }
+      .toolbar .category-track .filter {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        padding: 6px 14px !important;
+        font-size: 0.78rem !important;
+        line-height: 1.2;
+        border-radius: 999px !important;
+        border: 1px solid rgba(255, 255, 255, 0.18) !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        color: #e6e6e6 !important;
+        font-weight: 500;
+        transition: background 0.15s ease, transform 0.1s ease, color 0.15s ease;
+      }
+      .toolbar .category-track .filter:hover {
+        background: rgba(255, 255, 255, 0.14) !important;
+        transform: translateY(-1px);
+      }
+      .toolbar .category-track .filter.active {
+        background: linear-gradient(135deg, #f6c445, #e69b0c) !important;
+        border-color: #e69b0c !important;
+        color: #1a1a1a !important;
+        font-weight: 700;
+      }
+      .carousel-arrow {
+        flex: 0 0 auto;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        background: rgba(255, 255, 255, 0.06);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.72rem;
+        cursor: pointer;
+        transition: background 0.15s ease, transform 0.1s ease;
+      }
+      .carousel-arrow:hover {
+        background: rgba(255, 255, 255, 0.18);
+      }
+      .carousel-arrow:active {
+        transform: scale(0.9);
+      }
+      .carousel-arrow.oculta {
+        visibility: hidden;
+      }
       /* 🆕 Candado del botón "Mi tienda" para invitados/compradores:
          antes el botón quedaba con `disabled`, lo que impedía hasta el
          clic y no dejaba explicarle a la persona por qué esa sección no
@@ -1398,11 +1469,32 @@
        roja, justo después de la barra de búsqueda, como una sola fila
        plana y deslizable en vez de aparecer más abajo tras los banners. -->
   <div class="toolbar">
-    <!-- Filtros a la izquierda -->
-    <div class="toolbar-group">
-      <button class="filter" data-category="Caballeros">Caballeros</button>
-      <button class="filter" data-category="Damas">Damas</button>
-      <button class="filter" data-category="Niños">Niños</button>
+    <!-- 🆕 Carrusel de categorías: todas las categorías (incluyendo
+         "Todo" y "Servicios") van juntas en una sola fila deslizable,
+         con flechas a los costados para moverla con clic (antes solo
+         se podía arrastrar con el cursor, lo cual no es intuitivo en
+         computadora). Los botones .filter mantienen sus mismos
+         atributos data-category y clases, así que el listener de
+         script.js sigue funcionando igual sin cambios. -->
+    <div class="category-carousel">
+      <button type="button" class="carousel-arrow carousel-arrow-left" id="catArrowLeft" aria-label="Ver categorías anteriores">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+      <div class="category-track" id="categoryTrack">
+        <button class="filter" data-category="Todo">Todo</button>
+        <button class="filter" data-category="Damas">Damas</button>
+        <button class="filter" data-category="Caballeros">Caballeros</button>
+        <button class="filter" data-category="Niños">Niños</button>
+        <button class="filter" data-category="Hogar y Decoración">Hogar y Decoración</button>
+        <button class="filter" data-category="Tecnología y Electrónica">Tecnología y Electrónica</button>
+        <button class="filter" data-category="Joyería y Accesorios">Joyería y Accesorios</button>
+        <button class="filter" data-category="Alimentos">Alimentos</button>
+        <button class="filter" data-category="Deportes">Deportes</button>
+        <button class="filter" data-category="Servicios">Servicios</button>
+      </div>
+      <button type="button" class="carousel-arrow carousel-arrow-right" id="catArrowRight" aria-label="Ver más categorías">
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
     </div>
 
     <!-- Botones destacados al centro -->
@@ -1413,11 +1505,9 @@
       <button class="main" data-main="Recomendados">Recomendados</button>
     </div>
 
-    <!-- Filtros a la derecha -->
+    <!-- "Mi tienda" queda fija y destacada (no entra al carrusel) -->
     <div class="toolbar-group">
       <button class="filter filter-mi-tienda" data-category="Mi tienda" data-bloqueado="true"><i class="fa-solid fa-star"></i> Mi tienda <i class="fa-solid fa-lock candado-mi-tienda"></i></button>
-      <button class="filter" data-category="Todo">Todo</button>
-      <button class="filter" data-category="Servicios">Servicios</button>
 
       <!-- 🆕 Menú de 3 puntitos: se movió aquí, al final de los filtros,
            para dejar el header libre solo con la barra de búsqueda y la
@@ -1932,6 +2022,11 @@ async function cargarMisProductos(usuarioId) {
               <option value="Damas">Damas</option>
               <option value="Caballeros">Caballeros</option>
               <option value="Niños">Niños</option>
+              <option value="Hogar y Decoración">Hogar y Decoración</option>
+              <option value="Tecnología y Electrónica">Tecnología y Electrónica</option>
+              <option value="Joyería y Accesorios">Joyería y Accesorios</option>
+              <option value="Alimentos">Alimentos</option>
+              <option value="Deportes">Deportes</option>
               <option value="Servicios">Servicios</option>
             </select>
 
@@ -2074,6 +2169,11 @@ async function cargarMisProductos(usuarioId) {
               <option value="Damas">Damas</option>
               <option value="Caballeros">Caballeros</option>
               <option value="Niños">Niños</option>
+              <option value="Hogar y Decoración">Hogar y Decoración</option>
+              <option value="Tecnología y Electrónica">Tecnología y Electrónica</option>
+              <option value="Joyería y Accesorios">Joyería y Accesorios</option>
+              <option value="Alimentos">Alimentos</option>
+              <option value="Deportes">Deportes</option>
               <option value="Servicios">Servicios</option>
             </select>
 
@@ -2574,6 +2674,26 @@ async function cargarMisProductos(usuarioId) {
                 <div class="interes-check-item">
                   <input type="checkbox" id="interesNinos" value="Niños" />
                   <label for="interesNinos">Niños</label>
+                </div>
+                <div class="interes-check-item">
+                  <input type="checkbox" id="interesHogar" value="Hogar y Decoración" />
+                  <label for="interesHogar">Hogar y Decoración</label>
+                </div>
+                <div class="interes-check-item">
+                  <input type="checkbox" id="interesTecnologia" value="Tecnología y Electrónica" />
+                  <label for="interesTecnologia">Tecnología y Electrónica</label>
+                </div>
+                <div class="interes-check-item">
+                  <input type="checkbox" id="interesJoyeria" value="Joyería y Accesorios" />
+                  <label for="interesJoyeria">Joyería y Accesorios</label>
+                </div>
+                <div class="interes-check-item">
+                  <input type="checkbox" id="interesAlimentos" value="Alimentos" />
+                  <label for="interesAlimentos">Alimentos</label>
+                </div>
+                <div class="interes-check-item">
+                  <input type="checkbox" id="interesDeportes" value="Deportes" />
+                  <label for="interesDeportes">Deportes</label>
                 </div>
                 <div class="interes-check-item">
                   <input type="checkbox" id="interesServicios" value="Servicios" />
@@ -3087,6 +3207,29 @@ async function cargarMisProductos(usuarioId) {
             button.classList.add("active");
           });
         });
+
+        // 🆕 Flechas del carrusel de categorías: al hacer clic desplazan
+        // la fila un tramo (equivalente a "una pantalla" de pills), y se
+        // ocultan solas cuando ya no hay más para deslizar de ese lado.
+        const categoryTrack = document.getElementById("categoryTrack");
+        const catArrowLeft = document.getElementById("catArrowLeft");
+        const catArrowRight = document.getElementById("catArrowRight");
+        if (categoryTrack && catArrowLeft && catArrowRight) {
+          const actualizarFlechas = () => {
+            const maxScroll = categoryTrack.scrollWidth - categoryTrack.clientWidth - 1;
+            catArrowLeft.classList.toggle("oculta", categoryTrack.scrollLeft <= 0);
+            catArrowRight.classList.toggle("oculta", categoryTrack.scrollLeft >= maxScroll);
+          };
+          catArrowLeft.addEventListener("click", () => {
+            categoryTrack.scrollBy({ left: -180, behavior: "smooth" });
+          });
+          catArrowRight.addEventListener("click", () => {
+            categoryTrack.scrollBy({ left: 180, behavior: "smooth" });
+          });
+          categoryTrack.addEventListener("scroll", actualizarFlechas);
+          window.addEventListener("resize", actualizarFlechas);
+          actualizarFlechas();
+        }
 
         // Activación de botones .main (botones del centro)
         const mainButtons = document.querySelectorAll(".toolbar .main");
