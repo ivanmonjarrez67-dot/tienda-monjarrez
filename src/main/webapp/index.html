@@ -57,6 +57,11 @@
         font-weight: bold;
         flex: 0 0 auto;
         white-space: nowrap;
+        padding: 4px 10px !important;
+        font-size: 0.72rem !important;
+        line-height: 1.2;
+        border-radius: 5px !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
       }
       .filter.filter-mi-tienda:hover {
         filter: brightness(1.06);
@@ -91,19 +96,66 @@
       .toolbar .category-track .filter:not(.filter-mi-tienda) {
         flex: 0 0 auto;
         white-space: nowrap;
-        padding: 6px 14px !important;
-        font-size: 0.78rem !important;
+        padding: 4px 10px !important;
+        font-size: 0.72rem !important;
         line-height: 1.2;
-        border-radius: 999px !important;
-        border: 1px solid rgba(255, 255, 255, 0.18) !important;
-        background: rgba(255, 255, 255, 0.05) !important;
-        color: #e6e6e6 !important;
+        border-radius: 5px !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
+        background: transparent !important;
+        color: #ffffff !important;
         font-weight: 500;
-        transition: background 0.15s ease, transform 0.1s ease, color 0.15s ease;
+        transition: background 0.15s ease, transform 0.1s ease, color 0.15s ease, border-color 0.15s ease;
       }
       .toolbar .category-track .filter:not(.filter-mi-tienda):hover {
-        background: rgba(255, 255, 255, 0.14) !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+        border-color: rgba(255, 255, 255, 0.7) !important;
         transform: translateY(-1px);
+      }
+
+      /* 🆕 Los 4 botones destacados (Novedades, Descuentos, Colección,
+         Recomendados) traían el tamaño grande de styles.css (pensado
+         para cuando vivían sueltos, no dentro del carrusel). Ahora se
+         ven como texto plano y angosto: sin fondo ni borde, solo la
+         letra, del mismo tamaño que los pills de categoría. Al
+         seleccionarse solo cambia el color del texto (rojo, igual que
+         el check de categorías), nunca el fondo. "Mi tienda" y las
+         categorías con check no se tocan. */
+      .toolbar .category-track .main {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        padding: 4px 10px !important;
+        font-size: 0.72rem !important;
+        line-height: 1.2;
+        border-radius: 5px !important;
+        border: 1px solid rgba(0, 0, 0, 0.12) !important;
+        background: #ffffff !important;
+        color: #1a1a1a !important;
+        font-weight: 700;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+        transition: background 0.15s ease, transform 0.1s ease, color 0.15s ease;
+      }
+      .toolbar .category-track .main:hover {
+        background: #f0f0f0 !important;
+        transform: translateY(-1px);
+      }
+
+      /* 🆕 En teléfono los pills quedaban igual de grandes que en
+         computadora porque antes no había una regla aparte para
+         pantallas chicas; ahora se angostan un poco más para que no
+         se vean como "botonazos". */
+      @media (max-width: 640px) {
+        .toolbar .category-track .filter:not(.filter-mi-tienda) {
+          padding: 3px 9px !important;
+          font-size: 0.68rem !important;
+        }
+        .toolbar .category-track .main {
+          padding: 3px 7px !important;
+          font-size: 0.68rem !important;
+        }
+        .filter.filter-mi-tienda {
+          padding: 3px 9px !important;
+          font-size: 0.68rem !important;
+        }
       }
       /* 🆕 Antes el filtro seleccionado se ponía dorado (igual que "Mi
          tienda"), lo cual confundía ambas cosas. Ahora solo se marca con
@@ -111,17 +163,28 @@
          texto se quedan igual que en estado normal. "Mi tienda" nunca
          entra en esta regla (queda siempre dorado, sin importar si está
          seleccionada o no). */
-      .toolbar .category-track .filter.active:not(.filter-mi-tienda) {
-        border-color: #e02424 !important;
-      }
       .filter-check-icon {
         display: none;
-        margin-left: 5px;
+        margin-right: 5px;
         color: #e02424;
         font-size: 0.85em;
       }
-      .toolbar .category-track .filter.active .filter-check-icon {
+      .toolbar .category-track .filter.active .filter-check-icon,
+      .toolbar .category-track .main.active .filter-check-icon {
         display: inline-block;
+      }
+
+      /* 🆕 Los filtros traían una segunda flechita heredada de
+         styles.css (pensada para cuando estos botones eran un
+         desplegable tipo <select>, no un pill de carrusel). Con el
+         check de .filter-check-icon alcanza, así que se elimina
+         cualquier pseudo-elemento de flecha/chevron que quede. */
+      .toolbar .category-track .filter::after,
+      .toolbar .category-track .filter::before,
+      .toolbar .category-track .main::after,
+      .toolbar .category-track .main::before {
+        content: none !important;
+        display: none !important;
       }
 
       /* 🆕 Ahora "Mi tienda", los 4 botones destacados (Novedades,
@@ -1513,21 +1576,21 @@
          (Todo, Damas, etc.) usan borde rojo + check al seleccionarse. -->
     <div class="category-carousel">
       <div class="category-track" id="categoryTrack">
+        <button class="filter" data-category="Todo"><i class="fa-solid fa-circle-check filter-check-icon"></i>Todo</button>
+        <button class="filter" data-category="Damas"><i class="fa-solid fa-circle-check filter-check-icon"></i>Damas</button>
+        <button class="filter" data-category="Caballeros"><i class="fa-solid fa-circle-check filter-check-icon"></i>Caballeros</button>
+        <button class="filter" data-category="Niños"><i class="fa-solid fa-circle-check filter-check-icon"></i>Niños</button>
+        <button class="filter" data-category="Hogar y Decoración"><i class="fa-solid fa-circle-check filter-check-icon"></i>Hogar y Decoración</button>
         <button class="filter filter-mi-tienda" data-category="Mi tienda" data-bloqueado="true"><i class="fa-solid fa-star"></i> Mi tienda <i class="fa-solid fa-lock candado-mi-tienda"></i></button>
-        <button class="main" data-main="Novedades">Novedades</button>
-        <button class="main" data-main="Descuentos">Descuentos</button>
-        <button class="main" data-main="Colección">Colección</button>
-        <button class="main" data-main="Recomendados">Recomendados</button>
-        <button class="filter" data-category="Todo">Todo<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
-        <button class="filter" data-category="Damas">Damas<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
-        <button class="filter" data-category="Caballeros">Caballeros<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
-        <button class="filter" data-category="Niños">Niños<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
-        <button class="filter" data-category="Hogar y Decoración">Hogar y Decoración<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
-        <button class="filter" data-category="Tecnología y Electrónica">Tecnología y Electrónica<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
-        <button class="filter" data-category="Joyería y Accesorios">Joyería y Accesorios<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
-        <button class="filter" data-category="Deportes">Deportes<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
-        <button class="filter" data-category="Servicios">Servicios<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
-        <button class="filter" data-category="Alimentos">Alimentos<i class="fa-solid fa-circle-check filter-check-icon"></i></button>
+        <button class="main" data-main="Novedades"><i class="fa-solid fa-circle-check filter-check-icon"></i>Novedades</button>
+        <button class="main" data-main="Descuentos"><i class="fa-solid fa-circle-check filter-check-icon"></i>Descuentos</button>
+        <button class="main" data-main="Colección"><i class="fa-solid fa-circle-check filter-check-icon"></i>Colección</button>
+        <button class="main" data-main="Recomendados"><i class="fa-solid fa-circle-check filter-check-icon"></i>Recomendados</button>
+        <button class="filter" data-category="Tecnología y Electrónica"><i class="fa-solid fa-circle-check filter-check-icon"></i>Tecnología y Electrónica</button>
+        <button class="filter" data-category="Joyería y Accesorios"><i class="fa-solid fa-circle-check filter-check-icon"></i>Joyería y Accesorios</button>
+        <button class="filter" data-category="Deportes"><i class="fa-solid fa-circle-check filter-check-icon"></i>Deportes</button>
+        <button class="filter" data-category="Servicios"><i class="fa-solid fa-circle-check filter-check-icon"></i>Servicios</button>
+        <button class="filter" data-category="Alimentos"><i class="fa-solid fa-circle-check filter-check-icon"></i>Alimentos</button>
 
         <!-- Menú de 3 puntitos: de último en la fila -->
         <div class="menu-container">
