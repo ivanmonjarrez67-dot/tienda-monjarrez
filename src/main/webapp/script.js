@@ -323,6 +323,49 @@ function pintarMosaico(grid, productos, construirTarjetaHTML) {
   return true;
 }
 
+// 🆕 Aviso "mega mercado": se usa en dos casos —
+//   1) una búsqueda o filtro no encuentra coincidencias (conContactoExtra:
+//      false, solo el correo de "buscamos"), y
+//   2) al final del listado completo de productos (conContactoExtra: true,
+//      agrega también el correo de soporte como canal alterno). El envío
+//      es simple: links mailto: con asunto/cuerpo prellenado, sin backend
+//      nuevo de por medio. (🔧 Antes el segundo canal era un teléfono —
+//      no se veía profesional — ahora también es un mailto.)
+function crearAvisoMegaMercado({ conContactoExtra } = {}) {
+  const asunto = encodeURIComponent("Busco un producto en Tienda Monjarrez");
+  const cuerpo = encodeURIComponent(
+    "Hola,\n\nNo encontré el producto que buscaba en el catálogo. ¿Podrían ayudarme a conseguirlo en su mega mercado y coordinar el envío?\n\nProducto: \n\nQuedo atento/a, muchas gracias."
+  );
+  const mailto = `mailto:buscamos@tiendamonjarrez.com?subject=${asunto}&body=${cuerpo}`;
+  const contactoExtraHtml = conContactoExtra
+    ? `<p class="mercado-aviso-telefono"><i class="fa-solid fa-headset"></i> ¿Prefieres contactar a soporte? Escríbenos a <a href="mailto:soporte@tiendamonjarrez.com">soporte@tiendamonjarrez.com</a></p>`
+    : "";
+  return `
+    <div class="mercado-aviso">
+      <div class="mercado-aviso-icono"><i class="fa-solid fa-store"></i></div>
+      <h3>¿No encuentras lo que buscabas?</h3>
+      <p>Nuestros vendedores suben productos nuevos cada día. Si aún no está publicado, tenemos acceso a un mega mercado para buscarlo, coordinar el envío y avisarte apenas lo consigamos.</p>
+      <a class="mercado-aviso-btn" href="${mailto}"><i class="fa-solid fa-envelope"></i> Escríbenos a buscamos@tiendamonjarrez.com</a>
+      ${contactoExtraHtml}
+    </div>
+  `;
+}
+
+// 🆕 Muestra el aviso de mega mercado justo después del último producto
+// del catálogo COMPLETO (sin filtros ni búsqueda). Vive en un contenedor
+// aparte (#avisoFinCatalogo) para no pisar el grid ni tener que
+// reconstruirlo. Se limpia cuando no aplica (catálogo vacío, búsqueda o
+// filtro activos) para que no quede pegado donde no corresponde.
+function mostrarAvisoFinCatalogo() {
+  const contenedor = document.getElementById("avisoFinCatalogo");
+  if (contenedor) contenedor.innerHTML = crearAvisoMegaMercado({ conContactoExtra: true });
+}
+
+function limpiarAvisoFinCatalogo() {
+  const contenedor = document.getElementById("avisoFinCatalogo");
+  if (contenedor) contenedor.innerHTML = "";
+}
+
 // 🆕 Arma la galería de una tarjeta: 1 sola imagen (imagen base) si no hay
 // fotos adicionales, o un mini carrusel con puntitos si hay imagen2 y/o
 // imagen3. Las imágenes viajan en data-imagenes (JSON) para que el click
@@ -532,6 +575,9 @@ fetch("/api/productos")
     grid.classList.remove("skeleton-grid");
     pintarMosaico(grid, productos, construirTarjetaProductoHTML);
     abrirProductoDesdeUrl();
+    // 🆕 Este fetch es el catálogo COMPLETO (sin filtros ni búsqueda), así
+    // que aquí sí corresponde el aviso de mega mercado al final del listado.
+    if (productos && productos.length > 0) mostrarAvisoFinCatalogo();
   })
   .catch((error) => {
     console.error("Error al cargar productos:", error);
@@ -562,9 +608,10 @@ function buscarProductos() {
     .then((response) => response.json())
     .then((productos) => {
       const grid = document.getElementById("productGrid");
+      limpiarAvisoFinCatalogo(); // ya no es el catálogo completo, ese aviso no aplica aquí
       if (productos.length === 0) {
-        grid.innerHTML = "<p style='color: white;'>No se encontraron productos.</p>";
-        window.Monji?.buscando("No encontré productos con esa búsqueda. Prueba con otras palabras 🔍");
+        grid.innerHTML = crearAvisoMegaMercado({ conContactoExtra: false });
+        window.Monji?.buscando("No encontré ese producto en el catálogo, pero tranquilo: tenemos acceso a un mega mercado. Escríbenos y te ayudamos a conseguirlo 🔍");
         return;
       }
       pintarMosaico(grid, productos, construirTarjetaProductoHTML);
@@ -630,12 +677,19 @@ function cargarProductos() {
     .then((response) => response.json())
     .then((productos) => {
       const grid = document.getElementById("productGrid");
+      // Solo es "el catálogo completo" si no hay filtro ni categoría
+      // aplicados; con cualquiera de los dos activo, el aviso de fin de
+      // catálogo no corresponde aquí.
+      const esCatalogoCompleto = !filtroPrincipal && !categoriaSeleccionada;
       if (productos.length === 0) {
-        grid.innerHTML = '<p style="color:white;">No se encontraron productos..</p>';
-        window.Monji?.buscando("No encontré productos en esta categoría 🔍");
+        limpiarAvisoFinCatalogo();
+        grid.innerHTML = crearAvisoMegaMercado({ conContactoExtra: false });
+        window.Monji?.buscando("No encontré productos en esta categoría, pero tranquilo: tenemos acceso a un mega mercado. Escríbenos y te ayudamos a conseguirlo 🔍");
         return;
       }
       pintarMosaico(grid, productos, construirTarjetaProductoHTML);
+      if (esCatalogoCompleto) mostrarAvisoFinCatalogo();
+      else limpiarAvisoFinCatalogo();
     })
     .catch((error) => console.error("Error al cargar productos filtrados:", error));
 }

@@ -2390,3 +2390,61 @@ body.theme-stars #starsCanvas {
 #btnSiguienteUsuario i {
   font-size: 15px;
 }
+
+/* ============================================
+   ICONOS FLOTANTES DE REDES SOCIALES
+   Centrados abajo, no chocan con Monji (abajo-derecha)
+   ============================================ */
+.redes-flotantes {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 14px;
+  z-index: 900; /* debajo de modales (999+) pero visible sobre el resto */
+}
+
+.red-icono {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.red-icono:hover {
+  transform: scale(1.12);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.red-facebook {
+  background: #1877f2;
+}
+
+.red-instagram {
+  background: radial-gradient(circle at 30% 110%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+}
+
+.red-tiktok {
+  background: #000;
+}
+
+/* En móvil: un poco más pequeños y pegados, para no chocar con barras
+   de navegación del navegador ni con el widget de Monji */
+@media (max-width: 600px) {
+  .redes-flotantes {
+    bottom: 14px;
+    gap: 10px;
+  }
+  .red-icono {
+    width: 42px;
+    height: 42px;
+    font-size: 18px;
+  }
+}

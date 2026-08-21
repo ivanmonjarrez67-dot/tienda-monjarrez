@@ -360,7 +360,8 @@
          (.info-bar-row--shipping), para que cada una pueda
          ocultarse/mostrarse de forma independiente. */
       .info-bar-main.ocultando,
-      .info-bar-row--shipping.ocultando {
+      .info-bar-row--shipping.ocultando,
+      .info-bar-row--megamercado.ocultando {
         animation: ocultarBanner 0.4s ease-in forwards;
       }
       @keyframes ocultarBanner {
@@ -368,7 +369,8 @@
         100% { opacity: 0; transform: translateY(-12px); max-height: 0; }
       }
       .info-bar-main.reapareciendo,
-      .info-bar-row--shipping.reapareciendo {
+      .info-bar-row--shipping.reapareciendo,
+      .info-bar-row--megamercado.reapareciendo {
         animation: reaparecerBanner 0.35s ease-out forwards;
       }
       @keyframes reaparecerBanner {
@@ -518,6 +520,24 @@
 
       .info-bar-row--main {
         background: rgba(255, 255, 255, 0.02);
+        /* 🆕 Reducida (antes heredaba el padding 12px 20px genérico de
+           .info-bar-row) para dejarle espacio al nuevo aviso del "mega
+           mercado" sin que la tarjeta completa crezca de alto. */
+        padding: 8px 20px;
+      }
+
+      .info-bar-row--main .info-bar-shield {
+        width: 20px;
+        height: 20px;
+        font-size: 11px;
+      }
+
+      .info-bar-row--main .info-bar-title {
+        font-size: 13.5px;
+      }
+
+      .info-bar-row--main .info-bar-feature {
+        font-size: 11.5px;
       }
 
       .info-bar-row--cta {
@@ -557,16 +577,105 @@
         line-height: 1.4;
       }
 
-      .info-bar-shipping-text a {
-        color: #8fe0d3;
+      /* 🆕 El correo de este aviso ya no es un link subrayado (poco
+         visible sobre el fondo oscuro); ahora es un botón con el mismo
+         acento turquesa del aviso, igual que ya se hace con los botones
+         de contacto del panel de producto. */
+      .info-bar-shipping-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        border-radius: 6px;
         font-weight: 600;
-        text-decoration: underline;
-        text-underline-offset: 2px;
+        font-size: inherit;
+        text-decoration: none;
         white-space: nowrap;
+        vertical-align: middle;
+        color: #8fe0d3;
+        border: 1.5px solid rgba(90, 168, 158, 0.55);
+        background: rgba(90, 168, 158, 0.12);
+        transition: background 0.15s ease, color 0.15s ease;
       }
 
-      .info-bar-shipping-text a:hover {
-        color: #b0f0e5;
+      .info-bar-shipping-btn svg {
+        width: 12px;
+        height: 12px;
+        flex-shrink: 0;
+      }
+
+      .info-bar-shipping-btn:hover {
+        background: #5aa89e;
+        color: #0d1f1c;
+      }
+
+      /* 🆕 Aviso del "mega mercado": mismo patrón que el de envío, pero
+         con acento morado (a juego con el aviso de mega mercado del
+         catálogo — búsqueda sin resultados / fin del listado — y con el
+         tema Estrellado del sitio) para distinguirlo del rojo principal
+         y del verde/turquesa de envío. Vive dentro de #heroBanner /
+         #heroBannerVendedor, así que hereda automáticamente la lógica de
+         la campana (notifBellBtn) y la secuencia de auto-ocultado. */
+      .info-bar-row--megamercado {
+        background: rgba(124, 108, 224, 0.1);
+        border-top: 1px solid rgba(124, 108, 224, 0.32);
+      }
+
+      .info-bar-mega-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: rgba(124, 108, 224, 0.2);
+        border: 1px solid rgba(124, 108, 224, 0.5);
+        color: #a99bf5;
+        font-size: 11px;
+        flex-shrink: 0;
+      }
+
+      .info-bar-mega-text {
+        color: #d9d3fb;
+        font-size: 12.5px;
+        line-height: 1.4;
+      }
+
+      .info-bar-mega-text strong {
+        color: #f1effe;
+      }
+
+      /* 🔧 Antes este link heredaba el azul por defecto del navegador
+         (se veía fuera de lugar). Ahora usa el mismo morado del resto
+         del aviso. */
+      /* 🆕 Mismo tratamiento que el correo de envíos: botón en vez de
+         link subrayado, con el acento morado propio de este aviso. */
+      .info-bar-mega-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: inherit;
+        text-decoration: none;
+        white-space: nowrap;
+        vertical-align: middle;
+        color: #c4bafb;
+        border: 1.5px solid rgba(124, 108, 224, 0.55);
+        background: rgba(124, 108, 224, 0.14);
+        transition: background 0.15s ease, color 0.15s ease;
+      }
+
+      .info-bar-mega-btn svg {
+        width: 12px;
+        height: 12px;
+        flex-shrink: 0;
+      }
+
+      .info-bar-mega-btn:hover {
+        background: #7c6ce0;
+        color: #14103a;
       }
 
       .info-bar-left {
@@ -708,16 +817,26 @@
           gap: 10px;
         }
         .info-bar-row--cta,
-        .info-bar-row--shipping {
+        .info-bar-row--shipping,
+        .info-bar-row--megamercado {
           justify-content: center;
         }
         .info-bar-cta-text,
-        .info-bar-shipping-text {
+        .info-bar-shipping-text,
+        .info-bar-mega-text {
           text-align: center;
         }
         .cta-vender-btn {
           width: 100%;
           justify-content: center;
+        }
+        /* 🆕 En teléfono el aviso quedaba pegado de borde a borde y se
+           veía demasiado ancho/pesado; se le da más aire lateral para
+           que luzca como una tarjeta angosta, no un bloque de pantalla
+           completa. */
+        .hero-banner {
+          padding-left: 22px;
+          padding-right: 22px;
         }
       }
 
@@ -733,6 +852,9 @@
         }
         .info-bar-shipping-text {
           font-size: 11.5px;
+        }
+        .info-bar-mega-text {
+          font-size: 11px;
         }
       }
 
@@ -884,6 +1006,90 @@
       body.theme-pink #productGrid .producto {
         background-color: #fff5f8;
         border-color: #ffc4d6;
+      }
+
+      /* 🆕 Aviso del "mega mercado" dentro del catálogo: se usa cuando
+         una búsqueda/filtro no encuentra coincidencias y también al
+         final del listado completo de productos. Morado, a juego con
+         el tema Estrellado (#2a1e52 / #151a4d que usa activarEstrellado
+         en script.js), para diferenciarlo del aviso dorado de la
+         campana de notificaciones. */
+      .mercado-aviso {
+        margin: 18px auto 6px;
+        max-width: 560px;
+        background: linear-gradient(135deg, rgba(42, 30, 82, 0.92) 0%, rgba(21, 26, 77, 0.92) 100%);
+        border: 1px solid rgba(124, 108, 224, 0.35);
+        border-radius: 14px;
+        padding: 22px 24px;
+        text-align: center;
+        color: #e4e1fb;
+        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+      }
+
+      .mercado-aviso-icono {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(124, 108, 224, 0.18);
+        border: 1px solid rgba(124, 108, 224, 0.5);
+        color: #a99bf5;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        margin-bottom: 10px;
+      }
+
+      .mercado-aviso h3 {
+        margin: 0 0 8px;
+        font-size: 16px;
+        color: #f1effe;
+      }
+
+      .mercado-aviso p {
+        margin: 0 0 16px;
+        font-size: 13.5px;
+        line-height: 1.55;
+        color: #cfc9f5;
+      }
+
+      .mercado-aviso-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, #7c6ce0, #5a4bc4);
+        color: #fff;
+        padding: 10px 20px;
+        border-radius: 9px;
+        font-weight: 600;
+        font-size: 13.5px;
+        text-decoration: none;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+        transition: filter 0.15s ease, transform 0.15s ease;
+      }
+
+      .mercado-aviso-btn:hover {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
+      }
+
+      .mercado-aviso-telefono {
+        margin: 12px 0 0;
+        font-size: 12.5px;
+        color: #cfc9f5;
+      }
+
+      .mercado-aviso-telefono a {
+        color: #a99bf5;
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+
+      @media (max-width: 460px) {
+        .mercado-aviso {
+          padding: 18px 16px;
+        }
       }
     </style>
     <link rel="stylesheet" href="mascota.css" />
@@ -1390,7 +1596,7 @@
     <li class="carga-asistida">
       <i class="fa-solid fa-wand-magic-sparkles"></i> <strong>Carga asistida de productos:</strong> si lo prefieres, nuestro
       equipo publica tus 14 productos por ti — solo escríbenos a
-      <strong>tiendamonjarrez@gmail.com</strong> con la información y nosotros
+      <strong>soporte@tiendamonjarrez.com</strong> con la información y nosotros
       nos encargamos de subirlos a la plataforma y avisarte cuando estén
       listos. Además, durante el proceso recibirás <strong>asesoría
       personalizada</strong> con recomendaciones para mejorar tus productos
@@ -1448,7 +1654,7 @@
 
     <div class="nota-pago">
         <strong>Nota importante:</strong><br>
-        Escríbanos a tiendamonjarrez@gmail.com indicando "Pago con tarjeta" y le enviaremos
+        Escríbanos a soporte@tiendamonjarrez.com indicando "Pago con tarjeta" y le enviaremos
         un enlace de pago seguro. Conserve el comprobante como respaldo.
     </div>
   </div>
@@ -1697,8 +1903,22 @@
           <span class="info-bar-shipping-icon"><i class="fa-solid fa-truck-fast"></i></span>
           <span class="info-bar-shipping-text">
             ¿El producto que te interesa está en una zona alejada? Escríbenos a
-            <a href="mailto:tiendamonjarrez@gmail.com?subject=Informacion%20sobre%20envio%20de%20productos&body=Hola%2C%0A%0ALes%20escribo%20porque%20el%20producto%20que%20me%20interesa%20esta%20en%20una%20zona%20alejada.%20Quisiera%20consultar%20si%20es%20posible%20coordinar%20el%20envio%20hasta%20mi%20ubicacion.%0A%0AQuedo%20atento%20a%20su%20respuesta%2C%20muchas%20gracias.%0A%0ASaludos%20cordiales.">tiendamonjarrez@gmail.com</a>
+            <a class="info-bar-shipping-btn" href="mailto:envios@tiendamonjarrez.com?subject=Informacion%20sobre%20envio%20de%20productos&body=Hola%2C%0A%0ALes%20escribo%20porque%20el%20producto%20que%20me%20interesa%20esta%20en%20una%20zona%20alejada.%20Quisiera%20consultar%20si%20es%20posible%20coordinar%20el%20envio%20hasta%20mi%20ubicacion.%0A%0AQuedo%20atento%20a%20su%20respuesta%2C%20muchas%20gracias.%0A%0ASaludos%20cordiales."><svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6zm-2 0-8 5-8-5h16zm0 12H4V8l8 5 8-5v10z"/></svg>envios@tiendamonjarrez.com</a>
             y con gusto validamos si podemos coordinar el envío.
+          </span>
+        </div>
+      </div>
+
+      <!-- 🆕 Aviso del "mega mercado": si el producto que busca el cliente
+           aún no está publicado, le dejamos claro que igual podemos
+           conseguirlo. Es la tercera parte de la campana, y queda
+           visible más tiempo (24s) que las otras dos. -->
+      <div class="info-bar-row info-bar-row--megamercado">
+        <div class="info-bar-left">
+          <span class="info-bar-mega-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+          <span class="info-bar-mega-text">
+            <strong>¿No encuentras un producto?</strong> Nuestros vendedores suben productos nuevos cada día. Si aún no lo encuentras, tenemos acceso a un mega mercado para buscarlo, coordinar el envío y avisarte apenas lo consigamos. Escríbenos a
+            <a class="info-bar-mega-btn" href="mailto:buscamos@tiendamonjarrez.com?subject=Busco%20un%20producto%20que%20no%20encontre&body=Hola%2C%0A%0AEstoy%20buscando%20un%20producto%20que%20no%20encontre%20publicado%20en%20la%20tienda.%20Les%20dejo%20el%20nombre%20y%20la%20descripcion%3A%0A%0ANombre%3A%20%0ADescripcion%3A%20%0A%0AQuedo%20atento%2Fa%20a%20su%20respuesta%2C%20muchas%20gracias.%0A%0ASaludos%20cordiales."><svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6zm-2 0-8 5-8-5h16zm0 12H4V8l8 5 8-5v10z"/></svg>buscamos@tiendamonjarrez.com</a>.
           </span>
         </div>
       </div>
@@ -1753,8 +1973,21 @@
           <span class="info-bar-shipping-icon"><i class="fa-solid fa-truck-fast"></i></span>
           <span class="info-bar-shipping-text">
             ¿Un comprador o compradora en una zona alejada te consulta por envío de tus productos? Escríbenos a
-            <a href="mailto:tiendamonjarrez@gmail.com?subject=Informacion%20sobre%20envio%20de%20productos&body=Hola%2C%0A%0ALes%20escribo%20porque%20un%20comprador%20me%20consulto%20por%20el%20envio%20de%20un%20producto%20a%20una%20zona%20alejada.%20Quisiera%20consultar%20si%20es%20posible%20coordinar%20el%20envio%20hasta%20esa%20ubicacion.%0A%0AQuedo%20atento%20a%20su%20respuesta%2C%20muchas%20gracias.%0A%0ASaludos%20cordiales.">tiendamonjarrez@gmail.com</a>
+            <a class="info-bar-shipping-btn" href="mailto:envios@tiendamonjarrez.com?subject=Informacion%20sobre%20envio%20de%20productos&body=Hola%2C%0A%0ALes%20escribo%20porque%20un%20comprador%20me%20consulto%20por%20el%20envio%20de%20un%20producto%20a%20una%20zona%20alejada.%20Quisiera%20consultar%20si%20es%20posible%20coordinar%20el%20envio%20hasta%20esa%20ubicacion.%0A%0AQuedo%20atento%20a%20su%20respuesta%2C%20muchas%20gracias.%0A%0ASaludos%20cordiales."><svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6zm-2 0-8 5-8-5h16zm0 12H4V8l8 5 8-5v10z"/></svg>envios@tiendamonjarrez.com</a>
             y validamos juntos las opciones de entrega.
+          </span>
+        </div>
+      </div>
+
+      <!-- 🆕 Aviso del "mega mercado" (también visible para vendedores,
+           por si buscan un producto como compradores). Tercera parte de
+           la campana. -->
+      <div class="info-bar-row info-bar-row--megamercado">
+        <div class="info-bar-left">
+          <span class="info-bar-mega-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+          <span class="info-bar-mega-text">
+            <strong>¿No encuentras un producto?</strong> Nuestros vendedores suben productos nuevos cada día. Si aún no lo encuentras, tenemos acceso a un mega mercado para buscarlo, coordinar el envío y avisarte apenas lo consigamos. Escríbenos a
+            <a class="info-bar-mega-btn" href="mailto:buscamos@tiendamonjarrez.com?subject=Busco%20un%20producto%20que%20no%20encontre&body=Hola%2C%0A%0AEstoy%20buscando%20un%20producto%20que%20no%20encontre%20publicado%20en%20la%20tienda.%20Les%20dejo%20el%20nombre%20y%20la%20descripcion%3A%0A%0ANombre%3A%20%0ADescripcion%3A%20%0A%0AQuedo%20atento%2Fa%20a%20su%20respuesta%2C%20muchas%20gracias.%0A%0ASaludos%20cordiales."><svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6zm-2 0-8 5-8-5h16zm0 12H4V8l8 5 8-5v10z"/></svg>buscamos@tiendamonjarrez.com</a>.
           </span>
         </div>
       </div>
@@ -2077,6 +2310,11 @@ async function cargarMisProductos(usuarioId) {
         <div id="productGrid" class="product-grid mosaic-grid">
           <!-- Aquí se cargarán las imágenes de los productos -->
         </div>
+        <!-- 🆕 Aviso del "mega mercado" al final del catálogo completo.
+             script.js lo llena/lo muestra solo cuando se pinta el listado
+             SIN filtros ni búsqueda (ver mostrarAvisoFinCatalogo en
+             script.js), justo después del último producto. -->
+        <div id="avisoFinCatalogo"></div>
       </div>
       <div id="addProductModal" class="modal">
         <div class="modal-content">
@@ -3147,24 +3385,34 @@ async function cargarMisProductos(usuarioId) {
           .map((id) => document.getElementById(id))
           .filter(Boolean);
 
-        // 🔧 Ahora cada banner tiene DOS partes independientes:
-        // "principal" (.info-bar-main, la franja roja) y "envio"
-        // (.info-bar-row--shipping, el aviso nuevo). Automáticamente la
-        // principal se oculta primero (a los 8s) y la de envío se queda
-        // activa 8s más (16s en total), para asegurar que el aviso de
-        // envío se alcance a ver. La campana, en cambio, siempre las
-        // maneja juntas: cada clic muestra u oculta las dos a la vez.
+        // 🔧 Cada banner tiene TRES avisos independientes: "principal"
+        // (.info-bar-main, la franja roja), "envio"
+        // (.info-bar-row--shipping) y "mega" (.info-bar-row--megamercado,
+        // el aviso de "¿no encuentras un producto?"). Antes los tres se
+        // mostraban juntos y se iban ocultando de a uno, así que durante
+        // varios segundos quedaban los tres apilados a la vez ocupando
+        // mucho espacio. Ahora se muestran EN SECUENCIA: nunca hay más
+        // de uno visible al mismo tiempo — primero la roja, se oculta,
+        // aparece la de envío, se oculta, aparece la de mega mercado y
+        // al terminar queda apagado (la campana se pone roja) hasta que
+        // la persona pulse la campana, que reinicia el ciclo desde el
+        // principio.
+        const DURACION_AVISO = 13000; // ms que cada aviso queda visible antes de ceder el paso al siguiente (antes 8000, muy corto para leerlo completo)
         let bannerActual = null;
-        let parteMain = null;
-        let parteEnvio = null;
+        let secuencia = [];
+        let pasoActual = -1;
         let oculto = false;
-        let hideTimerMain = null;
-        let hideTimerEnvio = null;
+        let timerSecuencia = null;
 
         function bannerDeSesion() {
           // De los dos banners (comprador/invitado y vendedor), script.js
           // deja exactamente uno sin display:none según el tipo de usuario.
           return banners.find((b) => b.style.display !== "none");
+        }
+
+        function detenerSecuencia() {
+          clearTimeout(timerSecuencia);
+          timerSecuencia = null;
         }
 
         function ocultarParte(el) {
@@ -3180,56 +3428,64 @@ async function cargarMisProductos(usuarioId) {
           );
         }
 
-        function mostrarParte(el) {
-          if (!el || el.style.display !== "none") return;
+        function mostrarParte(el, conAnimacion) {
+          if (!el) return;
           el.style.display = "";
-          el.classList.add("reapareciendo");
-          el.addEventListener(
-            "animationend",
-            function () {
-              el.classList.remove("reapareciendo");
-            },
-            { once: true }
-          );
+          if (conAnimacion) {
+            el.classList.add("reapareciendo");
+            el.addEventListener(
+              "animationend",
+              function () {
+                el.classList.remove("reapareciendo");
+              },
+              { once: true }
+            );
+          }
+        }
+
+        // Oculta el aviso actual de la secuencia y muestra el siguiente
+        // (con una breve transición de entrada). Al llegar al final de
+        // la secuencia, deja todo oculto y enciende el puntito rojo de
+        // la campana para invitar a volver a abrirla.
+        function avanzarSecuencia(conAnimacion) {
+          const anterior = secuencia[pasoActual];
+          if (anterior) ocultarParte(anterior);
+          pasoActual++;
+          if (pasoActual >= secuencia.length) {
+            oculto = true;
+            if (dot) dot.classList.add("activo");
+            return;
+          }
+          mostrarParte(secuencia[pasoActual], conAnimacion);
+          timerSecuencia = setTimeout(function () {
+            avanzarSecuencia(true);
+          }, DURACION_AVISO);
         }
 
         function ocultar() {
           if (!bannerActual || oculto) return;
           oculto = true;
-          clearTimeout(hideTimerMain);
-          clearTimeout(hideTimerEnvio);
-          ocultarParte(parteMain);
-          ocultarParte(parteEnvio);
+          detenerSecuencia();
+          ocultarParte(secuencia[pasoActual]);
           if (dot) dot.classList.add("activo");
         }
 
         function mostrar() {
           if (!bannerActual || !oculto) return;
           oculto = false;
-          mostrarParte(parteMain);
-          mostrarParte(parteEnvio);
           if (dot) dot.classList.remove("activo");
-          // Al mostrarlas de nuevo con la campana, se reinicia el mismo
-          // ciclo automático: la principal a los 8s y la de envío 8s
-          // después de esa (16s en total).
-          hideTimerMain = setTimeout(function () {
-            ocultarParte(parteMain);
-          }, 8000);
-          hideTimerEnvio = setTimeout(function () {
-            ocultarParte(parteEnvio);
-            oculto = true;
-            if (dot) dot.classList.add("activo");
-          }, 16000);
+          // Reinicia el mismo ciclo secuencial desde el aviso principal.
+          pasoActual = -1;
+          avanzarSecuencia(true);
         }
 
-        // 🆕 (Re)inicializa cuál es "el" banner vigente y reprograma el
-        // auto-ocultado. Se llama al cargar la página y también desde
+        // 🆕 (Re)inicializa cuál es "el" banner vigente y reprograma la
+        // secuencia. Se llama al cargar la página y también desde
         // actualizarMiTienda() cada vez que cambia la sesión, para que la
         // campana siempre apunte al banner correcto y nunca deje dos
         // banners visibles a la vez.
         function iniciar() {
-          clearTimeout(hideTimerMain);
-          clearTimeout(hideTimerEnvio);
+          detenerSecuencia();
           banners.forEach((b) => {
             b.querySelectorAll(".ocultando, .reapareciendo").forEach((el) =>
               el.classList.remove("ocultando", "reapareciendo")
@@ -3237,23 +3493,18 @@ async function cargarMisProductos(usuarioId) {
           });
 
           bannerActual = bannerDeSesion();
-          parteMain = bannerActual ? bannerActual.querySelector(".info-bar-main") : null;
-          parteEnvio = bannerActual ? bannerActual.querySelector(".info-bar-row--shipping") : null;
-          if (parteMain) parteMain.style.display = "";
-          if (parteEnvio) parteEnvio.style.display = "";
+          const parteMain = bannerActual ? bannerActual.querySelector(".info-bar-main") : null;
+          const parteEnvio = bannerActual ? bannerActual.querySelector(".info-bar-row--shipping") : null;
+          const parteMega = bannerActual ? bannerActual.querySelector(".info-bar-row--megamercado") : null;
+          secuencia = [parteMain, parteEnvio, parteMega].filter(Boolean);
+          secuencia.forEach((el) => { el.style.display = "none"; });
 
+          pasoActual = -1;
           oculto = false;
           if (dot) dot.classList.remove("activo");
 
-          if (bannerActual) {
-            hideTimerMain = setTimeout(function () {
-              ocultarParte(parteMain);
-            }, 8000);
-            hideTimerEnvio = setTimeout(function () {
-              ocultarParte(parteEnvio);
-              oculto = true;
-              if (dot) dot.classList.add("activo");
-            }, 16000);
+          if (bannerActual && secuencia.length) {
+            avanzarSecuencia(false);
           }
         }
         window.resetNotifBanner = iniciar;
@@ -3497,7 +3748,7 @@ async function cargarMisProductos(usuarioId) {
             }
 
             // 🆕 Botón "Consultar posibilidad de envíos": mismo patrón
-            // que correoHtml, pero fijo a tiendamonjarrez@gmail.com y con
+            // que correoHtml, pero fijo a envios@tiendamonjarrez.com y con
             // asunto/cuerpo enfocados en logística de envío a zonas
             // alejadas. Usa el mismo acento turquesa que el aviso de
             // envío del hero-banner (rgb(90,168,158) / #5aa89e).
@@ -3507,7 +3758,7 @@ async function cargarMisProductos(usuarioId) {
             const cuerpoEnvio = encodeURIComponent(
               `Hola,\n\nLes escribo porque el producto "${nombre}" que me interesa esta en una zona alejada. Quisiera consultar si es posible coordinar el envio hasta mi ubicacion.\n\nQuedo atento a su respuesta, muchas gracias.\n\nSaludos cordiales.`
             );
-            const envioHtml = `<a class="contacto-btn contacto-envio" href="mailto:tiendamonjarrez@gmail.com?subject=${asuntoEnvio}&body=${cuerpoEnvio}">
+            const envioHtml = `<a class="contacto-btn contacto-envio" href="mailto:envios@tiendamonjarrez.com?subject=${asuntoEnvio}&body=${cuerpoEnvio}">
               <svg viewBox="0 0 640 512" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M624 352h-16V243.9c0-12.7-5.1-24.9-14.1-33.9L494 110.1c-9-9-21.2-14.1-33.9-14.1H416V48c0-26.5-21.5-48-48-48H48C21.5 0 0 21.5 0 48v320c0 26.5 21.5 48 48 48h16c0 53 43 96 96 96s96-43 96-96h128c0 53 43 96 96 96s96-43 96-96h48c8.8 0 16-7.2 16-16v-32c0-8.8-7.2-16-16-16zM160 464c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48zm320 0c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48zm80-208H416V144h44.1l99.9 99.9V256z"/></svg>
               Consultar posibilidad de envíos de este producto
             </a>`;
@@ -3895,8 +4146,8 @@ async function cargarMisProductos(usuarioId) {
         <h3>¿Necesitas ayuda?</h3>
         <p>Nuestro equipo de soporte está listo para atenderte.
            Escríbenos y con gusto resolveremos tu consulta.</p>
-        <a class="ayuda-correo" href="mailto:tiendamonjarrez@gmail.com">
-          <i class="fa-solid fa-envelope"></i> tiendamonjarrez@gmail.com
+        <a class="ayuda-correo" href="mailto:soporte@tiendamonjarrez.com">
+          <i class="fa-solid fa-envelope"></i> soporte@tiendamonjarrez.com
         </a>
       </div>
     </div>
@@ -4573,8 +4824,24 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
 
 
 
-
-
+  <!-- 🆕 Iconos flotantes de redes sociales: comentados por el momento
+       mientras se crean/confirman las cuentas reales (Facebook,
+       Instagram, TikTok). Los enlaces de abajo son placeholders
+       (TU_PAGINA / TU_USUARIO), así que se desactivan para no mostrar
+       botones que no llevan a ningún lado. Para reactivarlos, quitar
+       este comentario y poner los enlaces reales.
+  <div class="redes-flotantes" id="redesFlotantes">
+    <a href="https://www.facebook.com/TU_PAGINA" target="_blank" rel="noopener noreferrer" class="red-icono red-facebook" aria-label="Facebook">
+      <i class="fa-brands fa-facebook-f"></i>
+    </a>
+    <a href="https://www.instagram.com/TU_USUARIO" target="_blank" rel="noopener noreferrer" class="red-icono red-instagram" aria-label="Instagram">
+      <i class="fa-brands fa-instagram"></i>
+    </a>
+    <a href="https://www.tiktok.com/@TU_USUARIO" target="_blank" rel="noopener noreferrer" class="red-icono red-tiktok" aria-label="TikTok">
+      <i class="fa-brands fa-tiktok"></i>
+    </a>
+  </div>
+  -->
 
   </body>
 </html>

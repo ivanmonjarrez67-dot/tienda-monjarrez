@@ -40,6 +40,7 @@
         { texto: "🔑 Olvidé mi contraseña.", id: "olvide_contrasena" },
         { texto: "📞 ¿Cómo contacto a un vendedor?", id: "contactar_vendedor" },
         { texto: "🚚 ¿Tienen servicio de envíos?", id: "servicio_envios" },
+        { texto: "🔍 No encuentro un producto, ¿qué hago?", id: "producto_no_encontrado" },
       ],
     },
     publicar_producto: {
@@ -115,7 +116,16 @@
     },
     servicio_envios: {
       respuestas: [
-        "🚚 Depende de la zona. Si el producto que te interesa está lejos, comunícate con nosotros al correo que aparece en el ícono de notificaciones (🔔) o directamente a <a href=\"mailto:tiendamonjarrez@gmail.com?subject=Informacion%20sobre%20envio%20de%20productos&body=Hola%2C%0A%0AQuisiera%20consultar%20si%20es%20posible%20coordinar%20el%20envio%20de%20un%20producto%20hasta%20mi%20zona.%0A%0AQuedo%20atento%20a%20su%20respuesta%2C%20muchas%20gracias.%0A%0ASaludos%20cordiales.\">tiendamonjarrez@gmail.com</a>, y con gusto validamos si podemos coordinar el envío hasta tu ubicación.",
+        "🚚 Depende de la zona. Si el producto que te interesa está lejos, comunícate con nosotros al correo que aparece en el ícono de notificaciones (🔔) o directamente a <a href=\"mailto:envios@tiendamonjarrez.com?subject=Informacion%20sobre%20envio%20de%20productos&body=Hola%2C%0A%0AQuisiera%20consultar%20si%20es%20posible%20coordinar%20el%20envio%20de%20un%20producto%20hasta%20mi%20zona.%0A%0AQuedo%20atento%20a%20su%20respuesta%2C%20muchas%20gracias.%0A%0ASaludos%20cordiales.\">envios@tiendamonjarrez.com</a>, y con gusto validamos si podemos coordinar el envío hasta tu ubicación.",
+      ],
+      opciones: [
+        { texto: "📞 ¿Cómo contacto a un vendedor?", id: "contactar_vendedor" },
+        { texto: "❓ Hacer otra consulta", id: "inicio" },
+      ],
+    },
+    producto_no_encontrado: {
+      respuestas: [
+        "🔍 Tranquilo/a, nuestros vendedores suben productos nuevos todos los días. Y si aun así no lo encuentras, tenemos acceso a un <strong>mega mercado</strong>: escríbenos a <a href=\"mailto:buscamos@tiendamonjarrez.com?subject=Busco%20un%20producto%20que%20no%20encontre&body=Hola%2C%0A%0AEstoy%20buscando%20un%20producto%20que%20no%20encontre%20publicado%20en%20la%20tienda.%20Les%20dejo%20el%20nombre%20y%20la%20descripcion%3A%0A%0ANombre%3A%20%0ADescripcion%3A%20%0A%0AQuedo%20atento%2Fa%20a%20su%20respuesta%2C%20muchas%20gracias.%0A%0ASaludos%20cordiales.\">buscamos@tiendamonjarrez.com</a> contándonos qué buscas, y con gusto te lo conseguimos, coordinamos el envío y te avisamos apenas lo tengamos.",
       ],
       opciones: [
         { texto: "📞 ¿Cómo contacto a un vendedor?", id: "contactar_vendedor" },
