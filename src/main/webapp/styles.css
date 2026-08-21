@@ -496,7 +496,7 @@ Adaptación del toggle a móviles y tablets
    Fondo oscuro semitransparente para que se lea sobre cualquier foto. */
 .producto-badge {
     position: absolute;
-    top: 10px;
+    bottom: 10px;
     left: 10px;
     max-width: calc(100% - 20px);
     padding: 3px 9px;

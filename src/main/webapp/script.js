@@ -444,14 +444,25 @@ function construirTarjetaProductoHTML(producto) {
     ? `<span class="producto-badge">${producto.empresa}</span>`
     : "";
 
-  const galeriaHtml = construirGaleriaHTML(
+  let galeriaHtml = construirGaleriaHTML(
     [producto.imagen, producto.imagen2, producto.imagen3],
     producto.nombre || "",
     "width:150px;height:150px;object-fit:cover;"
   );
 
+  // 🔧 El badge del nombre de empresa se inserta DENTRO del contenedor de
+  // la imagen (.producto-galeria, que ya es position:relative) en vez de
+  // quedar como hermano suelto de toda la tarjeta. Así "bottom" (ver
+  // styles.css) lo ancla a la esquina inferior de la FOTO, no al fondo de
+  // toda la tarjeta (que quedaría flotando sobre el precio/botón).
+  if (badgeHtml) {
+    galeriaHtml = galeriaHtml.replace(
+      /(<div class="producto-galeria"[^>]*>)/,
+      `$1${badgeHtml}`
+    );
+  }
+
   return `
-        ${badgeHtml}
         ${galeriaHtml}
         <h3>${producto.nombre || ''}</h3>
         ${precioHtml}
