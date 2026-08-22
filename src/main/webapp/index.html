@@ -1091,6 +1091,79 @@
           padding: 18px 16px;
         }
       }
+
+      /* 🆕 Iconos flotantes de redes sociales: Instagram activo (enlaza
+         a la cuenta real), Facebook y TikTok quedan bloqueados con un
+         candadito hasta que esas cuentas estén listas. */
+      .redes-flotantes {
+        position: fixed;
+        left: 50%;
+        bottom: 18px;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 14px;
+        z-index: 500;
+      }
+
+      .red-icono {
+        position: relative;
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: #fff;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        transition: transform 0.15s ease, filter 0.15s ease;
+      }
+
+      .red-icono:hover {
+        transform: translateY(-3px);
+      }
+
+      .red-instagram {
+        background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285aeb 90%);
+      }
+
+      .red-bloqueada {
+        background: #6b6b76;
+        cursor: not-allowed;
+        filter: grayscale(0.4);
+      }
+
+      .red-bloqueada:hover {
+        transform: none;
+      }
+
+      .red-candado {
+        position: absolute;
+        bottom: -4px;
+        right: -4px;
+        width: 19px;
+        height: 19px;
+        border-radius: 50%;
+        background: #2c2c34;
+        border: 2px solid #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        color: #f1c40f;
+      }
+
+      @media (max-width: 460px) {
+        .redes-flotantes {
+          bottom: 14px;
+          gap: 10px;
+        }
+        .red-icono {
+          width: 40px;
+          height: 40px;
+          font-size: 17px;
+        }
+      }
     </style>
     <link rel="stylesheet" href="mascota.css" />
     
@@ -4824,24 +4897,25 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
 
 
 
-  <!-- 🆕 Iconos flotantes de redes sociales: comentados por el momento
-       mientras se crean/confirman las cuentas reales (Facebook,
-       Instagram, TikTok). Los enlaces de abajo son placeholders
-       (TU_PAGINA / TU_USUARIO), así que se desactivan para no mostrar
-       botones que no llevan a ningún lado. Para reactivarlos, quitar
-       este comentario y poner los enlaces reales.
+  <!-- 🆕 Iconos flotantes de redes sociales: Instagram ya activo con el
+       enlace real de la tienda. Facebook y TikTok se muestran
+       bloqueados con un candadito (no enlazan a ningún lado) hasta que
+       esas cuentas estén listas; cuando existan, solo hay que quitarles
+       la clase "red-bloqueada", poner el href real y borrar el
+       <span class="red-candado">. -->
   <div class="redes-flotantes" id="redesFlotantes">
-    <a href="https://www.facebook.com/TU_PAGINA" target="_blank" rel="noopener noreferrer" class="red-icono red-facebook" aria-label="Facebook">
-      <i class="fa-brands fa-facebook-f"></i>
-    </a>
-    <a href="https://www.instagram.com/TU_USUARIO" target="_blank" rel="noopener noreferrer" class="red-icono red-instagram" aria-label="Instagram">
+    <a href="https://www.instagram.com/tiendamonjarrez?utm_source=qr&igsi=dmFxc2pmcjRhdHVq" target="_blank" rel="noopener noreferrer" class="red-icono red-instagram" aria-label="Instagram">
       <i class="fa-brands fa-instagram"></i>
     </a>
-    <a href="https://www.tiktok.com/@TU_USUARIO" target="_blank" rel="noopener noreferrer" class="red-icono red-tiktok" aria-label="TikTok">
+    <a href="#" class="red-icono red-bloqueada" aria-label="Facebook (próximamente)" title="Muy pronto" onclick="return false;">
+      <i class="fa-brands fa-facebook-f"></i>
+      <span class="red-candado"><i class="fa-solid fa-lock"></i></span>
+    </a>
+    <a href="#" class="red-icono red-bloqueada" aria-label="TikTok (próximamente)" title="Muy pronto" onclick="return false;">
       <i class="fa-brands fa-tiktok"></i>
+      <span class="red-candado"><i class="fa-solid fa-lock"></i></span>
     </a>
   </div>
-  -->
 
   </body>
 </html>
