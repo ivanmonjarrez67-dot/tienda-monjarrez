@@ -188,6 +188,33 @@ function cargarProductosMiTienda() {
     window.addEventListener('scroll', () => {
       if (menuContent.style.display === 'block') posicionarMenu();
     }, true);
+
+    // 🆕 Menú de 3 puntitos flotante: en reposo (arriba del todo) el
+    // botón se queda donde siempre estuvo, dentro de la fila de
+    // filtros. En cuanto el usuario empieza a bajar el scroll, se
+    // despega de esa fila y queda fijo justo debajo del header, en
+    // rojo apagado (ver CSS "body.menu-flotando #menuBtn" en
+    // index.html). Al volver arriba del todo, regresa solo a su
+    // posición original. No mueve nada más de la página.
+    function actualizarAlturaHeaderMenu() {
+      const header = document.querySelector('header');
+      if (header) {
+        document.documentElement.style.setProperty('--header-h', header.offsetHeight + 'px');
+      }
+    }
+    actualizarAlturaHeaderMenu();
+    window.addEventListener('resize', actualizarAlturaHeaderMenu);
+
+    const UMBRAL_SCROLL_MENU = 24;
+    function actualizarMenuFlotante() {
+      const flotando = window.scrollY > UMBRAL_SCROLL_MENU;
+      document.body.classList.toggle('menu-flotando', flotando);
+      // Si el menú estaba abierto mientras el botón se movía, se
+      // recalcula su posición para que no quede desalineado.
+      if (menuContent.style.display === 'block') posicionarMenu();
+    }
+    window.addEventListener('scroll', actualizarMenuFlotante, { passive: true });
+    actualizarMenuFlotante();
   }
 
 window.mostrarAyuda = function mostrarAyuda() {
@@ -649,6 +676,11 @@ document.querySelectorAll(".filter").forEach((btn) => {
     if (btn.dataset.category === "Mi tienda" && btn.dataset.bloqueado === "true") {
       e.stopImmediatePropagation();
       alert("La sección \"Mi tienda\" es exclusiva para vendedores registrados en Tienda Monjarrez. Regístrate o inicia sesión como vendedor para publicar y administrar tus propios productos.");
+      // 🆕 Como ahora todos entran como Invitado por defecto (ya no se
+      // fuerza el login al cargar la página), aprovechamos este clic
+      // para abrirle el login directamente y que pueda registrarse o
+      // iniciar sesión como vendedor/a sin tener que buscarlo aparte.
+      if (typeof window.mostrarLogin === "function") window.mostrarLogin();
       return;
     }
     categoriaSeleccionada = btn.dataset.category;
@@ -1313,6 +1345,20 @@ function actualizarMiTienda(usuario) {
   miTiendaBtn.style.opacity = puedeEntrar ? 1 : 0.6;
   miTiendaBtn.title = puedeEntrar ? "" : "Exclusivo para vendedores de Tienda Monjarrez";
   if (candado) candado.style.display = puedeEntrar ? "none" : "inline-block";
+
+  // 🆕 El botón "Cerrar sesión" del menú ahora es consciente de si hay
+  // sesión activa o no: para un Invitado no tiene sentido "cerrar"
+  // nada, así que se convierte en "Iniciar sesión" (abre el login) y
+  // vuelve a decir "Cerrar sesión" en cuanto entra como vendedor/a o
+  // comprador/a.
+  const btnSesionTexto = document.getElementById("btnSesionMenuTexto");
+  const btnSesionIcono = document.getElementById("btnSesionMenuIcono");
+  const conSesion = usuario === "vendedor" || usuario === "comprador" || usuario === "vendedor-recién-registrado";
+  if (btnSesionTexto) btnSesionTexto.textContent = conSesion ? "Cerrar sesión" : "Iniciar sesión";
+  if (btnSesionIcono) {
+    btnSesionIcono.classList.toggle("fa-right-from-bracket", conSesion);
+    btnSesionIcono.classList.toggle("fa-right-to-bracket", !conSesion);
+  }
 }
 window.actualizarMiTienda = actualizarMiTienda;
 

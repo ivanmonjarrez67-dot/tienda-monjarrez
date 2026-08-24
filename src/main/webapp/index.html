@@ -200,6 +200,47 @@
         white-space: nowrap;
       }
 
+      /* 🆕 MENÚ DE 3 PUNTITOS FLOTANTE
+         En reposo (arriba del todo) el botón sigue exactamente donde
+         estaba: dentro de la fila de filtros (.category-track), sin
+         ningún cambio. En cuanto el usuario empieza a bajar el scroll,
+         un script agrega la clase "menu-flotando" al <body> y el MISMO
+         botón (#menuBtn) se despega de esa fila y se fija justo debajo
+         del header, mostrado en el rojo apagado de la marca. El
+         desplegable del menú (#menuContent) no necesita ningún cambio:
+         su posición ya se recalcula en script.js con
+         getBoundingClientRect() del botón cada vez que se abre, así que
+         sigue apareciendo justo debajo de donde esté el botón en cada
+         momento. */
+      body.menu-flotando #menuBtn {
+        position: fixed;
+        top: calc(var(--header-h, 76px) + 8px);
+        right: 14px;
+        z-index: 3000;
+        background: linear-gradient(135deg, #b33a3a, #7a1414) !important;
+        border: 2px solid rgba(255, 255, 255, 0.55) !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(179, 58, 58, 0.22);
+        transform: scale(1.18);
+        transform-origin: center;
+        animation: menuFlotandoAparecer 0.3s ease-out, menuFlotandoPulso 2.2s ease-in-out 0.3s 3;
+      }
+      body.menu-flotando #menuBtn::before,
+      body.menu-flotando #menuBtn::after {
+        color: #ffffff !important; /* puntitos blancos: máximo contraste contra el fondo rojo */
+      }
+      @keyframes menuFlotandoAparecer {
+        0%   { transform: scale(0.6); opacity: 0; }
+        100% { transform: scale(1.18); opacity: 1; }
+      }
+      /* Un par de pulsos suaves al aparecer para que el ojo lo detecte
+         de inmediato; se detiene solo (3 repeticiones) y no molesta
+         mientras se sigue navegando. Mantiene el mismo scale(1.18) del
+         estado final de arriba para no "encogerse" al terminar. */
+      @keyframes menuFlotandoPulso {
+        0%, 100% { transform: scale(1.18); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(179, 58, 58, 0.22); }
+        50%      { transform: scale(1.28); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.55), 0 0 0 9px rgba(179, 58, 58, 0.32); }
+      }
+
       /* 🆕 Carrusel deslizable con el cursor/dedo (antes tenía flechas
          laterales clicables; ahora se desliza igual que en el celular:
          arrastrando con el mouse en computadora o con el dedo en
@@ -1910,8 +1951,13 @@
               <i class="fa-regular fa-circle-question"></i> Ayuda
             </button>
 
-            <!-- Botón de cerrar sesión -->
-            <button onclick="cerrarSesion()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</button>
+            <!-- Botón de cerrar sesión / iniciar sesión: el texto e
+                 ícono los actualiza actualizarMiTienda() en script.js
+                 según haya o no sesión activa (ver id's abajo). -->
+            <button id="btnSesionMenu" onclick="manejarClicSesion()">
+              <i id="btnSesionMenuIcono" class="fa-solid fa-right-from-bracket"></i>
+              <span id="btnSesionMenuTexto">Cerrar sesión</span>
+            </button>
           </div>
         </div>
 
@@ -4698,6 +4744,18 @@ function comprobarSesion() {
   return sesion.tipo; // "vendedor" o "comprador"
 }
 
+// 🆕 El único botón del menú ("Cerrar sesión" / "Iniciar sesión") llama
+// siempre a esta función; ella decide en el momento del clic si hay
+// sesión activa (cierra sesión) o no (abre el login). El texto e ícono
+// visibles del botón los actualiza actualizarMiTienda() en script.js.
+function manejarClicSesion() {
+  if (comprobarSesion()) {
+    cerrarSesion();
+  } else {
+    mostrarLogin();
+  }
+}
+
 function actualizarActividad() {
   const sesion = JSON.parse(localStorage.getItem("sesionUsuario"));
   if (!sesion) return;
@@ -4746,17 +4804,17 @@ window.addEventListener("load", () => {
   if (tipo) {
     mostrarContenido(tipo, false); // Sesión activa → mostrar contenido
     actualizarMiTienda(tipo);      // 🔹 Ajustar "Mi tienda" según tipo
-  } else if (window.__llegaDesdeProductoCompartido) {
-    // 🆕 Si la persona llegó desde un enlace de producto compartido
-    // (tiendamonjarrez.com/index.html?producto=123, el que genera el
-    // botón "Compartir" vía ProductoServlet), no tiene sentido tapársela
-    // con el login — se le deja entrar directo como Invitado, igual que
-    // si hubiera tocado el botón "Invitado" a mano, para que vea el
-    // producto de una vez.
-    document.querySelector(".role-btn.invitado")?.click();
   } else {
-    mostrarLogin();                // No hay sesión → mostrar login
-    actualizarMiTienda("invitado"); // 🔹 Bloquear por defecto
+    // 🆕 Ya no se tapa la página con el login al entrar: cualquiera que
+    // llegue sin sesión activa (incluidos los enlaces de producto
+    // compartido) ve el catálogo de una vez, como Invitado por
+    // defecto. Se reutiliza el mismo flujo que ya dispara el botón
+    // "Invitado" del login (oculta el login, muestra contenidoInvitado).
+    // El login sigue disponible para quien quiera entrar como
+    // Vendedor/a o Comprador/a: desde el menú de 3 puntitos ("Iniciar
+    // sesión", ver más abajo) o al intentar entrar a "Mi tienda".
+    document.querySelector(".role-btn.invitado")?.click();
+    actualizarMiTienda("invitado"); // 🔹 Bloquear "Mi tienda" por defecto
   }
 });
 

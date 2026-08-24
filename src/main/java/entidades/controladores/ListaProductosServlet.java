@@ -23,12 +23,16 @@ public class ListaProductosServlet extends HttpServlet {
         // fotos extra). Son LEFT JOIN a propósito: la enorme mayoría de
         // productos no van a tener fila en ninguna de las 2 tablas nuevas,
         // y en ese caso los campos simplemente llegan NULL.
+        // 🆕 ORDER BY NEWID(): genera un orden aleatorio distinto en cada
+        // ejecución del query, así el catálogo no muestra siempre los
+        // mismos productos primero.
         String sql = "SELECT p.id, p.nombre, p.descripcion, p.imagen, p.precio, p.Nombre_Empresa, "
                    + "p.telefono, p.correo, p.provincia, p.ciudad, "
                    + "d.precio_anterior, ia.imagen2, ia.imagen3 "
                    + "FROM Productos p "
                    + "LEFT JOIN Descuentos d ON d.producto_id = p.id "
-                   + "LEFT JOIN ImagenesAdicionalesProducto ia ON ia.producto_id = p.id";
+                   + "LEFT JOIN ImagenesAdicionalesProducto ia ON ia.producto_id = p.id "
+                   + "ORDER BY NEWID()";
 
         try (Connection conn = DatabaseConnection.getConnection();
              Statement stmt = conn.createStatement();
