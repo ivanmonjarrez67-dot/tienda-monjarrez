@@ -32,4 +32,8 @@ public class Config {
     public static final String CLOUDINARY_UPLOAD_PRESET =
             System.getenv("CLOUDINARY_UPLOAD_PRESET");
 
+            // Config.java — agregar esta línea junto a las demás
+public static final String CJ_API_KEY =
+        System.getenv("CJ_API_KEY");
+
 }
