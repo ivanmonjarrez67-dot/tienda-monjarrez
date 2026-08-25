@@ -19,8 +19,8 @@ import entidades.JsonUtils;
 @WebServlet("/admin/cjProductTest")
 public class CJProductTestServlet extends HttpServlet {
 
-    private static final String LIST_URL =
-            "https://developers.cjdropshipping.com/api2.0/v1/product/list?pageNum=1&pageSize=1";
+   private static final String LIST_URL =
+        "https://developers.cjdropshipping.com/api2.0/v1/product/list?pageNum=1&pageSize=1&startInventory=1";
 
     private static final String QUERY_URL_BASE =
             "https://developers.cjdropshipping.com/api2.0/v1/product/query?pid=";
