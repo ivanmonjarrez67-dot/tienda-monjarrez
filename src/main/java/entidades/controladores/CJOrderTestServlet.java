@@ -1,0 +1,96 @@
+package entidades.controladores;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Map;
+
+import entidades.CJApiService;
+import entidades.JsonParser;
+import entidades.JsonUtils;
+
+// 🧪 Servlet de PRUEBA: crea una orden en modo SANDBOX (isSandbox=1)
+// usando la variante de prueba ya validada (vid). No genera cobro real,
+// ni logística real, ni fulfillment real — es solo para probar el flujo.
+@WebServlet("/admin/cjOrderTest")
+public class CJOrderTestServlet extends HttpServlet {
+
+    private static final String ORDER_URL =
+            "https://developers.cjdropshipping.com/api2.0/v1/shopping/order/createOrderV2";
+
+    // Datos fijos de la variante de prueba (Sakura pink S)
+    private static final String VID_PRUEBA = "2608251230391600200";
+
+    // Logística que ya confirmamos con /admin/cjFreightTest
+    private static final String LOGISTICA_PRUEBA = "CJPacket Eub";
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json;charset=UTF-8");
+        PrintWriter out = response.getWriter();
+
+        try {
+            // Número de orden único por cada corrida (evita choques si probás varias veces)
+            String orderNumber = "TEST-SANDBOX-" + System.currentTimeMillis();
+
+            // Armamos el JSON del body a mano, igual que en obtenerAccessToken()
+            String jsonBody = "{"
+                    + "\"orderNumber\":\"" + JsonUtils.escapar(orderNumber) + "\","
+                    + "\"shippingCountryCode\":\"CR\","
+                    + "\"shippingCountry\":\"Costa Rica\","
+                    + "\"shippingProvince\":\"San Jose\","
+                    + "\"shippingCity\":\"San Jose\","
+                    + "\"shippingZip\":\"10101\","
+                    + "\"shippingPhone\":\"88888888\","
+                    + "\"shippingCustomerName\":\"Test Tienda Monjarrez\","
+                    + "\"shippingAddress\":\"Direccion de prueba 123\","
+                    + "\"email\":\"\","
+                    + "\"logisticName\":\"" + JsonUtils.escapar(LOGISTICA_PRUEBA) + "\","
+                    + "\"fromCountryCode\":\"CN\","
+                    + "\"platform\":\"Api\","
+                    + "\"orderFlow\":1,"
+                    + "\"isSandbox\":1,"
+                    + "\"products\":[{"
+                        + "\"vid\":\"" + JsonUtils.escapar(VID_PRUEBA) + "\","
+                        + "\"quantity\":1,"
+                        + "\"storeLineItemId\":\"test-lineitem-1\""
+                    + "}]"
+                    + "}";
+
+            Map<String, Object> resp = CJApiService.post(ORDER_URL, jsonBody);
+
+            int code = JsonParser.getInt(resp, "code", -1);
+            boolean result = JsonParser.getBoolean(resp, "result", false);
+            String message = JsonParser.getString(resp, "message");
+
+            StringBuilder json = new StringBuilder();
+            json.append("{\"ok\":").append(result).append(",");
+            json.append("\"code\":").append(code).append(",");
+            json.append("\"message\":\"").append(JsonUtils.escapar(message)).append("\",");
+
+            if (result) {
+                Map<String, Object> data = JsonParser.getMap(resp, "data");
+                json.append("\"orderId\":\"").append(JsonUtils.escapar(JsonParser.getString(data, "orderId"))).append("\",");
+                json.append("\"orderNumber\":\"").append(JsonUtils.escapar(JsonParser.getString(data, "orderNumber"))).append("\",");
+                json.append("\"orderStatus\":\"").append(JsonUtils.escapar(JsonParser.getString(data, "orderStatus"))).append("\",");
+                json.append("\"orderAmount\":").append(JsonParser.getDouble(data, "orderAmount", 0)).append(",");
+                json.append("\"productAmount\":").append(JsonParser.getDouble(data, "productAmount", 0)).append(",");
+                json.append("\"postageAmount\":").append(JsonParser.getDouble(data, "postageAmount", 0));
+            } else {
+                json.append("\"detalle\":\"orden no creada, revisar mensaje de error\"");
+            }
+            json.append("}");
+
+            out.print(json.toString());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.setStatus(500);
+            out.print("{\"ok\":false,\"error\":\"" + JsonUtils.escapar("Excepcion: " + e.getMessage()) + "\"}");
+        }
+    }
+}
