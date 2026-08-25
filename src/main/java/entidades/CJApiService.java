@@ -9,7 +9,7 @@ import java.util.Map;
 
 import config.Config;
 
-// 🔧 Centraliza autenticación y llamadas GET a la API de CJdropshipping.
+// 🔧 Centraliza autenticación y llamadas GET/POST a la API de CJdropshipping.
 public class CJApiService {
 
     private static final String CJ_AUTH_URL =
@@ -64,6 +64,25 @@ public class CJApiService {
                 .header("CJ-Access-Token", token)
                 .timeout(Duration.ofSeconds(20))
                 .GET()
+                .build();
+
+        HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        return (Map<String, Object>) JsonParser.parse(response.body());
+    }
+
+    // 🆕 Llamada POST genérica a CJ, agregando el header CJ-Access-Token.
+    // La usa CJFreightTestServlet (y en el futuro cualquier otro endpoint
+    // de CJ que necesite mandar un body, como sourcing/create).
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> post(String url, String jsonBody) throws Exception {
+        String token = obtenerAccessToken();
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("CJ-Access-Token", token)
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(20))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                 .build();
 
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
