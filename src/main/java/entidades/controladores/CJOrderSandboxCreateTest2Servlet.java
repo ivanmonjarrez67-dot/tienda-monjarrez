@@ -12,17 +12,15 @@ import entidades.JsonParser;
 import entidades.JsonUtils;
 
 // 🧪 Servlet de PRUEBA: repite createOrderV2 en modo SANDBOX pero con
-// payType=3 ("solo crear la orden, sin carrito ni pago automatico").
-// Objetivo: ver si con payType=3 la orden queda en un estado distinto
-// a IN_CART (ideal: UNPAID), para poder despues simular el pago.
+// payType=2 ("pago con balance, avanza automatico por carrito ->
+// confirmacion -> descuento"). Objetivo: ver si asi la orden llega
+// directo a un estado pagado/confirmado sin pasos manuales de addCart.
 @WebServlet("/admin/cjOrderSandboxCreateTest2")
 public class CJOrderSandboxCreateTest2Servlet extends HttpServlet {
 
     private static final String ORDER_URL =
             "https://developers.cjdropshipping.com/api2.0/v1/shopping/order/createOrderV2";
 
-    // Mismos datos de prueba que CJOrderTestServlet, para poder comparar
-    // resultados manzanas con manzanas.
     private static final String VID_PRUEBA = "2608251230391600200";
     private static final String LOGISTICA_PRUEBA = "CJPacket Eub";
 
@@ -34,29 +32,29 @@ public class CJOrderSandboxCreateTest2Servlet extends HttpServlet {
         PrintWriter out = response.getWriter();
 
         try {
-            String orderNumber = "TEST-SANDBOX-PT3-" + System.currentTimeMillis();
+            String orderNumber = "TEST-SANDBOX-PT2-" + System.currentTimeMillis();
 
             String jsonBody = "{"
                     + "\"orderNumber\":\"" + JsonUtils.escapar(orderNumber) + "\","
                     + "\"shippingCountryCode\":\"CR\","
                     + "\"shippingCountry\":\"Costa Rica\","
-                    + "\"shippingProvince\":\"San Jose\","
-                    + "\"shippingCity\":\"San Jose\","
-                    + "\"shippingZip\":\"10101\","
+                    + "\"shippingProvince\":\"Alajuela\","
+                    + "\"shippingCity\":\"Alajuela\","
+                    + "\"shippingZip\":\"20101\","
                     + "\"shippingPhone\":\"88888888\","
                     + "\"shippingCustomerName\":\"Test Tienda Monjarrez\","
                     + "\"shippingAddress\":\"Direccion de prueba 123\","
-                    + "\"email\":\"\","
+                    + "\"email\":\"test@tiendamonjarrez.com\","
                     + "\"logisticName\":\"" + JsonUtils.escapar(LOGISTICA_PRUEBA) + "\","
                     + "\"fromCountryCode\":\"CN\","
                     + "\"platform\":\"Api\","
                     + "\"orderFlow\":1,"
                     + "\"isSandbox\":1,"
-                    + "\"payType\":3,"
+                    + "\"payType\":2,"
                     + "\"products\":[{"
                         + "\"vid\":\"" + JsonUtils.escapar(VID_PRUEBA) + "\","
                         + "\"quantity\":1,"
-                        + "\"storeLineItemId\":\"test-lineitem-pt3-1\""
+                        + "\"storeLineItemId\":\"test-lineitem-pt2-1\""
                     + "}]"
                     + "}";
 
@@ -78,7 +76,8 @@ public class CJOrderSandboxCreateTest2Servlet extends HttpServlet {
                 json.append("\"orderStatus\":\"").append(JsonUtils.escapar(JsonParser.getString(data, "orderStatus"))).append("\",");
                 json.append("\"orderAmount\":").append(JsonParser.getDouble(data, "orderAmount", 0)).append(",");
                 json.append("\"productAmount\":").append(JsonParser.getDouble(data, "productAmount", 0)).append(",");
-                json.append("\"postageAmount\":").append(JsonParser.getDouble(data, "postageAmount", 0));
+                json.append("\"postageAmount\":").append(JsonParser.getDouble(data, "postageAmount", 0)).append(",");
+                json.append("\"actualPayment\":").append(JsonParser.getDouble(data, "actualPayment", 0));
             } else {
                 json.append("\"detalle\":\"orden no creada, revisar mensaje de error\"");
             }
