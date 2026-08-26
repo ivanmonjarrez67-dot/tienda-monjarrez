@@ -11,10 +11,10 @@ import entidades.CJApiService;
 import entidades.JsonParser;
 import entidades.JsonUtils;
 
-// 🧪 Servlet de PRUEBA: repite createOrderV2 en modo SANDBOX pero con
+// 🧪 Servlet de PRUEBA: repite createOrderV2 en modo SANDBOX con
 // payType=2 ("pago con balance, avanza automatico por carrito ->
-// confirmacion -> descuento"). Objetivo: ver si asi la orden llega
-// directo a un estado pagado/confirmado sin pasos manuales de addCart.
+// confirmacion -> descuento"). Si CJ rechaza la orden, ahora mostramos
+// el "data" crudo del error para saber exactamente que esta fallando.
 @WebServlet("/admin/cjOrderSandboxCreateTest2")
 public class CJOrderSandboxCreateTest2Servlet extends HttpServlet {
 
@@ -79,7 +79,11 @@ public class CJOrderSandboxCreateTest2Servlet extends HttpServlet {
                 json.append("\"postageAmount\":").append(JsonParser.getDouble(data, "postageAmount", 0)).append(",");
                 json.append("\"actualPayment\":").append(JsonParser.getDouble(data, "actualPayment", 0));
             } else {
-                json.append("\"detalle\":\"orden no creada, revisar mensaje de error\"");
+                // 🆕 En vez de un mensaje generico, mostramos el "data" crudo
+                // que vino en la respuesta de CJ (puede traer detalles del
+                // error, como interceptOrderReasons u otros campos).
+                String rawData = String.valueOf(resp.get("data"));
+                json.append("\"detalle\":\"").append(JsonUtils.escapar(rawData)).append("\"");
             }
             json.append("}");
 
