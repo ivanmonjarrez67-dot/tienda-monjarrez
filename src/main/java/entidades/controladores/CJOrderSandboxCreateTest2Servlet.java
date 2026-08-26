@@ -11,10 +11,14 @@ import entidades.CJApiService;
 import entidades.JsonParser;
 import entidades.JsonUtils;
 
-// 🧪 Servlet de PRUEBA: repite createOrderV2 en modo SANDBOX con
-// payType=2 ("pago con balance, avanza automatico por carrito ->
-// confirmacion -> descuento"). Si CJ rechaza la orden, ahora mostramos
-// el "data" crudo del error para saber exactamente que esta fallando.
+// 🧪 Servlet de PRUEBA: crea una orden NORMAL (sin isSandbox) con
+// payType=3 ("crear solamente, sin iniciar pago"). Objetivo: descartar
+// si el problema es especifico del modo Sandbox de la cuenta, ya que
+// las pruebas sandbox venian fallando con "Sandbox orders and normal
+// orders cannot be submitted together".
+// ⚠️ Esta orden queda registrada como REAL (no sandbox) en la cuenta de
+// CJ, aunque payType=3 no dispara pago ni fulfillment. Cancelar/eliminar
+// despues desde el dashboard de CJ si no se va a usar.
 @WebServlet("/admin/cjOrderSandboxCreateTest2")
 public class CJOrderSandboxCreateTest2Servlet extends HttpServlet {
 
@@ -32,7 +36,7 @@ public class CJOrderSandboxCreateTest2Servlet extends HttpServlet {
         PrintWriter out = response.getWriter();
 
         try {
-            String orderNumber = "TEST-SANDBOX-PT2-" + System.currentTimeMillis();
+            String orderNumber = "TEST-NORMAL-PT3-" + System.currentTimeMillis();
 
             String jsonBody = "{"
                     + "\"orderNumber\":\"" + JsonUtils.escapar(orderNumber) + "\","
@@ -49,12 +53,11 @@ public class CJOrderSandboxCreateTest2Servlet extends HttpServlet {
                     + "\"fromCountryCode\":\"CN\","
                     + "\"platform\":\"Api\","
                     + "\"orderFlow\":1,"
-                    + "\"isSandbox\":1,"
-                    + "\"payType\":2,"
+                    + "\"payType\":3,"
                     + "\"products\":[{"
                         + "\"vid\":\"" + JsonUtils.escapar(VID_PRUEBA) + "\","
                         + "\"quantity\":1,"
-                        + "\"storeLineItemId\":\"test-lineitem-pt2-1\""
+                        + "\"storeLineItemId\":\"test-lineitem-normal-pt3-1\""
                     + "}]"
                     + "}";
 
@@ -79,9 +82,6 @@ public class CJOrderSandboxCreateTest2Servlet extends HttpServlet {
                 json.append("\"postageAmount\":").append(JsonParser.getDouble(data, "postageAmount", 0)).append(",");
                 json.append("\"actualPayment\":").append(JsonParser.getDouble(data, "actualPayment", 0));
             } else {
-                // 🆕 En vez de un mensaje generico, mostramos el "data" crudo
-                // que vino en la respuesta de CJ (puede traer detalles del
-                // error, como interceptOrderReasons u otros campos).
                 String rawData = String.valueOf(resp.get("data"));
                 json.append("\"detalle\":\"").append(JsonUtils.escapar(rawData)).append("\"");
             }
