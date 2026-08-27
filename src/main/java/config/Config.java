@@ -36,4 +36,9 @@ public class Config {
 public static final String CJ_API_KEY =
         System.getenv("CJ_API_KEY");
 
+
+        // CJ - reglas de precio (ajustables sin tocar el servlet)
+public static final double CJ_MARGEN_MULTIPLICADOR = 2.0;
+public static final int CJ_MAX_DIAS_ENVIO = 15;
+
 }
