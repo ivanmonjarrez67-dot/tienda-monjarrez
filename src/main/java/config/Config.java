@@ -41,4 +41,7 @@ public static final String CJ_API_KEY =
 public static final double CJ_MARGEN_MULTIPLICADOR = 2.0;
 public static final int CJ_MAX_DIAS_ENVIO = 15;
 
+public static final double TIPO_CAMBIO_USD_CRC =
+        Double.parseDouble(System.getenv().getOrDefault("TIPO_CAMBIO_USD_CRC", "484"));
+
 }
