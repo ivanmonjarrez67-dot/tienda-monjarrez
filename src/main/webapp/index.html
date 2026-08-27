@@ -3709,7 +3709,7 @@ async function cargarMisProductos(usuarioId) {
     if (!seccion || !grid) return; // si el HTML no está montado, no hacemos nada
 
     grid.innerHTML = '<div class="imp-monjarrez-loading">cargando importaciones…</div>';
-    seccion.style.display = ""; // mostramos mientras carga; si falla o viene vacío, se oculta abajo
+        seccion.style.display = "block"; // mostramos mientras carga; si falla o viene vacío, se oculta abajo
 
     fetch(ENDPOINT_IMPORTACIONES)
       .then((res) => {
