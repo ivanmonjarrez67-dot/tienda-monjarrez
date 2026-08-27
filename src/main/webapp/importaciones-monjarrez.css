@@ -36,9 +36,24 @@
 }
 
 .imp-monjarrez-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 14px;
+  /* 🔧 Antes era CSS grid con celdas de igual tamaño, lo que obligaba
+     a recortar la imagen (object-fit: cover + height fija) para que
+     encajara en un cuadro parejo. Ahora es un layout tipo "columnas"
+     (como Pinterest/Temu): cada tarjeta ocupa el ancho de su columna
+     y la imagen crece a su alto NATURAL, sin recortarse ni perder
+     calidad. */
+  column-count: 2;
+  column-gap: 14px;
+}
+
+@media (min-width: 640px) {
+  .imp-monjarrez-grid { column-count: 3; }
+}
+@media (min-width: 900px) {
+  .imp-monjarrez-grid { column-count: 4; }
+}
+@media (min-width: 1200px) {
+  .imp-monjarrez-grid { column-count: 5; }
 }
 
 .imp-monjarrez-card {
@@ -46,8 +61,14 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 10px;
   padding: 10px;
-  display: flex;
-  flex-direction: column;
+  display: block;
+  /* En layout de columnas (no grid), el espaciado vertical entre
+     tarjetas se hace con margin, no con "gap". */
+  margin-bottom: 14px;
+  /* Evita que una tarjeta se corte a la mitad entre una columna y
+     la siguiente. */
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
   transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
@@ -58,21 +79,32 @@
 
 .imp-monjarrez-card img {
   width: 100%;
-  height: 150px;
-  object-fit: cover;
+  /* 🔧 Antes: height:150px + object-fit:cover -> recortaba la imagen
+     para forzarla a un cuadrado. Ahora la imagen conserva su
+     proporción real (alto automático), igual que en tu ejemplo de
+     Temu: nunca se recorta ni se ve "achatada". */
+  height: auto;
+  display: block;
   border-radius: 8px;
   background: #111;
-  display: block;
 }
 
 .imp-monjarrez-card h3 {
   font-family: 'Poppins', sans-serif;
-  font-size: 0.85rem;
-  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
   margin: 8px 0 6px;
   line-height: 1.3;
-  min-height: 2.4em;
-  font-weight: 500;
+  /* 🔧 Antes el nombre completo se mostraba siempre (con min-height
+     reservando espacio para 2 líneas aunque el título fuera corto).
+     Ahora se trunca a 2 líneas con "..." — el nombre acompaña, no
+     compite con la imagen. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .imp-monjarrez-envio {
@@ -101,7 +133,7 @@
 }
 
 .imp-monjarrez-btn {
-  margin-top: auto;
+  margin-top: 8px;
   background: #3fae82;
   color: #0c1211;
   border: none;
@@ -118,7 +150,10 @@
 }
 
 .imp-monjarrez-loading {
-  grid-column: 1 / -1;
+  /* 🔧 "grid-column: 1/-1" era para el grid viejo; con columnas
+     (column-count) el equivalente es column-span para que el mensaje
+     cruce todas las columnas en vez de quedar metido en la primera. */
+  column-span: all;
   text-align: center;
   color: rgba(255, 255, 255, 0.5);
   font-size: 0.8rem;
@@ -127,6 +162,5 @@
 
 @media (max-width: 640px) {
   .imp-monjarrez-title { font-size: 1.35rem; }
-  .imp-monjarrez-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
-  .imp-monjarrez-card img { height: 120px; }
+  .imp-monjarrez-grid { column-count: 2; column-gap: 10px; }
 }
