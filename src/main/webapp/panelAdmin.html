@@ -381,6 +381,7 @@
     <span class="welcome" id="welcomeMsg"></span>
     <span class="stamp" id="clock"></span>
     <div class="divider"></div>
+    <button class="gear-btn" onclick="abrirModalCJ()" title="Importar producto de CJ">📦</button>
     <button class="gear-btn" onclick="abrirModal()" title="Gestión de admins">⚙</button>
     <button class="gear-btn salir" onclick="cerrarSesion()" title="Cerrar sesión">⏻</button>
   </div>
@@ -420,6 +421,22 @@
       </div>
       <div class="modal-error" id="errorActualizar"></div>
     </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalCJOverlay">
+  <div class="modal">
+    <h2>Importar producto de CJ</h2>
+    <form class="modal-form active" id="formImportarCJ">
+      <label for="cjPid">PID del producto en CJ</label>
+      <input type="text" id="cjPid" required placeholder="ej: 2608270215401610000">
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" onclick="cerrarModalCJ()">Cancelar</button>
+        <button type="submit" class="btn aprobar">Importar</button>
+      </div>
+      <div class="modal-error" id="errorImportarCJ"></div>
+    </form>
+    <div id="resultadoImportarCJ" style="display:none; margin-top:14px; font-family:var(--mono); font-size:12px; color:var(--muted); white-space:pre-wrap;"></div>
   </div>
 </div>
 
@@ -727,6 +744,53 @@ document.getElementById('formActualizar').addEventListener('submit', async (e) =
   }catch(err){
     errorBox.textContent = err.message;
     errorBox.classList.add('show');
+  }
+});
+
+// --- Modal de importar producto de CJ ---
+const IMPORTAR_CJ_ENDPOINT = '/admin/importarProductoCJ';
+
+function abrirModalCJ(){
+  document.getElementById('resultadoImportarCJ').style.display = 'none';
+  document.getElementById('errorImportarCJ').classList.remove('show');
+  document.getElementById('formImportarCJ').reset();
+  document.getElementById('modalCJOverlay').classList.add('show');
+}
+function cerrarModalCJ(){
+  document.getElementById('modalCJOverlay').classList.remove('show');
+}
+
+document.getElementById('formImportarCJ').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errorBox = document.getElementById('errorImportarCJ');
+  const resultadoBox = document.getElementById('resultadoImportarCJ');
+  errorBox.classList.remove('show');
+  resultadoBox.style.display = 'none';
+
+  const pid = document.getElementById('cjPid').value.trim();
+  const btn = e.target.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  btn.textContent = 'Importando…';
+
+  try{
+    const res = await fetch(IMPORTAR_CJ_ENDPOINT, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: `pid=${encodeURIComponent(pid)}`
+    });
+    if(res.status === 401){ window.location.href = 'adminLogin.html'; return; }
+    const data = await res.json();
+    if(!res.ok || data.ok === false) throw new Error(data.error || 'error desconocido');
+
+    toast(`Producto importado — ${data.variantesImportadas} variantes, desde $${data.precioVentaDesde.toFixed(2)}`);
+    resultadoBox.textContent = JSON.stringify(data, null, 2);
+    resultadoBox.style.display = 'block';
+  }catch(err){
+    errorBox.textContent = err.message;
+    errorBox.classList.add('show');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Importar';
   }
 });
 
