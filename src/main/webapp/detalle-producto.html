@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tienda Monjarrez — Detalle del producto</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+  integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer"
+/>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg-card: #151515;
+    --border: #2a2a2a;
+    --red: #e02424;
+    --green: #1db954;
+    --green-hover: #17a34a;
+    --text: #f2f2f2;
+    --text-dim: #a0a0a0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Poppins", sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ---------- Header ---------- */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+  }
+  .logo { font-size: 1.3rem; font-weight: 700; }
+  .logo .rojo { color: var(--red); }
+  .volver {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.15s ease;
+  }
+  .volver:hover { color: var(--text); }
+
+  /* ---------- Layout principal ---------- */
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 28px 20px 60px;
+  }
+  .breadcrumb {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-bottom: 18px;
+  }
+  .producto-layout {
+    display: grid;
+    grid-template-columns: 90px 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 820px) {
+    .producto-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* ---------- Galería ---------- */
+  .miniaturas {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
+    order: 2;
+  }
+  @media (min-width: 821px) {
+    .miniaturas { flex-direction: column; overflow-x: visible; order: 0; }
+  }
+  .miniatura {
+    width: 64px;
+    height: 64px;
+    flex: 0 0 auto;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid var(--border);
+    cursor: pointer;
+    background: var(--bg-card);
+    transition: border-color 0.15s ease;
+  }
+  .miniatura img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .miniatura.activa { border-color: var(--red); }
+
+  .imagen-principal {
+    order: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+  }
+  .imagen-principal img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #fff;
+  }
+
+  /* ---------- Panel de info ---------- */
+  .panel-info { order: 3; }
+  @media (min-width: 821px) { .panel-info { order: 2; } }
+
+  .badge-internacional {
+    display: inline-block;
+    background: rgba(224, 36, 36, 0.15);
+    color: #ff6a6a;
+    border: 1px solid rgba(224, 36, 36, 0.4);
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+  }
+  h1.titulo-producto {
+    font-size: 1.25rem;
+    line-height: 1.4;
+    margin: 0 0 10px;
+  }
+  .categoria-producto {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+
+  .precio-crc {
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: #ffb020;
+    margin-bottom: 4px;
+  }
+  .precio-nota {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-bottom: 18px;
+  }
+
+  .envio-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.82rem;
+    margin-bottom: 20px;
+  }
+  .envio-info i { color: var(--green); }
+
+  .variantes-titulo {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .variante-seleccionada-nombre {
+    font-weight: 400;
+    color: var(--text-dim);
+  }
+  .variantes-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 26px;
+  }
+  .variante-opcion {
+    width: 72px;
+    text-align: center;
+    cursor: pointer;
+  }
+  .variante-opcion .miniatura {
+    width: 72px;
+    height: 72px;
+    margin-bottom: 4px;
+  }
+  .variante-opcion.sin-stock { opacity: 0.4; cursor: not-allowed; }
+  .variante-opcion.activa-variante span { color: var(--text); font-weight: 600; }
+  .variante-opcion span {
+    display: block;
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .btn-info-internacional {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    background: var(--green);
+    color: #06210f;
+    font-weight: 700;
+    font-size: 0.92rem;
+    border: none;
+    border-radius: 9px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+    text-decoration: none;
+  }
+  .btn-info-internacional:hover { background: var(--green-hover); transform: translateY(-1px); }
+  .btn-info-internacional i { font-size: 1rem; }
+
+  .aviso-internacional {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-top: 10px;
+    text-align: center;
+  }
+
+  .estado-carga, .estado-error {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--text-dim);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Tienda <span class="rojo">Monjarrez</span></div>
+  <a class="volver" href="/"><i class="fa-solid fa-arrow-left"></i> Volver a la tienda</a>
+</header>
+
+<main>
+  <div id="estadoCarga" class="estado-carga">Cargando producto…</div>
+  <div id="contenidoProducto" style="display:none;">
+    <div class="breadcrumb" id="breadcrumb"></div>
+    <div class="producto-layout">
+      <div class="miniaturas" id="miniaturas"></div>
+      <div class="imagen-principal">
+        <img id="imagenPrincipal" src="" alt="" />
+      </div>
+      <div class="panel-info">
+        <span class="badge-internacional"><i class="fa-solid fa-earth-americas"></i> Producto internacional</span>
+        <h1 class="titulo-producto" id="tituloProducto"></h1>
+        <div class="categoria-producto" id="categoriaProducto"></div>
+
+        <div class="precio-crc" id="precioProductoCrc"></div>
+        <div class="precio-nota"><span id="precioProductoUsd"></span> USD ref. — precio final sujeto a confirmación por correo</div>
+
+        <div class="envio-info">
+          <i class="fa-solid fa-truck-fast"></i>
+          <span id="envioInfo"></span>
+        </div>
+
+        <div class="variantes-titulo">
+          Opciones disponibles: <span class="variante-seleccionada-nombre" id="varianteSeleccionadaNombre"></span>
+        </div>
+        <div class="variantes-grid" id="variantesGrid"></div>
+
+        <a href="#" id="btnSolicitarInfo" class="btn-info-internacional">
+          <i class="fa-regular fa-envelope"></i>
+          Solicitar más información de este producto internacional
+        </a>
+        <div class="aviso-internacional">Te responderemos por correo con la disponibilidad y el detalle final de tu pedido.</div>
+      </div>
+    </div>
+  </div>
+  <div id="estadoError" class="estado-error" style="display:none;">
+    No se pudo cargar este producto. <a href="/" style="color:#ff6a6a;">Volver al catálogo</a>
+  </div>
+</main>
+
+<script>
+(function () {
+  const CORREO_CONSULTAS = "buscamos@tiendamonjarrez.com";
+  const ENDPOINT_DETALLE = "/detalleProductoCJ";
+
+  const params = new URLSearchParams(window.location.search);
+  const productoId = params.get("id");
+
+  const elCarga = document.getElementById("estadoCarga");
+  const elContenido = document.getElementById("contenidoProducto");
+  const elError = document.getElementById("estadoError");
+
+  let producto = null;
+  let variantes = [];
+  let varianteActual = null;
+
+  function fmtUsd(n) {
+    const num = Number(n);
+    if (isNaN(num)) return "";
+    return "$" + num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function fmtCrc(n) {
+    const num = Number(n);
+    if (isNaN(num)) return "";
+    return "₡" + num.toLocaleString("es-CR", { maximumFractionDigits: 0 });
+  }
+
+  function esc(s) {
+    if (s === null || s === undefined) return "";
+    const div = document.createElement("div");
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  function seleccionarVariante(v) {
+    varianteActual = v;
+    document.getElementById("imagenPrincipal").src = v.imagen || producto.imagen;
+    document.getElementById("precioProductoCrc").textContent = fmtCrc(v.precioVentaCrc);
+    document.getElementById("precioProductoUsd").textContent = fmtUsd(v.precioVenta);
+    document.getElementById("envioInfo").textContent =
+      (v.envioDias ? `Llega en ${v.envioDias} días` : "Envío internacional") +
+      (v.envioTransportadora ? ` · ${v.envioTransportadora}` : "");
+    document.getElementById("varianteSeleccionadaNombre").textContent = v.opciones || "";
+
+    document.querySelectorAll(".variante-opcion").forEach((el) => {
+      el.classList.toggle("activa-variante", el.dataset.id === String(v.id));
+    });
+    document.querySelectorAll(".variante-opcion .miniatura").forEach((el) => {
+      el.classList.toggle("activa", el.closest(".variante-opcion").dataset.id === String(v.id));
+    });
+
+    actualizarLinkSolicitud();
+  }
+
+  function actualizarLinkSolicitud() {
+    const asunto = encodeURIComponent("Más información sobre un producto internacional");
+    const cuerpo = encodeURIComponent(
+      `Hola,\n\nMe interesa este producto de Importaciones Monjarrez:\n\n` +
+      `Producto: ${producto.nombre}\n` +
+      `Opción/color: ${varianteActual ? varianteActual.opciones : ""}\n` +
+      `SKU: ${varianteActual ? varianteActual.variantSku : ""}\n` +
+      `ID producto: ${producto.id}\n\n` +
+      `¿Podrían darme más información sobre cómo pedirlo?\n\nQuedo atento/a, gracias.`
+    );
+    document.getElementById("btnSolicitarInfo").href =
+      `mailto:${CORREO_CONSULTAS}?subject=${asunto}&body=${cuerpo}`;
+  }
+
+  function renderizar() {
+    document.getElementById("tituloProducto").textContent = producto.nombre;
+    document.getElementById("categoriaProducto").textContent = producto.categoria || "";
+    document.getElementById("breadcrumb").textContent =
+      "Importaciones Monjarrez" + (producto.categoria ? " / " + producto.categoria : "");
+
+    const miniaturasWrap = document.getElementById("miniaturas");
+    const variantesWrap = document.getElementById("variantesGrid");
+    miniaturasWrap.innerHTML = "";
+    variantesWrap.innerHTML = "";
+
+    // Imágenes únicas para la tira de miniaturas (puede repetirse la
+    // misma imagen entre variantes de un mismo color con distinto
+    // atributo, así que se deduplica).
+    const imagenesUnicas = [...new Set(variantes.map((v) => v.imagen).filter(Boolean))];
+    if (imagenesUnicas.length === 0 && producto.imagen) imagenesUnicas.push(producto.imagen);
+
+    imagenesUnicas.forEach((img, i) => {
+      const div = document.createElement("div");
+      div.className = "miniatura" + (i === 0 ? " activa" : "");
+      div.innerHTML = `<img src="${esc(img)}" alt="">`;
+      div.addEventListener("click", () => {
+        document.getElementById("imagenPrincipal").src = img;
+        document.querySelectorAll("#miniaturas .miniatura").forEach((m) => m.classList.remove("activa"));
+        div.classList.add("activa");
+      });
+      miniaturasWrap.appendChild(div);
+    });
+
+    variantes.forEach((v) => {
+      const div = document.createElement("div");
+      div.className = "variante-opcion" + (v.stock <= 0 ? " sin-stock" : "");
+      div.dataset.id = v.id;
+      div.innerHTML = `
+        <div class="miniatura"><img src="${esc(v.imagen || producto.imagen)}" alt="${esc(v.opciones)}"></div>
+        <span>${esc(v.opciones)}</span>
+      `;
+      div.addEventListener("click", () => seleccionarVariante(v));
+      variantesWrap.appendChild(div);
+    });
+
+    if (variantes.length > 0) {
+      seleccionarVariante(variantes[0]);
+      document.getElementById("imagenPrincipal").src = imagenesUnicas[0] || producto.imagen;
+    } else {
+      document.getElementById("imagenPrincipal").src = producto.imagen;
+      document.getElementById("precioProductoCrc").textContent = fmtCrc(producto.precioVentaDesdeCrc);
+      document.getElementById("precioProductoUsd").textContent = fmtUsd(producto.precioVentaDesde);
+    }
+
+    elCarga.style.display = "none";
+    elContenido.style.display = "block";
+  }
+
+  if (!productoId) {
+    elCarga.style.display = "none";
+    elError.style.display = "block";
+    return;
+  }
+
+  fetch(`${ENDPOINT_DETALLE}?id=${encodeURIComponent(productoId)}`)
+    .then((res) => {
+      if (!res.ok) throw new Error("respuesta " + res.status);
+      return res.json();
+    })
+    .then((data) => {
+      if (!data.ok) throw new Error(data.error || "producto no encontrado");
+      producto = data.producto;
+      variantes = data.variantes || [];
+      renderizar();
+    })
+    .catch((err) => {
+      console.error("Error al cargar el detalle del producto:", err);
+      elCarga.style.display = "none";
+      elError.style.display = "block";
+    });
+})();
+</script>
+
+</body>
+</html>

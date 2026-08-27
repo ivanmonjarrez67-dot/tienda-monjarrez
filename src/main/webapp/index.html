@@ -3661,7 +3661,6 @@ async function cargarMisProductos(usuarioId) {
    ================================================================ */
 (function () {
   const ENDPOINT_IMPORTACIONES = "/listaProductosCJ";
-  const CORREO_CONSULTAS = "buscamos@tiendamonjarrez.com";
 
   function fmtUsd(n) {
     const num = Number(n);
@@ -3697,7 +3696,7 @@ async function cargarMisProductos(usuarioId) {
         <p class="imp-monjarrez-precio-crc">${fmtCrc(p.precioCrc)}</p>
         <p class="imp-monjarrez-precio-usd">${fmtUsd(p.precioUsd)} USD ref.</p>
         <button class="imp-monjarrez-btn" data-id="${p.id ?? ''}" data-nombre="${nombre}">
-          Quiero este producto
+          Ver más detalles
         </button>
       </div>
     `;
@@ -3729,20 +3728,17 @@ async function cargarMisProductos(usuarioId) {
       });
   }
 
-  // Click delegado en el botón "Quiero este producto": por ahora abre
-  // un correo prellenado (mismo patrón que ya usa el aviso de "mega
-  // mercado" en script.js), hasta que se decida un flujo de checkout
-  // propio para productos CJ.
+  // Click delegado en el botón "Ver más detalles": abre la página de
+  // detalle (galería + variantes + selector, estilo Temu) en una
+  // pestaña nueva. El mailto de "quiero este producto" ya no vive
+  // acá — se movió DENTRO de detalle-producto.html, en el botón
+  // "Solicitar más información de este producto internacional".
   document.addEventListener("click", (e) => {
     const btn = e.target.closest(".imp-monjarrez-btn");
     if (!btn) return;
     const id = btn.dataset.id || "";
-    const nombre = btn.dataset.nombre || "";
-    const asunto = encodeURIComponent("Quiero un producto de Importaciones Monjarrez");
-    const cuerpo = encodeURIComponent(
-      `Hola,\n\nMe interesa este producto de Importaciones Monjarrez:\n\nProducto: ${nombre}\nID: ${id}\n\n¿Podrían darme más información sobre cómo pedirlo?\n\nQuedo atento/a, gracias.`
-    );
-    window.location.href = `mailto:${CORREO_CONSULTAS}?subject=${asunto}&body=${cuerpo}`;
+    if (!id) return;
+    window.open(`/detalle-producto.html?id=${encodeURIComponent(id)}`, "_blank");
   });
 
   window.addEventListener("load", cargarImportacionesMonjarrez);
