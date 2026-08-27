@@ -36,6 +36,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="importaciones-monjarrez.css" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
@@ -2435,6 +2436,16 @@ async function cargarMisProductos(usuarioId) {
              script.js), justo después del último producto. -->
         <div id="avisoFinCatalogo"></div>
       </div>
+      <!-- ================== IMPORTACIONES MONJARREZ (independiente del catálogo normal) ================== -->
+<section id="importacionesMonjarrezSection" class="imp-monjarrez-section">
+  <div class="imp-monjarrez-header">
+    <h2 class="imp-monjarrez-title">Importaciones Monjarrez</h2>
+    <p class="imp-monjarrez-subtitle">productos internacionales, envío directo a tu puerta</p>
+  </div>
+  <div id="impMonjarrezGrid" class="imp-monjarrez-grid">
+    <!-- Se pinta desde importaciones-monjarrez.js -->
+  </div>
+</section>
       <div id="addProductModal" class="modal">
         <div class="modal-content">
           <span class="close">&times;</span>
@@ -3640,6 +3651,104 @@ async function cargarMisProductos(usuarioId) {
     </script>
 
     <script src="script.js"></script>
+<script src="script.js"></script>
+
+<script>
+/* ================================================================
+   IMPORTACIONES MONJARREZ — lógica independiente (productos CJ)
+   No depende de script.js ni lo modifica. Vive en su propio IIFE
+   para no crear variables/funciones globales que puedan chocar con
+   las que ya existen (productGrid, cargarProductos, etc.).
+   ================================================================ */
+(function () {
+  const ENDPOINT_IMPORTACIONES = "/listaProductosCJ";
+  const CORREO_CONSULTAS = "buscamos@tiendamonjarrez.com";
+
+  function fmtUsd(n) {
+    const num = Number(n);
+    if (isNaN(num)) return "";
+    return "$" + num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function fmtCrc(n) {
+    const num = Number(n);
+    if (isNaN(num)) return "";
+    return "₡" + num.toLocaleString("es-CR", { maximumFractionDigits: 0 });
+  }
+
+  // Escapar valores antes de insertarlos en el HTML (mismo criterio
+  // que ya usa el resto del sitio para nombre/descripcion).
+  function esc(s) {
+    if (s === null || s === undefined) return "";
+    const div = document.createElement("div");
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  function construirTarjetaImportacion(p) {
+    const nombre = esc(p.nombre);
+    const imagen = esc(p.imagen);
+    const envioTexto = p.envioDias ? `Llega en ${esc(p.envioDias)} días` : "Envío internacional";
+
+    return `
+      <div class="imp-monjarrez-card">
+        <img src="${imagen}" alt="${nombre}" loading="lazy">
+        <h3>${nombre}</h3>
+        <span class="imp-monjarrez-envio">${envioTexto}</span>
+        <p class="imp-monjarrez-precio-crc">${fmtCrc(p.precioCrc)}</p>
+        <p class="imp-monjarrez-precio-usd">${fmtUsd(p.precioUsd)} USD ref.</p>
+        <button class="imp-monjarrez-btn" data-id="${p.id ?? ''}" data-nombre="${nombre}">
+          Quiero este producto
+        </button>
+      </div>
+    `;
+  }
+
+  function cargarImportacionesMonjarrez() {
+    const seccion = document.getElementById("importacionesMonjarrezSection");
+    const grid = document.getElementById("impMonjarrezGrid");
+    if (!seccion || !grid) return; // si el HTML no está montado, no hacemos nada
+
+    grid.innerHTML = '<div class="imp-monjarrez-loading">cargando importaciones…</div>';
+    seccion.style.display = ""; // mostramos mientras carga; si falla o viene vacío, se oculta abajo
+
+    fetch(ENDPOINT_IMPORTACIONES)
+      .then((res) => {
+        if (!res.ok) throw new Error("el servidor respondió " + res.status);
+        return res.json();
+      })
+      .then((productos) => {
+        if (!productos || productos.length === 0) {
+          seccion.style.display = "none";
+          return;
+        }
+        grid.innerHTML = productos.map(construirTarjetaImportacion).join("");
+      })
+      .catch((err) => {
+        console.error("Error al cargar Importaciones Monjarrez:", err);
+        seccion.style.display = "none"; // fallamos en silencio: no afecta el resto del catálogo
+      });
+  }
+
+  // Click delegado en el botón "Quiero este producto": por ahora abre
+  // un correo prellenado (mismo patrón que ya usa el aviso de "mega
+  // mercado" en script.js), hasta que se decida un flujo de checkout
+  // propio para productos CJ.
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".imp-monjarrez-btn");
+    if (!btn) return;
+    const id = btn.dataset.id || "";
+    const nombre = btn.dataset.nombre || "";
+    const asunto = encodeURIComponent("Quiero un producto de Importaciones Monjarrez");
+    const cuerpo = encodeURIComponent(
+      `Hola,\n\nMe interesa este producto de Importaciones Monjarrez:\n\nProducto: ${nombre}\nID: ${id}\n\n¿Podrían darme más información sobre cómo pedirlo?\n\nQuedo atento/a, gracias.`
+    );
+    window.location.href = `mailto:${CORREO_CONSULTAS}?subject=${asunto}&body=${cuerpo}`;
+  });
+
+  window.addEventListener("load", cargarImportacionesMonjarrez);
+})();
+</script>
 
     <script>
       // ---------------------------

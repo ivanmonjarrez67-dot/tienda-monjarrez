@@ -1,0 +1,132 @@
+/* ================================================================
+   IMPORTACIONES MONJARREZ — sección independiente (productos CJ)
+   Todo aquí usa el prefijo "imp-monjarrez-" a propósito, para que
+   nada de esto choque con las clases que ya existen en styles.css
+   ================================================================ */
+
+.imp-monjarrez-section {
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 16px;
+  /* display:none por defecto: el JS la muestra solo si el endpoint
+     devuelve al menos un producto. Así, si no hay productos CJ o el
+     servlet falla, la sección no deja un espacio vacío ni un título
+     "colgando" sin contenido. */
+  display: none;
+}
+
+.imp-monjarrez-header {
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.imp-monjarrez-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.imp-monjarrez-subtitle {
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 4px 0 0;
+}
+
+.imp-monjarrez-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.imp-monjarrez-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.imp-monjarrez-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.imp-monjarrez-card img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #111;
+  display: block;
+}
+
+.imp-monjarrez-card h3 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.85rem;
+  color: #fff;
+  margin: 8px 0 6px;
+  line-height: 1.3;
+  min-height: 2.4em;
+  font-weight: 500;
+}
+
+.imp-monjarrez-envio {
+  display: inline-block;
+  font-size: 0.66rem;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: rgba(63, 174, 130, 0.15);
+  color: #3fae82;
+  border: 1px solid rgba(63, 174, 130, 0.4);
+  margin-bottom: 8px;
+  width: fit-content;
+}
+
+.imp-monjarrez-precio-crc {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f6c445;
+  margin: 0;
+}
+
+.imp-monjarrez-precio-usd {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0 0 8px;
+}
+
+.imp-monjarrez-btn {
+  margin-top: auto;
+  background: #3fae82;
+  color: #0c1211;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 0;
+  font-weight: 600;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.imp-monjarrez-btn:hover {
+  filter: brightness(1.08);
+}
+
+.imp-monjarrez-loading {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.8rem;
+  padding: 20px;
+}
+
+@media (max-width: 640px) {
+  .imp-monjarrez-title { font-size: 1.35rem; }
+  .imp-monjarrez-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .imp-monjarrez-card img { height: 120px; }
+}
