@@ -50,6 +50,12 @@ public class EditarProductoServlet extends HttpServlet {
         String imagen2 = request.getParameter("imagen2");
         String imagen3 = request.getParameter("imagen3");
 
+        // 🆕 Producto de reventa internacional: igual criterio, tabla
+        // aparte ProductosExtranjeros (no se toca Productos). script.js
+        // siempre manda "1" o "0".
+        String esExtranjeroStr = request.getParameter("es_extranjero");
+        boolean esExtranjero = "1".equals(esExtranjeroStr);
+
         if (idStr == null || idStr.isEmpty()) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Falta el ID del producto.");
             return;
@@ -120,8 +126,8 @@ public class EditarProductoServlet extends HttpServlet {
                 }
             }
 
-            // 2️⃣ Actualizar el producto (mismas columnas que usa el INSERT
-            // de GuardarProductoServlet, incluida "Nombre_Empresa").
+            // 2️⃣ Actualizar el producto — SIN TOCAR la tabla Productos
+            // (mismas columnas de siempre, "es_extranjero" vive aparte).
             String sql = "UPDATE Productos SET nombre = ?, descripcion = ?, imagen = ?, precio = ?, "
                        + "Nombre_Empresa = ?, categoria = ?, telefono = ?, correo = ?, provincia = ?, ciudad = ? "
                        + "WHERE id = ? AND usuario_id = ?";
@@ -204,7 +210,34 @@ public class EditarProductoServlet extends HttpServlet {
                 }
             }
 
-            // 5️⃣ Si la imagen cambió y la anterior era un archivo local
+            // 5️⃣ Producto de reventa internacional (ProductosExtranjeros):
+            // mismo patrón que Descuentos pero sin columna de valor, solo
+            // existencia de la fila. Si se marcó y no había fila, se
+            // inserta; si NO se marcó y había fila, se borra; en los otros
+            // dos casos no hay que hacer nada.
+            try (PreparedStatement psExiste = conn.prepareStatement(
+                    "SELECT 1 FROM ProductosExtranjeros WHERE producto_id = ?")) {
+                psExiste.setInt(1, id);
+                boolean yaEstaba;
+                try (ResultSet rsExiste = psExiste.executeQuery()) {
+                    yaEstaba = rsExiste.next();
+                }
+                if (esExtranjero && !yaEstaba) {
+                    try (PreparedStatement psInsert = conn.prepareStatement(
+                            "INSERT INTO ProductosExtranjeros (producto_id) VALUES (?)")) {
+                        psInsert.setInt(1, id);
+                        psInsert.executeUpdate();
+                    }
+                } else if (!esExtranjero && yaEstaba) {
+                    try (PreparedStatement psDelete = conn.prepareStatement(
+                            "DELETE FROM ProductosExtranjeros WHERE producto_id = ?")) {
+                        psDelete.setInt(1, id);
+                        psDelete.executeUpdate();
+                    }
+                }
+            }
+
+            // 6️⃣ Si la imagen cambió y la anterior era un archivo local
             // subido por GuardarProductoArchivo (mismo esquema de URL que
             // usa EliminarProductoServlet, con "=" antes del nombre del
             // archivo), borrar el archivo viejo para no dejar imágenes

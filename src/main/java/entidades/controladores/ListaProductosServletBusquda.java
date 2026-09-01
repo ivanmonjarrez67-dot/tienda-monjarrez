@@ -35,12 +35,15 @@ public class ListaProductosServletBusquda extends HttpServlet {
 
         // 🆕 Mismo LEFT JOIN que ListaProductosServlet, para traer también
         // precio_anterior/imagen2/imagen3 en los resultados de búsqueda.
+        // 🆕 LEFT JOIN con ProductosExtranjeros (tabla nueva, solo
+        // producto_id) para la bandera de "producto internacional".
         String sql = "SELECT p.id, p.nombre, p.descripcion, p.imagen, p.precio, p.Nombre_Empresa, "
-                   + "p.telefono, p.correo, p.provincia, p.ciudad, "
+                   + "p.telefono, p.correo, p.provincia, p.ciudad, pe.producto_id AS extranjero_id, "
                    + "d.precio_anterior, ia.imagen2, ia.imagen3 "
                    + "FROM Productos p "
                    + "LEFT JOIN Descuentos d ON d.producto_id = p.id "
-                   + "LEFT JOIN ImagenesAdicionalesProducto ia ON ia.producto_id = p.id";
+                   + "LEFT JOIN ImagenesAdicionalesProducto ia ON ia.producto_id = p.id "
+                   + "LEFT JOIN ProductosExtranjeros pe ON pe.producto_id = p.id";
 
         if (!condiciones.isEmpty()) {
             sql += " WHERE " + String.join(" AND ", condiciones);
@@ -75,6 +78,7 @@ public class ListaProductosServletBusquda extends HttpServlet {
                 out.print("\"correo\":\"" + JsonUtils.escapar(rs.getString("correo")) + "\",");
                 out.print("\"provincia\":\"" + JsonUtils.escapar(rs.getString("provincia")) + "\",");
                 out.print("\"ciudad\":\"" + JsonUtils.escapar(rs.getString("ciudad")) + "\",");
+                out.print("\"es_extranjero\":" + (rs.getObject("extranjero_id") != null) + ",");
 
                 double precioAnterior = rs.getDouble("precio_anterior");
                 out.print("\"precio_anterior\":" + (rs.wasNull() ? "null" : precioAnterior) + ",");

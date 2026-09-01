@@ -18,20 +18,17 @@ public class ListaProductosServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.setContentType("application/json;charset=UTF-8");
 
-        // 🆕 LEFT JOIN con Descuentos (precio_anterior, para el tachado de
-        // rebajas) e ImagenesAdicionalesProducto (imagen2/imagen3, hasta 2
-        // fotos extra). Son LEFT JOIN a propósito: la enorme mayoría de
-        // productos no van a tener fila en ninguna de las 2 tablas nuevas,
-        // y en ese caso los campos simplemente llegan NULL.
-        // 🆕 ORDER BY NEWID(): genera un orden aleatorio distinto en cada
-        // ejecución del query, así el catálogo no muestra siempre los
-        // mismos productos primero.
+        // 🆕 LEFT JOIN con ProductosExtranjeros: tabla nueva, solo con
+        // producto_id (sin columna extra en Productos). Si existe fila,
+        // el producto se marca como internacional; si no, "pe.producto_id"
+        // llega NULL y se traduce a "false" al armar el JSON.
         String sql = "SELECT p.id, p.nombre, p.descripcion, p.imagen, p.precio, p.Nombre_Empresa, "
-                   + "p.telefono, p.correo, p.provincia, p.ciudad, "
+                   + "p.telefono, p.correo, p.provincia, p.ciudad, pe.producto_id AS extranjero_id, "
                    + "d.precio_anterior, ia.imagen2, ia.imagen3 "
                    + "FROM Productos p "
                    + "LEFT JOIN Descuentos d ON d.producto_id = p.id "
                    + "LEFT JOIN ImagenesAdicionalesProducto ia ON ia.producto_id = p.id "
+                   + "LEFT JOIN ProductosExtranjeros pe ON pe.producto_id = p.id "
                    + "ORDER BY NEWID()";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -57,6 +54,7 @@ public class ListaProductosServlet extends HttpServlet {
                 out.print("\"correo\":\"" + JsonUtils.escapar(rs.getString("correo")) + "\",");
                 out.print("\"provincia\":\"" + JsonUtils.escapar(rs.getString("provincia")) + "\",");
                 out.print("\"ciudad\":\"" + JsonUtils.escapar(rs.getString("ciudad")) + "\",");
+                out.print("\"es_extranjero\":" + (rs.getObject("extranjero_id") != null) + ",");
 
                 double precioAnterior = rs.getDouble("precio_anterior");
                 out.print("\"precio_anterior\":" + (rs.wasNull() ? "null" : precioAnterior) + ",");

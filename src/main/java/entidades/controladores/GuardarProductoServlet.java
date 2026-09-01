@@ -48,6 +48,15 @@ public class GuardarProductoServlet extends HttpServlet {
         String imagen2 = request.getParameter("imagen2");
         String imagen3 = request.getParameter("imagen3");
 
+        // 🆕 Producto de reventa internacional (Temu, AliExpress, etc.):
+        // checkbox opcional del formulario. Igual que Descuentos e
+        // ImagenesAdicionalesProducto, NO se toca la tabla Productos: si
+        // se marca, se crea una fila en la tabla nueva ProductosExtranjeros
+        // (solo con el producto_id); si no se marca, simplemente no se
+        // crea fila. script.js siempre manda "1" o "0" explícitos.
+        String esExtranjeroStr = request.getParameter("es_extranjero");
+        boolean esExtranjero = "1".equals(esExtranjeroStr);
+
         // ✅ Obtener usuarioId directamente desde el parámetro
         String usuarioIdParam = request.getParameter("usuario_id");
         if (usuarioIdParam == null || usuarioIdParam.isEmpty()) {
@@ -93,9 +102,8 @@ public class GuardarProductoServlet extends HttpServlet {
 
             int nuevoProductoId;
 
-            // Insertar producto (con RETURN_GENERATED_KEYS para poder
-            // insertar después en Descuentos / ImagenesAdicionalesProducto,
-            // que dependen del id recién creado).
+            // Insertar producto — SIN TOCAR la tabla Productos (misma
+            // cantidad de columnas de siempre).
             String sql = "INSERT INTO Productos "
                        + "(usuario_id, nombre, descripcion, imagen, precio, Nombre_Empresa, categoria, telefono, correo, provincia, ciudad) "
                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -144,6 +152,19 @@ public class GuardarProductoServlet extends HttpServlet {
                     if (hayImagen2) stmtImagenes.setString(2, imagen2.trim()); else stmtImagenes.setNull(2, Types.NVARCHAR);
                     if (hayImagen3) stmtImagenes.setString(3, imagen3.trim()); else stmtImagenes.setNull(3, Types.NVARCHAR);
                     stmtImagenes.executeUpdate();
+                }
+            }
+
+            // 🆕 Si se marcó "producto de reventa internacional", crear la
+            // fila en ProductosExtranjeros (tabla nueva, solo producto_id).
+            // Si no se marcó, simplemente no se crea nada — igual que
+            // Descuentos/ImagenesAdicionalesProducto cuando esos campos
+            // vienen vacíos.
+            if (esExtranjero) {
+                try (PreparedStatement stmtExtranjero = conn.prepareStatement(
+                        "INSERT INTO ProductosExtranjeros (producto_id) VALUES (?)")) {
+                    stmtExtranjero.setInt(1, nuevoProductoId);
+                    stmtExtranjero.executeUpdate();
                 }
             }
 

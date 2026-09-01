@@ -2526,6 +2526,16 @@ async function cargarMisProductos(usuarioId) {
 <label for="precioAnterior">Precio anterior / de referencia ₡ (opcional):</label>
 <input type="number" id="precioAnterior" name="precio_anterior" placeholder="Ej. 30000 (déjelo vacío si no hay rebaja)" />
 
+<!-- 🆕 Producto de reventa internacional: si se marca, en "Ver más
+     detalles" se muestra una nota indicando que el precio ya incluye
+     los costos de importación (para que el precio no se vea "inflado"
+     sin explicación al comprador). -->
+<label class="check-extranjero" for="esExtranjero">
+  <input type="checkbox" id="esExtranjero" name="es_extranjero" value="1" />
+  Este producto es una reventa de una plataforma internacional (Temu, AliExpress, etc.)
+</label>
+<p class="check-extranjero-ayuda">Si lo marca, se mostrará una nota junto al precio indicando que ya incluye los costos de importación.</p>
+
 
 
 
@@ -2659,6 +2669,14 @@ async function cargarMisProductos(usuarioId) {
             <label for="editPrecioAnterior">Precio anterior / de referencia ₡ (opcional):</label>
             <input type="number" id="editPrecioAnterior" name="precio_anterior" placeholder="Ej. 30000 (déjelo vacío si no hay rebaja)" />
 
+            <!-- 🆕 Producto de reventa internacional: mismo campo que en
+                 "Agregar Producto" (ver nota ahí). -->
+            <label class="check-extranjero" for="editEsExtranjero">
+              <input type="checkbox" id="editEsExtranjero" name="es_extranjero" value="1" />
+              Este producto es una reventa de una plataforma internacional (Temu, AliExpress, etc.)
+            </label>
+            <p class="check-extranjero-ayuda">Si lo marca, se mostrará una nota junto al precio indicando que ya incluye los costos de importación.</p>
+
             <label for="editTelefono">Teléfono:</label>
             <input type="tel" id="editTelefono" name="telefono" required placeholder="Ej. 8888-8888" />
 
@@ -2697,6 +2715,31 @@ async function cargarMisProductos(usuarioId) {
 
 
     <style>
+      /* 🆕 Checkbox "producto de reventa internacional" en los
+         formularios de Agregar/Editar Producto. */
+      .check-extranjero {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        font-size: 13.5px;
+        line-height: 1.4;
+        margin: 10px 0 2px;
+        cursor: pointer;
+      }
+      .check-extranjero input[type="checkbox"] {
+        margin-top: 2px;
+        flex-shrink: 0;
+        width: 16px;
+        height: 16px;
+        accent-color: #7c6ce0;
+      }
+      .check-extranjero-ayuda {
+        font-size: 12px;
+        color: #888;
+        margin: 2px 0 14px;
+        line-height: 1.4;
+      }
+
       /* Estilos del panel lateral y overlay (puedes mover a tu archivo CSS) */
       .side-overlay {
         position: fixed;
@@ -3904,6 +3947,25 @@ async function cargarMisProductos(usuarioId) {
                 <span class="producto-descuento-badge">-${porcentaje}%</span>`;
             }
 
+            // 🆕 Nota de "producto de reventa internacional": se muestra
+            // junto al precio solo si el vendedor marcó el producto como
+            // tal (checkbox "es_extranjero" en Agregar/Editar Producto).
+            // IMPORTANTE: para que este dato llegue hasta acá, falta que
+            // script.js agregue data-extranjero="1" al elemento que
+            // dispara este panel (igual que ya hace con data-precio) y
+            // que el servlet que guarda/devuelve productos incluya el
+            // campo es_extranjero. Mientras eso no esté conectado, esta
+            // nota simplemente no aparece (no rompe nada).
+            const esExtranjero = target.dataset.extranjero === "1";
+            let notaExtranjeroHtml = "";
+            if (esExtranjero) {
+              notaExtranjeroHtml = `
+                <p class="nota-precio-extranjero">
+                  <span class="nota-precio-extranjero-icono">ℹ️</span>
+                  Este es un producto internacional. El precio ya incluye los impuestos y costos de importación correspondientes.
+                </p>`;
+            }
+
             // 🆕 Galería: imagen base + hasta 2 adicionales, con puntitos
             // si hay más de una (mismo helper y mismo listener global de
             // clicks en ".galeria-dot" que usa el catálogo, ver script.js).
@@ -4031,6 +4093,7 @@ async function cargarMisProductos(usuarioId) {
         <p class="envio-alejado-texto">¿Este producto está en una zona alejada? Con gusto validamos si es posible coordinar el envío.</p>
         <p>${envioHtml}</p>
         <p><strong>Precio:</strong> ₡${precio}${precioAnteriorHtml}</p>
+        ${notaExtranjeroHtml}
         ${compartirHtml ? `<h3>Compartir</h3><p>${compartirHtml}</p>` : ""}
       `;
 
@@ -4303,6 +4366,28 @@ async function cargarMisProductos(usuarioId) {
         color: #666;
         margin: 0 0 8px;
         line-height: 1.5;
+      }
+
+      /* 🆕 Nota "producto de reventa internacional": tono morado sutil,
+         a juego con el resto de avisos del sitio (.mercado-aviso), pero
+         discreta ya que es una aclaración junto al precio, no una alerta. */
+      #infoModalContent .nota-precio-extranjero {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin: 6px 0 14px;
+        padding: 10px 12px;
+        background: rgba(124, 108, 224, 0.08);
+        border: 1px solid rgba(124, 108, 224, 0.3);
+        border-radius: 10px;
+        font-size: 12.5px;
+        line-height: 1.5;
+        color: #4a4470;
+      }
+      #infoModalContent .nota-precio-extranjero-icono {
+        flex-shrink: 0;
+        font-size: 14px;
+        line-height: 1.4;
       }
 
       /* Botón de ubicación → abre Google Maps */

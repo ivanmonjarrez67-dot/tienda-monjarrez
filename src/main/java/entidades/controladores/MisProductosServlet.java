@@ -17,67 +17,92 @@ import jakarta.servlet.http.*;
 public class MisProductosServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
+    // 🆕 Misma consulta base usada en doGet y doPost: además de los campos
+    // de siempre, trae precio_anterior (rebaja) e imagen2/imagen3
+    // (fotos adicionales) vía LEFT JOIN — antes este servlet no las traía,
+    // así que en "Mi tienda" nunca se veían aunque el producto sí las
+    // tuviera guardadas. También trae pe.producto_id (LEFT JOIN con
+    // ProductosExtranjeros) para la nota de "producto internacional".
+    private static final String SQL_PRODUCTOS =
+        "SELECT p.id, p.nombre, p.descripcion, p.imagen, p.precio, p.Nombre_Empresa, p.categoria, "
+      + "p.telefono, p.correo, p.provincia, p.ciudad, pe.producto_id AS extranjero_id, "
+      + "d.precio_anterior, ia.imagen2, ia.imagen3 "
+      + "FROM Productos p "
+      + "LEFT JOIN Descuentos d ON d.producto_id = p.id "
+      + "LEFT JOIN ImagenesAdicionalesProducto ia ON ia.producto_id = p.id "
+      + "LEFT JOIN ProductosExtranjeros pe ON pe.producto_id = p.id "
+      + "WHERE p.usuario_id = ? ORDER BY p.id DESC";
 
-    
-@Override
-protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-    response.setContentType("application/json;charset=UTF-8");
+    // 🆕 Escribe una fila de producto en el JSON, con todos los campos
+    // (antes duplicado a mano en doGet y doPost, ahora un solo lugar).
+    private void escribirProducto(PrintWriter out, ResultSet rs) throws java.sql.SQLException {
+        out.print("  {");
+        out.print("\"id\":" + rs.getInt("id") + ",");
+        out.print("\"nombre\":\"" + escapeJson(rs.getString("nombre")) + "\",");
+        out.print("\"descripcion\":\"" + escapeJson(rs.getString("descripcion")) + "\",");
+        out.print("\"imagen\":\"" + escapeJson(rs.getString("imagen")) + "\",");
+        out.print("\"precio\":" + rs.getDouble("precio") + ",");
+        out.print("\"empresa\":\"" + escapeJson(rs.getString("Nombre_Empresa")) + "\",");
+        out.print("\"categoria\":\"" + escapeJson(rs.getString("categoria")) + "\",");
+        out.print("\"telefono\":\"" + escapeJson(rs.getString("telefono")) + "\",");
+        out.print("\"correo\":\"" + escapeJson(rs.getString("correo")) + "\",");
+        out.print("\"provincia\":\"" + escapeJson(rs.getString("provincia")) + "\",");
+        out.print("\"ciudad\":\"" + escapeJson(rs.getString("ciudad")) + "\",");
+        out.print("\"es_extranjero\":" + (rs.getObject("extranjero_id") != null) + ",");
 
-    String usuarioIdParam = request.getParameter("usuario_id");
-
-    if (usuarioIdParam == null || usuarioIdParam.trim().isEmpty()) {
-        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        response.getWriter().print("{\"error\":\"Falta usuario_id\"}");
-        return;
+        double precioAnterior = rs.getDouble("precio_anterior");
+        out.print("\"precio_anterior\":" + (rs.wasNull() ? "null" : precioAnterior) + ",");
+        String imagen2 = rs.getString("imagen2");
+        out.print("\"imagen2\":" + (imagen2 == null ? "null" : "\"" + escapeJson(imagen2) + "\"") + ",");
+        String imagen3 = rs.getString("imagen3");
+        out.print("\"imagen3\":" + (imagen3 == null ? "null" : "\"" + escapeJson(imagen3) + "\""));
+        out.print("}");
     }
 
-    try {
-        int usuarioId = Integer.parseInt(usuarioIdParam);
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        response.setContentType("application/json;charset=UTF-8");
 
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(
-                 "SELECT id, nombre, descripcion, imagen, precio, Nombre_Empresa, categoria, telefono, correo, provincia, ciudad " +
-                 "FROM Productos WHERE usuario_id = ? ORDER BY id DESC")) {
+        String usuarioIdParam = request.getParameter("usuario_id");
 
-            stmt.setInt(1, usuarioId);
-
-            try (ResultSet rs = stmt.executeQuery();
-                 PrintWriter out = response.getWriter()) {
-
-                out.println("[");
-                boolean first = true;
-
-                while (rs.next()) {
-                    if (!first) out.println(",");
-                    first = false;
-
-                    out.print("  {");
-                    out.print("\"id\":" + rs.getInt("id") + ",");
-                    out.print("\"nombre\":\"" + escapeJson(rs.getString("nombre")) + "\",");
-                    out.print("\"descripcion\":\"" + escapeJson(rs.getString("descripcion")) + "\",");
-                    out.print("\"imagen\":\"" + escapeJson(rs.getString("imagen")) + "\",");
-                    out.print("\"precio\":" + rs.getDouble("precio") + ",");
-                    out.print("\"empresa\":\"" + escapeJson(rs.getString("Nombre_Empresa")) + "\",");
-                    out.print("\"categoria\":\"" + escapeJson(rs.getString("categoria")) + "\",");
-                    out.print("\"telefono\":\"" + escapeJson(rs.getString("telefono")) + "\",");
-                    out.print("\"correo\":\"" + escapeJson(rs.getString("correo")) + "\",");
-                    out.print("\"provincia\":\"" + escapeJson(rs.getString("provincia")) + "\",");
-                    out.print("\"ciudad\":\"" + escapeJson(rs.getString("ciudad")) + "\"");
-                    out.print("}");
-                }
-
-                out.println("]");
-            }
+        if (usuarioIdParam == null || usuarioIdParam.trim().isEmpty()) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.getWriter().print("{\"error\":\"Falta usuario_id\"}");
+            return;
         }
-    } catch (NumberFormatException e) {
-        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        response.getWriter().print("{\"error\":\"usuario_id inválido\"}");
-    } catch (Exception e) {
-        e.printStackTrace();
-        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        response.getWriter().print("{\"error\":\"" + escapeJson(e.getMessage()) + "\"}");
+
+        try {
+            int usuarioId = Integer.parseInt(usuarioIdParam);
+
+            try (Connection conn = DatabaseConnection.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(SQL_PRODUCTOS)) {
+
+                stmt.setInt(1, usuarioId);
+
+                try (ResultSet rs = stmt.executeQuery();
+                     PrintWriter out = response.getWriter()) {
+
+                    out.println("[");
+                    boolean first = true;
+
+                    while (rs.next()) {
+                        if (!first) out.println(",");
+                        first = false;
+                        escribirProducto(out, rs);
+                    }
+
+                    out.println("]");
+                }
+            }
+        } catch (NumberFormatException e) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.getWriter().print("{\"error\":\"usuario_id inválido\"}");
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().print("{\"error\":\"" + escapeJson(e.getMessage()) + "\"}");
+        }
     }
-}
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -123,10 +148,10 @@ protected void doGet(HttpServletRequest request, HttpServletResponse response) t
                 }
             }
 
-            // 🔹 Obtener los productos asociados al usuario_id
-            try (PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT id, nombre, descripcion, imagen, precio, Nombre_Empresa, telefono, correo, provincia, ciudad " +
-                    "FROM Productos WHERE usuario_id = ? ORDER BY id DESC")) {
+            // 🔹 Obtener los productos asociados al usuario_id (misma
+            // consulta con JOINs que doGet, para que este flujo también
+            // traiga rebaja/fotos adicionales/bandera de internacional).
+            try (PreparedStatement stmt = conn.prepareStatement(SQL_PRODUCTOS)) {
 
                 stmt.setInt(1, usuarioId);
 
@@ -139,19 +164,7 @@ protected void doGet(HttpServletRequest request, HttpServletResponse response) t
                     while (rs.next()) {
                         if (!first) out.println(",");
                         first = false;
-
-                        out.print("  {");
-                        out.print("\"id\":" + rs.getInt("id") + ",");
-                        out.print("\"nombre\":\"" + escapeJson(rs.getString("nombre")) + "\",");
-                        out.print("\"descripcion\":\"" + escapeJson(rs.getString("descripcion")) + "\",");
-                        out.print("\"imagen\":\"" + escapeJson(rs.getString("imagen")) + "\",");
-                        out.print("\"precio\":" + rs.getDouble("precio") + ",");
-                        out.print("\"empresa\":\"" + escapeJson(rs.getString("Nombre_Empresa")) + "\",");
-                        out.print("\"telefono\":\"" + escapeJson(rs.getString("telefono")) + "\",");
-                        out.print("\"correo\":\"" + escapeJson(rs.getString("correo")) + "\",");
-                        out.print("\"provincia\":\"" + escapeJson(rs.getString("provincia")) + "\",");
-                        out.print("\"ciudad\":\"" + escapeJson(rs.getString("ciudad")) + "\"");
-                        out.print("}");
+                        escribirProducto(out, rs);
                     }
 
                     out.println("]");
@@ -164,7 +177,7 @@ protected void doGet(HttpServletRequest request, HttpServletResponse response) t
                 out.print("{\"error\":\"" + escapeJson(e.getMessage()) + "\"}");
             }
         }
-    } 
+    }
 
     // 🔹 Encriptar la contraseña igual que el login
     private String hashContraseña(String contraseña) {
