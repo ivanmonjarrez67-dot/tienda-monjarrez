@@ -142,7 +142,8 @@ function cargarProductosMiTienda() {
               data-correo="${producto.correo || ''}"
               data-precio="${producto.precio || ''}"
               data-precio-anterior="${producto.precio_anterior || ''}"
-              data-categoria="${producto.categoria || ''}">
+              data-categoria="${producto.categoria || ''}"
+              data-extranjero="${producto.es_extranjero ? '1' : '0'}">
               Ver detalles
             </button>
             <button type="button" class="icon-btn editar-producto-btn" title="Editar producto" aria-label="Editar producto">
@@ -254,6 +255,12 @@ document.getElementById("addProductForm").onsubmit = function (event) {
   const imageUrl3Input = document.getElementById("imageUrl3");
   const imageUrl3 = imageUrl3Input ? imageUrl3Input.value.trim() : "";
 
+  // 🆕 Producto de reventa internacional: checkbox opcional, se envía
+  // como "1"/"0" (nunca vacío) para que el backend siempre reciba un
+  // valor explícito.
+  const esExtranjeroInput = document.getElementById("esExtranjero");
+  const esExtranjero = esExtranjeroInput && esExtranjeroInput.checked ? "1" : "0";
+
   if (!usuarioId || isNaN(usuarioId)) {
     alert("No se pudo obtener el ID del usuario. Vuelva a iniciar sesión o revise el campo.");
     return;
@@ -304,6 +311,7 @@ document.getElementById("addProductForm").onsubmit = function (event) {
       precio_anterior: precioAnterior,
       imagen2: imageUrl2,
       imagen3: imageUrl3,
+      es_extranjero: esExtranjero,
     }),
   })
     .then((response) => {
@@ -550,6 +558,7 @@ function construirTarjetaProductoHTML(producto) {
           data-correo="${producto.correo || ''}"
           data-precio="${producto.precio || ''}"
           data-precio-anterior="${producto.precio_anterior || ''}"
+          data-extranjero="${producto.es_extranjero ? '1' : '0'}"
         >
           Ver detalles
         </button>
@@ -799,7 +808,8 @@ document.getElementById("misProductosGrid").addEventListener("click", (e) => {
     correo: btn.dataset.correo,
     precio: btn.dataset.precio,
     precioAnterior: btn.dataset.precioAnterior,
-    categoria: btn.dataset.categoria
+    categoria: btn.dataset.categoria,
+    esExtranjero: btn.dataset.extranjero === "1"
   };
 
   // 🆕 Íconos de editar (lápiz) y eliminar (tacho) de ESTA tarjeta: como
@@ -847,6 +857,12 @@ function abrirModalEdicionProducto() {
   if (editImageUrl2Input) editImageUrl2Input.value = productoSeleccionado.imagen2 || "";
   const editImageUrl3Input = document.getElementById("editImageUrl3");
   if (editImageUrl3Input) editImageUrl3Input.value = productoSeleccionado.imagen3 || "";
+
+  // 🆕 Producto de reventa internacional: precarga el checkbox con el
+  // valor actual del producto (para no perderlo si el vendedor edita
+  // otro campo sin querer desmarcarlo).
+  const editEsExtranjeroInput = document.getElementById("editEsExtranjero");
+  if (editEsExtranjeroInput) editEsExtranjeroInput.checked = !!productoSeleccionado.esExtranjero;
 
   const preview = document.getElementById("editPreviewImagen");
   if (preview) {
@@ -910,6 +926,11 @@ document.getElementById("editProductForm").addEventListener("submit", function (
   const editImageUrl3Input = document.getElementById("editImageUrl3");
   const imageUrl3 = editImageUrl3Input ? editImageUrl3Input.value.trim() : "";
 
+  // 🆕 Producto de reventa internacional: mismo criterio que en "Agregar
+  // Producto", siempre se envía "1"/"0" explícito.
+  const editEsExtranjeroInput = document.getElementById("editEsExtranjero");
+  const esExtranjero = editEsExtranjeroInput && editEsExtranjeroInput.checked ? "1" : "0";
+
   // 🆕 El backend ahora exige usuario_id para verificar que el producto
   // le pertenece a quien intenta editarlo (mismo dueño que lo publicó),
   // igual que ya se hace para "Agregar Producto".
@@ -965,6 +986,7 @@ document.getElementById("editProductForm").addEventListener("submit", function (
       precio_anterior: precioAnterior,
       imagen2: imageUrl2,
       imagen3: imageUrl3,
+      es_extranjero: esExtranjero,
     }),
   })
     .then((response) => {
