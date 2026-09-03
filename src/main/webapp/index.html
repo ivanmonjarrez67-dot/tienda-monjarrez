@@ -5164,5 +5164,211 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
     </a>
   </div>
 
+  <!-- 🆕 Aviso "Regístrate" sobre el menú de 3 puntitos flotante:
+       solo se muestra a quien navega como Invitado (sin sesión de
+       Vendedor/a o Comprador/a). Señala el botón rojo flotante e
+       invita a registrarse para recibir avisos de productos nuevos y
+       novedades. Además, mientras la persona sea Invitada, un clic en
+       el propio botón del menú la manda directo al login ("Ingresar
+       como") en vez de
+       abrir el desplegable normal; con sesión de Vendedor/a o
+       Comprador/a el menú sigue funcionando tal como siempre. -->
+  <style>
+    .aviso-registro-menu {
+      position: fixed;
+      z-index: 3001;
+      max-width: 215px;
+      background: linear-gradient(135deg, #b33a3a, #7a1414);
+      color: #fff;
+      padding: 14px 16px 12px;
+      border-radius: 14px;
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.25);
+      font-size: 14.5px;
+      font-weight: 400;
+      line-height: 1.35;
+      cursor: pointer;
+      opacity: 0;
+      transform: translateY(-10px) scale(0.95);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      pointer-events: none;
+    }
+    .aviso-registro-menu.visible {
+      opacity: 1;
+      transform: none;
+      pointer-events: auto;
+    }
+    .aviso-registro-menu::before {
+      content: "";
+      position: absolute;
+      top: -8px;
+      right: 22px;
+      width: 16px;
+      height: 16px;
+      background: #b33a3a;
+      transform: rotate(45deg);
+      border-radius: 3px;
+    }
+    .aviso-registro-texto i {
+      margin-right: 4px;
+    }
+    .aviso-registro-subtexto {
+      font-size: 11px;
+      font-weight: 400;
+      opacity: 0.85;
+      margin-top: 3px;
+    }
+    .aviso-registro-cerrar {
+      position: absolute;
+      top: 4px;
+      right: 8px;
+      background: none;
+      border: none;
+      color: #ffffff;
+      opacity: 0.8;
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 4px 6px;
+    }
+    .aviso-registro-cerrar:hover {
+      opacity: 1;
+    }
+    .aviso-registro-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      background: #ffffff;
+      color: #7a1414;
+      font-weight: 700;
+      padding: 6px 13px;
+      border-radius: 20px;
+      font-size: 12.5px;
+    }
+    @media (max-width: 480px) {
+      .aviso-registro-menu {
+        max-width: 200px;
+      }
+    }
+  </style>
+  <script>
+    (function () {
+      const menuBtn = document.getElementById("menuBtn");
+      if (!menuBtn) return;
+
+      const CLAVE_SESION = "sesionUsuario";
+      const CLAVE_CIERRE = "avisoRegistroMenuCerrado";
+
+      // Es Invitado = no hay sesión activa de Vendedor/a o Comprador/a
+      // guardada en localStorage (mismo formato que usa comprobarSesion()
+      // más abajo en el archivo: { tipo, expiracion }).
+      function esInvitado() {
+        try {
+          const raw = localStorage.getItem(CLAVE_SESION);
+          if (!raw) return true;
+          const sesion = JSON.parse(raw);
+          if (!sesion || !sesion.tipo) return true;
+          if (Date.now() > sesion.expiracion) return true;
+          return false;
+        } catch (e) {
+          return true;
+        }
+      }
+
+      // Aviso flotante
+      const aviso = document.createElement("div");
+      aviso.id = "avisoRegistroMenu";
+      aviso.className = "aviso-registro-menu";
+      aviso.innerHTML =
+        '<button type="button" class="aviso-registro-cerrar" aria-label="Cerrar aviso">&times;</button>' +
+        '<div class="aviso-registro-texto"><i class="fa-solid fa-bell"></i>Regístrate ahora o inicia sesión en nuestra Tienda!</div>' +
+        '<div class="aviso-registro-subtexto">Y conoce más sobre nosotros</div>' +
+        '<span class="aviso-registro-btn">Ingresar <i class="fa-solid fa-arrow-right"></i></span>';
+      document.body.appendChild(aviso);
+
+      function posicionarAviso() {
+        const rect = menuBtn.getBoundingClientRect();
+        aviso.style.top = rect.bottom + 12 + "px";
+        aviso.style.right = Math.max(14, window.innerWidth - rect.right) + "px";
+      }
+
+      function ocultarAviso(recordarCierre) {
+        aviso.classList.remove("visible");
+        if (recordarCierre) sessionStorage.setItem(CLAVE_CIERRE, "1");
+      }
+
+      function abrirLogin() {
+        ocultarAviso(true);
+        const registro = document.getElementById("registroModal");
+        if (registro) registro.style.display = "none";
+        const login = document.getElementById("loginModal");
+        if (login) login.style.display = "flex";
+      }
+
+      aviso
+        .querySelector(".aviso-registro-cerrar")
+        .addEventListener("click", function (e) {
+          e.stopPropagation();
+          ocultarAviso(true);
+        });
+      aviso.addEventListener("click", abrirLogin);
+
+      function intentarMostrarAviso() {
+        if (!esInvitado()) return;
+        if (sessionStorage.getItem(CLAVE_CIERRE)) return;
+        if (!document.body.classList.contains("menu-flotando")) return;
+        posicionarAviso();
+        aviso.classList.add("visible");
+      }
+
+      // El botón se "despega" y se pone rojo/flotante agregando la
+      // clase "menu-flotando" al <body> (ver CSS arriba, cerca de la
+      // línea 216). En cuanto eso pasa, y solo si la persona navega
+      // como Invitada, mostramos el aviso apuntando al botón.
+      const observador = new MutationObserver(function () {
+        if (document.body.classList.contains("menu-flotando")) {
+          setTimeout(intentarMostrarAviso, 350); // deja terminar la animación del botón
+        } else {
+          ocultarAviso(false);
+        }
+      });
+      observador.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+
+      window.addEventListener(
+        "scroll",
+        function () {
+          if (aviso.classList.contains("visible")) posicionarAviso();
+        },
+        { passive: true }
+      );
+      window.addEventListener("resize", function () {
+        if (aviso.classList.contains("visible")) posicionarAviso();
+      });
+
+      // Interceptar el clic sobre el botón del menú ANTES de que llegue
+      // al manejador normal (el que despliega #menuContent): se escucha
+      // en fase de CAPTURA sobre "document", así el evento pasa por acá
+      // primero sin importar en qué orden se hayan enganchado los demás
+      // listeners. Si la persona es Invitada, la mandamos directo al
+      // login ("Ingresar como") y detenemos el evento ahí mismo; si tiene sesión de
+      // Vendedor/a o Comprador/a, no tocamos nada y el menú se
+      // despliega exactamente como siempre.
+      document.addEventListener(
+        "click",
+        function (e) {
+          const btn = e.target.closest && e.target.closest("#menuBtn");
+          if (!btn) return;
+          if (esInvitado()) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            abrirLogin();
+          }
+        },
+        true
+      );
+    })();
+  </script>
+
   </body>
 </html>
