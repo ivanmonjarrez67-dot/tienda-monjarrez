@@ -3,8 +3,10 @@ package entidades.controladores;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
 import entidades.DatabaseConnection;
+import entidades.EmailService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -29,6 +31,13 @@ import jakarta.servlet.http.HttpSession;
  *
  * Todo se hace dentro de una sola transacción: si algo falla, se revierte
  * todo (rollback) y la cuenta no queda a medio borrar.
+ *
+ * 🆕 Antes de borrar nada, se capturan nombre, correo y tipo (rol) del
+ * usuario desde la tabla Usuarios. Esos datos son los ÚLTIMOS que se van
+ * a poder leer de esta cuenta, así que se guardan en variables antes del
+ * DELETE. Solo si el commit() sale bien se envía el correo de
+ * confirmación de eliminación, usando esos datos ya capturados — nunca
+ * se manda el correo si el borrado falla.
  */
 @WebServlet("/api/perfil/eliminar")
 public class EliminarPerfilServlet extends HttpServlet {
@@ -50,6 +59,26 @@ public class EliminarPerfilServlet extends HttpServlet {
         int usuarioId = (Integer) usuarioIdObj;
 
         try (Connection conn = DatabaseConnection.getConnection()) {
+
+            // 🆕 Capturar los datos del perfil ANTES de borrar nada — son
+            // los últimos que vamos a poder leer de esta cuenta.
+            // La tabla Usuarios ya trae el rol en la columna "tipo", así
+            // que no hace falta consultar Vendedores para inferirlo.
+            String nombre = null;
+            String correo = null;
+            String tipo = null;
+
+            try (PreparedStatement stmt = conn.prepareStatement(
+                    "SELECT nombre, correo, tipo FROM Usuarios WHERE id = ?")) {
+                stmt.setInt(1, usuarioId);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        nombre = rs.getString("nombre");
+                        correo = rs.getString("correo");
+                        tipo = rs.getString("tipo");
+                    }
+                }
+            }
 
             boolean autoCommitOriginal = conn.getAutoCommit();
             try {
@@ -85,7 +114,21 @@ public class EliminarPerfilServlet extends HttpServlet {
             response.setStatus(HttpServletResponse.SC_OK);
             response.getWriter().write("Cuenta eliminada correctamente");
 
-            System.out.println("[EliminarPerfilServlet] 🗑️ Usuario " + usuarioId + " eliminó su cuenta.");
+            System.out.println("[EliminarPerfilServlet] Usuario " + usuarioId + " eliminó su cuenta.");
+
+            // 🆕 El commit ya fue exitoso — recién ahora se envía el correo,
+            // con los datos capturados antes del borrado. Si por algún
+            // motivo no se pudo leer el email (fila no encontrada arriba,
+            // dato nulo, etc.) simplemente no se envía, sin romper la
+            // respuesta al cliente (la cuenta ya se borró de todas formas).
+            if (correo != null && !correo.isEmpty()) {
+                String rol = "vendedor".equalsIgnoreCase(tipo) ? "vendedor" : "comprador";
+                String nombreParaCorreo = (nombre != null && !nombre.isEmpty()) ? nombre : "usuario";
+                EmailService.enviarCuentaEliminada(correo, nombreParaCorreo, rol);
+            } else {
+                System.out.println("[EliminarPerfilServlet] No se pudo obtener el correo del usuario "
+                        + usuarioId + "; no se envió el correo de confirmación.");
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
