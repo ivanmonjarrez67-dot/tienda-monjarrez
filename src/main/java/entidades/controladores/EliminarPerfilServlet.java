@@ -22,12 +22,21 @@ import jakarta.servlet.http.HttpSession;
  * la SESIÓN del servidor, nunca de un parámetro del cliente — así nadie
  * puede borrar la cuenta de otra persona.
  *
- * Orden de borrado (importante por las llaves foráneas hacia Usuarios.id):
- *   1. Intereses
- *   2. Productos
- *   3. SolicitudesDeVendedor
- *   4. Vendedores
- *   5. Usuarios   (al final, porque las demás tablas dependen de este id)
+ * Orden de borrado (importante por las llaves foráneas):
+ *   1. Intereses                       (usuario_id)
+ *   2. ImagenesAdicionalesProducto     (producto_id, de los productos del usuario)
+ *   3. Descuentos                      (producto_id, de los productos del usuario)
+ *   4. ProductosExtranjeros            (producto_id, de los productos del usuario)
+ *   5. Productos                       (usuario_id) — ya sin hijos pendientes
+ *   6. SuscripcionVendedor             (usuario_id)
+ *   7. SolicitudesDeVendedor           (usuario_id)
+ *   8. Vendedores                      (usuario_id)
+ *   9. Usuarios                        (al final, porque las demás tablas dependen de este id)
+ *
+ * 🆕 Productos tiene sus propias tablas hijas (imágenes adicionales,
+ * descuentos, productos extranjeros) que apuntan a Productos.id. Hay que
+ * vaciarlas ANTES de borrar Productos, o SQL Server rechaza el DELETE por
+ * la llave foránea (ese era el error "FK_ProductosExtranjeros_Productos").
  *
  * Todo se hace dentro de una sola transacción: si algo falla, se revierte
  * todo (rollback) y la cuenta no queda a medio borrar.
@@ -85,7 +94,24 @@ public class EliminarPerfilServlet extends HttpServlet {
                 conn.setAutoCommit(false);
 
                 ejecutarDelete(conn, "DELETE FROM Intereses WHERE usuario_id = ?", usuarioId);
+
+                // 🆕 Las tablas hijas de Productos (imágenes, descuentos,
+                // productos extranjeros) hay que vaciarlas ANTES de borrar
+                // Productos, usando una subconsulta por producto_id — así
+                // no hace falta traer los ids a Java ni armar un IN (...)
+                // a mano.
+                ejecutarDelete(conn,
+                    "DELETE FROM ImagenesAdicionalesProducto WHERE producto_id IN " +
+                    "(SELECT id FROM Productos WHERE usuario_id = ?)", usuarioId);
+                ejecutarDelete(conn,
+                    "DELETE FROM Descuentos WHERE producto_id IN " +
+                    "(SELECT id FROM Productos WHERE usuario_id = ?)", usuarioId);
+                ejecutarDelete(conn,
+                    "DELETE FROM ProductosExtranjeros WHERE producto_id IN " +
+                    "(SELECT id FROM Productos WHERE usuario_id = ?)", usuarioId);
+
                 ejecutarDelete(conn, "DELETE FROM Productos WHERE usuario_id = ?", usuarioId);
+                ejecutarDelete(conn, "DELETE FROM SuscripcionVendedor WHERE usuario_id = ?", usuarioId);
                 ejecutarDelete(conn, "DELETE FROM SolicitudesDeVendedor WHERE usuario_id = ?", usuarioId);
                 ejecutarDelete(conn, "DELETE FROM Vendedores WHERE usuario_id = ?", usuarioId);
 
