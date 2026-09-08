@@ -1792,16 +1792,24 @@ Modificaciones para visivilidad en dispositivos
   .product-grid {
     column-count: 2; /* Siempre 2 columnas en móvil (esto sigue aplicando a #misProductosGrid) */
     column-width: auto;
-    column-gap: 4px; /* 🔧 antes 6px: casi sin espacio entre columnas, como Temu */
-    padding: 4px; /* 🔧 antes 6px */
+    column-gap: 3px; /* 🔧 antes 4px: aún menos espacio entre columnas, como Temu */
+    padding: 2px; /* 🔧 antes 4px: casi sin borde lateral, el poco que queda lo pone #productGridWrapper */
   }
 
   .mosaic-grid {
-    gap: 4px; /* 🔧 antes 6px, igual que arriba */
+    gap: 3px; /* 🔧 antes 4px, igual que arriba */
   }
 
+  /* 🔧 En móvil la tarjeta ya no tiene un ancho tope (antes heredaba
+     max-width: 320px de la regla base, pensada para computadora/tablet
+     donde caben muchas columnas). Al quitarlo, cada tarjeta ocupa TODO
+     el ancho de su columna dentro del grid de 2 columnas — se ve tan
+     grande como en Temu. La imagen sigue sin recortarse (object-fit:
+     contain, más abajo en este archivo) y muestra su proporción real,
+     solo que ahora dentro de una tarjeta más ancha. */
   .producto {
-    margin-bottom: 4px; /* 🔧 antes 10px: casi sin espacio vertical entre tarjetas, como Temu */
+    max-width: none;
+    margin-bottom: 3px; /* 🔧 antes 4px: casi sin espacio vertical entre tarjetas, como Temu */
   }
 
   .producto h3 {

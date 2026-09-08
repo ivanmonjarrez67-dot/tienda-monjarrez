@@ -986,6 +986,22 @@
            Estrellado se ve. */
         isolation: isolate;
       }
+
+      /* 🆕 En teléfono, estilo Temu: casi nada de borde lateral en el
+         contenedor de productos (antes 24px de padding a cada lado
+         hacían que las tarjetas se vieran chicas y encerradas). Esto
+         SOLO cambia el padding/margen del contenedor — no toca las
+         imágenes (siguen mostrándose completas, sin recortar, con su
+         tamaño real vía object-fit:contain en styles.css). Se define
+         aquí, después de la regla base de arriba, para ganar en la
+         cascada sin necesitar !important. */
+      @media (max-width: 500px) {
+        #productGridWrapper {
+          padding: 6px 4px;
+          border-radius: 8px;
+          margin: 6px 0 20px;
+        }
+      }
       #starsCanvas {
         position: absolute;
         top: 0;
