@@ -121,7 +121,7 @@ function cargarProductosMiTienda() {
         const galeriaHtml = construirGaleriaHTML(
           [producto.imagen, producto.imagen2, producto.imagen3],
           producto.nombre || "",
-          "width:150px;height:150px;object-fit:cover;border-radius:8px;"
+          "width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:8px;display:block;"
         );
         card.innerHTML = `
           ${galeriaHtml}
@@ -525,7 +525,7 @@ function construirTarjetaProductoHTML(producto) {
   let galeriaHtml = construirGaleriaHTML(
     [producto.imagen, producto.imagen2, producto.imagen3],
     producto.nombre || "",
-    "width:150px;height:150px;object-fit:cover;"
+    "width:100%;aspect-ratio:1/1;object-fit:cover;display:block;"
   );
 
   // 🔧 El badge del nombre de empresa se inserta DENTRO del contenedor de

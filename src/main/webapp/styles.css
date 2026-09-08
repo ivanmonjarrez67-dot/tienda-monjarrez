@@ -433,17 +433,20 @@ Adaptación del toggle a móviles y tablets
     color: #1a1a1a; /* texto oscuro legible sobre el fondo claro de la tarjeta */
 }
 
-/* Imagen del producto: se muestra COMPLETA, sin recortar y sin altura
-   fija — cada foto conserva su alto natural según su propia proporción
-   (retrato, cuadrada, panorámica, etc.), igual que en Pinterest/Google
-   Shopping. Ya no se fuerza un mismo alto para todas.
+/* 🔧 Imagen del producto: cuadro fijo (1:1) que la foto SIEMPRE llena por
+   completo, recortando lo que sobre (object-fit: cover) — igual que
+   Temu/AliExpress. Antes se usaba object-fit:contain con altura libre
+   (look "Pinterest"), pero eso dejaba la foto chiquita y con espacio en
+   blanco alrededor cuando la imagen original traía relleno. Ahora la
+   imagen es la protagonista de la tarjeta sin importar su forma original.
    El selector es más específico que el estilo inline width/height que
    trae el <img> desde script.js, para que esta regla siempre gane. */
 .product-grid .producto img {
     width: 100% !important;
+    aspect-ratio: 1 / 1 !important;
     height: auto !important;
     max-height: none !important;
-    object-fit: contain !important;
+    object-fit: cover !important;
     display: block;
     border: none !important;
     border-radius: 0 !important;
