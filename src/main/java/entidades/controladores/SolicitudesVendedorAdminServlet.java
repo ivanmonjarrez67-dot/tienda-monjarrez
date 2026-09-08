@@ -10,6 +10,7 @@ import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.sql.*;
 import entidades.DatabaseConnection;
+import entidades.EmailService;
 
 @WebServlet("/admin/solicitudesVendedor")
 public class SolicitudesVendedorAdminServlet extends HttpServlet {
@@ -152,6 +153,15 @@ public class SolicitudesVendedorAdminServlet extends HttpServlet {
             return;
         }
 
+        // 🆕 Datos del vendedor para el correo de "suscripción aprobada".
+        // Se llenan solo cuando accion=aprobar (ver más abajo) y se usan
+        // DESPUÉS del commit, ya afuera del try-with-resources de la
+        // conexión — así un correo lento no deja la transacción/conexión
+        // abierta más de lo necesario.
+        String correoVendedor = null;
+        String nombreVendedor = null;
+        String tipoSuscripcionVendedor = null;
+
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
             try {
@@ -180,6 +190,25 @@ public class SolicitudesVendedorAdminServlet extends HttpServlet {
                         ps.setInt(1, usuarioId);
                         ps.executeUpdate();
                     }
+
+                    // 🆕 Traemos nombre/correo/tipo_suscripcion del vendedor
+                    // recién aprobado para poder avisarle por correo.
+                    String sqlDatosVendedor = """
+                        SELECT u.nombre, u.correo, v.tipo_suscripcion
+                        FROM Usuarios u
+                        JOIN Vendedores v ON v.usuario_id = u.id
+                        WHERE u.id = ?
+                        """;
+                    try (PreparedStatement ps = conn.prepareStatement(sqlDatosVendedor)) {
+                        ps.setInt(1, usuarioId);
+                        try (ResultSet rs = ps.executeQuery()) {
+                            if (rs.next()) {
+                                nombreVendedor = rs.getString("nombre");
+                                correoVendedor = rs.getString("correo");
+                                tipoSuscripcionVendedor = rs.getString("tipo_suscripcion");
+                            }
+                        }
+                    }
                 } else { // revertir
                     try (PreparedStatement ps = conn.prepareStatement(
                             "UPDATE Vendedores SET suscrito = 0 WHERE usuario_id = ?")) {
@@ -202,6 +231,21 @@ public class SolicitudesVendedorAdminServlet extends HttpServlet {
             out.print("{\"error\":\"" + esc(e.getMessage()) + "\"}");
             return;
         }
+
+        // 📩 Avisar al vendedor que su suscripción fue aprobada — recién
+        // ahora, con la transacción ya confirmada (commit) y la conexión
+        // cerrada. Igual que en SuscripcionServlet, un fallo al enviar el
+        // correo NUNCA debe hacer que la aprobación en sí falle: por eso
+        // va en su propio try/catch, después de responder que todo salió
+        // bien no importa qué pase con Brevo.
+        if ("aprobar".equals(accion) && correoVendedor != null) {
+            try {
+                EmailService.enviarSuscripcionAprobada(correoVendedor, nombreVendedor, tipoSuscripcionVendedor);
+            } catch (Exception e) {
+                System.out.println("[SolicitudesVendedorAdminServlet] ⚠️ No se pudo enviar el correo de suscripción aprobada: " + e.getMessage());
+            }
+        }
+
         out.print("{\"ok\":true}");
     }
 

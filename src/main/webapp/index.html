@@ -5409,5 +5409,53 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
     })();
   </script>
 
+  <!-- 🆕 Deep-link desde los correos de EmailService: ?accion=login-vendedor |
+       registro-vendedor | registro-comprador en la URL abre directo la
+       pantalla correspondiente, sin que la persona tenga que navegar los
+       menús manualmente.
+
+       Se ejecuta en el evento "load" del propio <script> (no en
+       DOMContentLoaded) y, como esta etiqueta está al final del <body>,
+       se registra DESPUÉS que el listener de "load" de script.js (el que
+       mete a todo el mundo como Invitado por defecto) — así que corre
+       después y puede "pisar" ese estado inicial abriendo el modal que
+       corresponda.
+
+       Reutiliza los mismos botones/flujos que ya existen (simulando un
+       click real sobre ellos) en vez de reimplementar la lógica de abrir
+       modales, para no duplicar nada de lo que ya hace script.js. -->
+  <script>
+    window.addEventListener("load", () => {
+      const accion = new URLSearchParams(window.location.search).get("accion");
+      if (!accion) return;
+
+      // Se quita el parámetro de la URL para que un refresh de la página
+      // no vuelva a disparar el modal.
+      const url = new URL(window.location);
+      url.searchParams.delete("accion");
+      window.history.replaceState({}, "", url);
+
+      if (accion === "login-vendedor") {
+        // Mismo flujo que "Ingresar como" → Vendedor/a: abre el login y
+        // hace click en el botón Vendedor/a, que ya se encarga de mostrar
+        // modalVendedor (cédula + contraseña).
+        document.getElementById("loginModal").style.display = "flex";
+        document.querySelector("#loginModal .role-btn.vendedor")?.click();
+      }
+
+      if (accion === "registro-vendedor") {
+        // Mismo flujo que "Registrarme" → Vendedor/a.
+        document.getElementById("registroModal").style.display = "flex";
+        document.getElementById("btnVendedor")?.click();
+      }
+
+      if (accion === "registro-comprador") {
+        // Mismo flujo que "Registrarme" → Comprador/a.
+        document.getElementById("registroModal").style.display = "flex";
+        document.getElementById("btnComprador")?.click();
+      }
+    });
+  </script>
+
   </body>
 </html>

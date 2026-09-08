@@ -36,6 +36,17 @@ import config.Config;
  * 🆕 Se agregó el correo de confirmación de eliminación de cuenta, enviado
  * desde el correo principal (tiendamonjarrez@gmail.com) ya que es el
  * último contacto que tendrá el usuario con la tienda.
+ *
+ * 🆕 Se agregó el correo de "suscripción aprobada" (enviarSuscripcionAprobada),
+ * que avisa al vendedor cuando el admin aprueba su suscripción desde
+ * panelAdmin — antes no existía ninguna notificación de esto y el vendedor
+ * se enteraba solo si entraba a revisar manualmente. Sale desde
+ * soporte@tiendamonjarrez.com (se reactivó ese remitente, que estaba
+ * comentado) porque es el equipo que aprueba las solicitudes, y así el
+ * vendedor puede responder ese mismo correo si tiene dudas. El botón
+ * "Ir a mi tienda" no lleva a la portada genérica: usa el parámetro
+ * ?accion=login-vendedor (ver index.html) para abrir directo el login de
+ * Vendedor/a.
  */
 public class EmailService {
 
@@ -53,7 +64,9 @@ public class EmailService {
     // Remitentes por tipo de correo (dominio ya verificado en Brevo)
     // ---------------------------------------------------------
     private static final String EMAIL_NO_REPLY       = "no-reply@tiendamonjarrez.com";
-    //private static final String EMAIL_SOPORTE         = "soporte@tiendamonjarrez.com";
+    // 🆕 Reactivado: lo necesita enviarSuscripcionAprobada() para que el
+    // vendedor pueda responder directo al equipo que aprobó su solicitud.
+    private static final String EMAIL_SOPORTE         = "soporte@tiendamonjarrez.com";
     private static final String EMAIL_SEGURIDAD       = "seguridad@tiendamonjarrez.com";
     private static final String EMAIL_NOTIFICACIONES  = "notificaciones@tiendamonjarrez.com";
 
@@ -79,7 +92,8 @@ public class EmailService {
     private static final String NOMBRE_GENERICO       = "Tienda Monjarrez";
     private static final String NOMBRE_SEGURIDAD      = "Tienda Monjarrez - Seguridad";
     private static final String NOMBRE_NOTIFICACIONES = "Tienda Monjarrez - Notificaciones";
-    //private static final String NOMBRE_SOPORTE        = "Tienda Monjarrez - Soporte";
+    // 🆕 Reactivado junto con EMAIL_SOPORTE.
+    private static final String NOMBRE_SOPORTE        = "Tienda Monjarrez - Soporte";
     private static final String NOMBRE_PRINCIPAL      = "Tienda Monjarrez";
 
     private static final HttpClient client = HttpClient.newHttpClient();
@@ -102,6 +116,9 @@ public class EmailService {
     private static final String ICON_PRODUCTO     = "icono-producto.png";
     private static final String ICON_SUSCRIPCION  = "icono-suscripcion.png";
     private static final String ICON_ELIMINADA    = "icono-cuenta-eliminada.png";
+    // 🆕 Reutiliza el ícono de vendedor (no hace falta subir un PNG nuevo):
+    // la aprobación es, en esencia, "ya eres vendedor activo".
+    private static final String ICON_APROBADA     = ICON_VENDEDOR;
 
     // ---------------------------------------------------------
     // Envío genérico (asíncrono, a prueba de fallos)
@@ -318,11 +335,42 @@ public class EmailService {
     }
 
     // ---------------------------------------------------------
+    // 🆕 Confirmación de suscripción APROBADA.
+    // Se envía justo después de que el admin aprueba la solicitud desde
+    // panelAdmin (botón "Aprobar" / "Renovar"). Antes de esto, el vendedor
+    // no recibía ningún aviso — solo se enteraba si entraba a revisar
+    // manualmente.
+    //
+    // Sale desde EMAIL_SOPORTE (no desde no-reply/notificaciones) porque
+    // es el equipo de soporte quien aprueba las solicitudes, así que si el
+    // vendedor responde el correo con una duda, cae en la bandeja correcta.
+    //
+    // El botón "Ir a mi tienda" NO apunta a la portada genérica: usa
+    // ?accion=login-vendedor, que index.html intercepta (ver el <script>
+    // agregado antes de </body>) para abrir directo el login de
+    // Vendedor/a, en vez de que la persona tenga que buscarlo en el menú.
+    // ---------------------------------------------------------
+    public static void enviarSuscripcionAprobada(String email, String nombre, String tipoSuscripcion) {
+        String cuerpo =
+              "<p>¡Buenas noticias! Tu suscripción <strong>" + tipoSuscripcion + "</strong> fue "
+            + "revisada y <strong>aprobada</strong>.</p>"
+            + "<p>Tu cuenta de vendedor ya está activa: puedes ingresar a <strong>Mi Tienda</strong> "
+            + "y comenzar a publicar tus productos ahora mismo.</p>"
+            + "<p>¡Felicidades y mucho éxito en Tienda Monjarrez!</p>";
+
+        String html = plantillaBase(ICON_APROBADA, "¡Felicidades, " + nombre + "!", cuerpo,
+                "Ir a mi tienda", URL_TIENDA + "/?accion=login-vendedor");
+        enviarAsync(EMAIL_SOPORTE, NOMBRE_SOPORTE, email, nombre,
+                "¡Tu suscripción en Tienda Monjarrez fue aprobada!", html);
+    }
+
+    // ---------------------------------------------------------
     // 🆕 Confirmación de eliminación de cuenta.
     // Se envía justo después de borrar la cuenta (comprador o vendedor),
     // usando los datos del perfil por última vez antes de perderse.
-    // Sale desde el correo principal (bandeja real), no desde el dominio,
-    // para que se sienta como el cierre "oficial" y personal del proceso.
+    // Sale desde el correo principal (tiendamonjarrez@gmail.com), no desde
+    // el dominio, para que se sienta como el cierre "oficial" y personal
+    // del proceso.
     //
     // @param rol "comprador" o "vendedor" (cualquier otro valor se trata
     //            como "comprador" por defecto)
