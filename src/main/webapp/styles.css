@@ -436,11 +436,10 @@ Adaptación del toggle a móviles y tablets
 }
 
 /* 🔧 Imagen del producto: se muestra COMPLETA, sin recortar (object-fit:
-   contain) — vuelve el pedido del usuario tras ver que el recorte
-   (cover) le cortaba parte de la foto. El ancho de la tarjeta ya se
-   agrandó aparte (ver .producto y .product-grid más abajo/arriba), así
-   que la foto se ve grande igual, solo que ahora completa y sin recortar,
-   con su alto natural según su propia proporción.
+   contain), cada una con su alto natural según su propia proporción —
+   el usuario prefiere esto a que todas midan igual recortadas. Los demás
+   cambios (menos espacio entre tarjetas, texto/botón más compacto) sí se
+   mantienen para que se sienta denso y grande como Temu.
    El selector es más específico que el estilo inline width/height que
    trae el <img> desde script.js, para que esta regla siempre gane. */
 .product-grid .producto img {
@@ -1793,25 +1792,30 @@ Modificaciones para visivilidad en dispositivos
   .product-grid {
     column-count: 2; /* Siempre 2 columnas en móvil (esto sigue aplicando a #misProductosGrid) */
     column-width: auto;
-    column-gap: 6px; /* 🔧 antes 10px: menos espacio perdido entre columnas = tarjetas más grandes */
-    padding: 6px; /* 🔧 antes 10px: menos relleno alrededor del grid = tarjetas más grandes, mismas 2 columnas */
+    column-gap: 4px; /* 🔧 antes 6px: casi sin espacio entre columnas, como Temu */
+    padding: 4px; /* 🔧 antes 6px */
   }
 
   .mosaic-grid {
-    gap: 6px; /* 🔧 antes 10px, igual que arriba */
+    gap: 4px; /* 🔧 antes 6px, igual que arriba */
   }
 
   .producto {
-    margin-bottom: 10px;
+    margin-bottom: 4px; /* 🔧 antes 10px: casi sin espacio vertical entre tarjetas, como Temu */
   }
 
   .producto h3 {
-    font-size: 0.78rem;
-    margin: 8px 10px 2px;
+    font-size: 0.76rem;
+    margin: 6px 8px 2px; /* 🔧 antes 8px 10px 2px: menos aire alrededor del texto */
+    line-height: 1.2;
+  }
+
+  .producto-precio {
+    margin: 2px 8px 6px; /* 🔧 precio más pegado al nombre y a la tarjeta, menos aire */
   }
 
   .producto .more-info-btn {
-    margin: 6px 10px 10px;
+    margin: 0 8px 8px; /* 🔧 antes 6px 10px 10px */
     font-size: 0.68rem;
     padding: 4px 11px;
     min-width: 0;
