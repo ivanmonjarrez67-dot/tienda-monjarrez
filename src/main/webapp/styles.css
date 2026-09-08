@@ -380,7 +380,7 @@ Adaptación del toggle a móviles y tablets
    usa "Mi tienda" (funciona bien ahí porque sus fotos son parecidas
    entre sí). */
 .product-grid {
-    column-width: 190px; /* crea tantas columnas quepan, mínimo 190px cada una */
+    column-width: 260px; /* 🔧 antes 190px: crea tantas columnas quepan, ahora con un mínimo más ancho para que las tarjetas/fotos se vean tan grandes como en Temu */
     column-gap: 20px;
     padding: 20px;
 }
@@ -419,10 +419,12 @@ Adaptación del toggle a móviles y tablets
     display: inline-block; /* necesario para que fluya bien dentro de las columnas */
     position: relative; /* 🆕 ancla el badge del vendedor sobre la esquina de la imagen */
     width: 100%;
-    max-width: 260px; /* 🔧 evita que la tarjeta se estire gigante cuando el
-                          filtro trae pocos productos y el navegador arma
-                          columnas más anchas de lo normal para llenar el
-                          espacio (ej. Novedades, Descuentos) */
+    max-width: 320px; /* 🔧 antes 260px: topaba la tarjeta (y su foto) más
+                          chica que las de Temu aunque hubiera espacio de
+                          sobra en pantalla. Sigue evitando que la tarjeta
+                          se estire gigante cuando el filtro trae pocos
+                          productos y el navegador arma columnas más
+                          anchas de lo normal (ej. Novedades, Descuentos) */
     margin: 0 0 20px; /* separación vertical entre tarjetas de una misma columna */
     break-inside: avoid; /* evita que una tarjeta quede partida entre dos columnas */
     background: linear-gradient(180deg, #ffffff 0%, #f4f4f6 100%);

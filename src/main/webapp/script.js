@@ -334,7 +334,7 @@ function pintarMosaico(grid, productos, construirTarjetaHTML) {
   grid.innerHTML = "";
   if (!productos || productos.length === 0) return false;
   const anchoDisponible = grid.clientWidth || window.innerWidth;
-  const anchoMinColumna = 210;
+  const anchoMinColumna = 260; // 🔧 antes 210: columnas más angostas = tarjetas/fotos más chicas que Temu
   let numColumnas = window.innerWidth <= 500 ? 2 : Math.max(1, Math.floor(anchoDisponible / anchoMinColumna));
   numColumnas = Math.min(numColumnas, productos.length);
   const columnas = [];
