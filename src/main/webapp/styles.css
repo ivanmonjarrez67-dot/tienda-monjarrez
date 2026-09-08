@@ -435,20 +435,19 @@ Adaptación del toggle a móviles y tablets
     color: #1a1a1a; /* texto oscuro legible sobre el fondo claro de la tarjeta */
 }
 
-/* 🔧 Imagen del producto: cuadro fijo (1:1) que la foto SIEMPRE llena por
-   completo, recortando lo que sobre (object-fit: cover) — igual que
-   Temu/AliExpress. Antes se usaba object-fit:contain con altura libre
-   (look "Pinterest"), pero eso dejaba la foto chiquita y con espacio en
-   blanco alrededor cuando la imagen original traía relleno. Ahora la
-   imagen es la protagonista de la tarjeta sin importar su forma original.
+/* 🔧 Imagen del producto: se muestra COMPLETA, sin recortar (object-fit:
+   contain) — vuelve el pedido del usuario tras ver que el recorte
+   (cover) le cortaba parte de la foto. El ancho de la tarjeta ya se
+   agrandó aparte (ver .producto y .product-grid más abajo/arriba), así
+   que la foto se ve grande igual, solo que ahora completa y sin recortar,
+   con su alto natural según su propia proporción.
    El selector es más específico que el estilo inline width/height que
    trae el <img> desde script.js, para que esta regla siempre gane. */
 .product-grid .producto img {
     width: 100% !important;
-    aspect-ratio: 1 / 1 !important;
     height: auto !important;
     max-height: none !important;
-    object-fit: cover !important;
+    object-fit: contain !important;
     display: block;
     border: none !important;
     border-radius: 0 !important;
@@ -1794,12 +1793,12 @@ Modificaciones para visivilidad en dispositivos
   .product-grid {
     column-count: 2; /* Siempre 2 columnas en móvil (esto sigue aplicando a #misProductosGrid) */
     column-width: auto;
-    column-gap: 10px; /* reduce un poco el gap */
-    padding: 10px; /* menos padding para móviles */
+    column-gap: 6px; /* 🔧 antes 10px: menos espacio perdido entre columnas = tarjetas más grandes */
+    padding: 6px; /* 🔧 antes 10px: menos relleno alrededor del grid = tarjetas más grandes, mismas 2 columnas */
   }
 
   .mosaic-grid {
-    gap: 10px; /* separación entre columnas del mosaico JS en móvil */
+    gap: 6px; /* 🔧 antes 10px, igual que arriba */
   }
 
   .producto {

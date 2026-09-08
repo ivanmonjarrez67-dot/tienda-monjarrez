@@ -121,7 +121,7 @@ function cargarProductosMiTienda() {
         const galeriaHtml = construirGaleriaHTML(
           [producto.imagen, producto.imagen2, producto.imagen3],
           producto.nombre || "",
-          "width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:8px;display:block;"
+          "width:100%;height:auto;object-fit:contain;border-radius:8px;display:block;"
         );
         card.innerHTML = `
           ${galeriaHtml}
@@ -525,7 +525,7 @@ function construirTarjetaProductoHTML(producto) {
   let galeriaHtml = construirGaleriaHTML(
     [producto.imagen, producto.imagen2, producto.imagen3],
     producto.nombre || "",
-    "width:100%;aspect-ratio:1/1;object-fit:cover;display:block;"
+    "width:100%;height:auto;object-fit:contain;display:block;"
   );
 
   // 🔧 El badge del nombre de empresa se inserta DENTRO del contenedor de
@@ -697,16 +697,25 @@ document.querySelectorAll(".filter").forEach((btn) => {
     btn.classList.add("active");
     const wrapperCatalogo = document.getElementById("productGridWrapper");
     const miTiendaContainer = document.getElementById("miTiendaContainer");
+    // 🔧 "Mi tienda" no es una categoría real de producto (no existe
+    // ningún producto con esa "categoría"), así que ya no se aplica como
+    // filtro ni se oculta el catálogo al seleccionarla — antes eso hacía
+    // que el listado de productos desapareciera para el vendedor al
+    // hacer clic, quedando solo el login flotando sin nada detrás. Ahora
+    // simplemente se recarga el catálogo normal (como si no hubiera
+    // categoría/filtro activo) y se abre encima el login/panel de "Mi
+    // tienda", dejando los productos visibles de fondo.
     if (categoriaSeleccionada === "Mi tienda") {
-      if (wrapperCatalogo) wrapperCatalogo.style.display = "none";
-    } else {
+      categoriaSeleccionada = null;
       if (wrapperCatalogo) wrapperCatalogo.style.display = "";
       if (miTiendaContainer) miTiendaContainer.style.display = "none";
       cargarProductos();
-    }
-    if (categoriaSeleccionada === "Mi tienda") {
       document.getElementById("miTiendaModal").style.display = "block";
+      return;
     }
+    if (wrapperCatalogo) wrapperCatalogo.style.display = "";
+    if (miTiendaContainer) miTiendaContainer.style.display = "none";
+    cargarProductos();
   });
 });
 
@@ -769,6 +778,8 @@ document.getElementById("miTiendaForm").addEventListener("submit", function (e) 
           idDiv.style.display = "block";
         }
         document.getElementById("miTiendaModal").style.display = "none";
+        const wrapperCatalogo = document.getElementById("productGridWrapper");
+        if (wrapperCatalogo) wrapperCatalogo.style.display = "none"; // 🆕 ahora que "Mi tienda" ya no oculta el catálogo al hacer clic, se oculta aquí recién al loguearse con éxito
         document.getElementById("miTiendaContainer").style.display = "block";
         cargarProductosMiTienda(cedula);
       } else {
