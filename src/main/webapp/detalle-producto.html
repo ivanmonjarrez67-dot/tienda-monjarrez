@@ -393,7 +393,7 @@
     const btnCompartir = document.getElementById("btnCompartirProducto");
     if (!btnCompartir) return;
 
-    const shareUrl = `${window.location.origin}/detalle-producto.html?id=${encodeURIComponent(producto.id)}`;
+    const shareUrl = `${window.location.origin}/producto-cj?id=${encodeURIComponent(producto.id)}`;
     const shareTitle = producto.nombre || "Producto";
 
     btnCompartir.addEventListener("click", async () => {
