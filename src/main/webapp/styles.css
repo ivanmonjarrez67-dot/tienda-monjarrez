@@ -494,9 +494,13 @@ Adaptación del toggle a móviles y tablets
     line-height: 1.2;
 }
 
-/* 🆕 Badge con el nombre del vendedor sobre la esquina de la foto —
-   inspirado en las insignias de marca de catálogos tipo AliExpress.
-   Fondo oscuro semitransparente para que se lea sobre cualquier foto. */
+/* 🚫 Desactivado (2026-09): el usuario siente que la etiqueta negra con
+   el nombre del emprendimiento, encima de la foto, le quita protagonismo
+   a la imagen del producto. Se comenta el estilo (queda apagado, el
+   <span class="producto-badge"> sigue existiendo en el HTML/JS pero sin
+   estilo visible) en vez de borrarlo, por si se quiere reactivar más
+   adelante — para reactivar, solo hay que quitar las marcas /* y *\/ de
+   aquí abajo.
 .producto-badge {
     position: absolute;
     bottom: 10px;
@@ -513,6 +517,10 @@ Adaptación del toggle a móviles y tablets
     overflow: hidden;
     text-overflow: ellipsis;
     z-index: 2;
+}
+*/
+.producto-badge {
+    display: none; /* 🆕 oculta el badge mientras el bloque de arriba esté comentado */
 }
 
 /* Botón "Más información" dentro de la tarjeta: el estilo original
@@ -1797,15 +1805,11 @@ Modificaciones para visivilidad en dispositivos
   }
 
   .product-grid.mosaic-grid {
-    gap: 0; /* 🔧 antes 3px/4px: mismo selector con la misma especificidad
-                que la regla base (.product-grid.mosaic-grid, línea ~397)
-                para poder ganarle en móvil — antes usaba solo ".mosaic-grid"
-                (menos específico) y por eso el gap de 20px de la regla base
-                seguía ganando y dejaba ese espacio en medio de las columnas. */
+    gap: 6px; /* 🔧 antes 0: espacio delgado entre columnas, como Temu (no pegadas, no ancho) */
   }
 
   .mosaic-grid .masonry-col {
-    gap: 0; /* 🆕 por si las tarjetas dentro de cada columna también usan gap propio */
+    gap: 0;
   }
 
   /* 🔧 En móvil la tarjeta ya no tiene un ancho tope (antes heredaba
@@ -1817,7 +1821,7 @@ Modificaciones para visivilidad en dispositivos
      solo que ahora dentro de una tarjeta más ancha. */
   .producto {
     max-width: none;
-    margin-bottom: 2px; /* 🔧 antes 3px: prácticamente sin espacio vertical entre tarjetas, como Temu */
+    margin-bottom: 6px; /* 🔧 antes 2px: mismo espacio delgado que el gap horizontal, para que se vea parejo */
   }
 
   .producto h3 {
