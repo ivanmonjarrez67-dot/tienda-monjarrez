@@ -77,16 +77,35 @@ public class RegistroVendedorServlet extends HttpServlet {
                 // registro que dejó a medias (por ejemplo envió la Solicitud
                 // pero nunca llegó a la Suscripción). Ahora, si la contraseña
                 // enviada coincide (mismo hash) con la guardada, asumimos que
-                // es la misma persona y le devolvemos su usuario_id real más
-                // el estado de qué pasos ya completó, para que el frontend lo
-                // mande directo al paso que le falta en vez de bloquearlo.
+                // es la misma persona:
+                //   - si ya tenía tipo "Vendedor", le devolvemos su
+                //     usuario_id real más el estado de qué pasos ya
+                //     completó, para que el frontend lo mande directo al
+                //     paso que le falta (o al login si ya terminó todo).
+                //   - si ya tenía otro tipo (Comprador), es la misma
+                //     persona pero intentando registrarse con un ROL
+                //     distinto usando el mismo correo; como Usuarios no
+                //     permite dos filas con el mismo correo, se le explica
+                //     que debe borrar su cuenta actual desde su perfil
+                //     antes de poder registrarse con el otro rol.
                 // Si la contraseña NO coincide, es otra persona intentando
                 // usar un correo ajeno: se mantiene el error de siempre, así
                 // que la protección contra duplicados no se pierde.
                 try {
                     EstadoReanudacion estado = buscarEstadoReanudacion(correo, contraseñaHash);
 
-                    if (estado != null) {
+                    if (estado == null) {
+                        response.setStatus(HttpServletResponse.SC_CONFLICT);
+                        out.print("{\"usuarioId\":-1, \"mensaje\":\"El correo ya está registrado\"}");
+                        System.out.println("[RegistroVendedorServlet] ⚠️ El correo ya existe en la base de datos (contraseña no coincide).");
+                    } else if (estado.rolDistinto) {
+                        response.setStatus(HttpServletResponse.SC_CONFLICT);
+                        out.print("{\"usuarioId\":-1, \"rolDistinto\":true"
+                                + ", \"mensaje\":\"Ya tienes una cuenta registrada con este correo como " + estado.tipoExistente
+                                + ". Para registrarte con un rol diferente, primero inicia sesión y elimina tu cuenta actual desde tu perfil.\"}");
+                        System.out.println("[RegistroVendedorServlet] ⚠️ Intento de registro con rol distinto para usuario_id=" + estado.usuarioId
+                                + " (tipo existente: " + estado.tipoExistente + ")");
+                    } else {
                         response.setStatus(HttpServletResponse.SC_OK);
                         out.print("{\"usuarioId\":" + estado.usuarioId
                                 + ",\"reanudado\":true"
@@ -96,10 +115,6 @@ public class RegistroVendedorServlet extends HttpServlet {
                         System.out.println("[RegistroVendedorServlet] 🔁 Registro incompleto reanudado para usuario_id=" + estado.usuarioId
                                 + " (solicitudEnviada=" + estado.solicitudEnviada
                                 + ", suscripcionEnviada=" + estado.suscripcionEnviada + ")");
-                    } else {
-                        response.setStatus(HttpServletResponse.SC_CONFLICT);
-                        out.print("{\"usuarioId\":-1, \"mensaje\":\"El correo ya está registrado\"}");
-                        System.out.println("[RegistroVendedorServlet] ⚠️ El correo ya existe en la base de datos (contraseña no coincide).");
                     }
                 } catch (SQLException e) {
                     response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -134,7 +149,7 @@ public class RegistroVendedorServlet extends HttpServlet {
      * viendo el error de "correo ya registrado").
      */
     private EstadoReanudacion buscarEstadoReanudacion(String correo, String contraseñaHashIngresada) throws SQLException {
-        String sqlUsuario = "SELECT id, contraseña FROM Usuarios WHERE correo = ?";
+        String sqlUsuario = "SELECT id, contraseña, tipo FROM Usuarios WHERE correo = ?";
         String sqlSolicitud = "SELECT COUNT(*) FROM SolicitudesDeVendedor WHERE usuario_id = ?";
         String sqlVendedor = "SELECT COUNT(*) FROM Vendedores WHERE usuario_id = ?";
 
@@ -142,18 +157,28 @@ public class RegistroVendedorServlet extends HttpServlet {
 
             int usuarioIdExistente = -1;
             String hashGuardado = null;
+            String tipoExistente = null;
             try (PreparedStatement ps = conn.prepareStatement(sqlUsuario)) {
                 ps.setString(1, correo);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         usuarioIdExistente = rs.getInt("id");
                         hashGuardado = rs.getString("contraseña");
+                        tipoExistente = rs.getString("tipo");
                     }
                 }
             }
 
             if (usuarioIdExistente <= 0 || hashGuardado == null || !hashGuardado.equals(contraseñaHashIngresada)) {
                 return null;
+            }
+
+            // 🆕 Misma persona (correo + contraseña coinciden), pero su
+            // cuenta ya existente es de OTRO rol (ej. Comprador). No se
+            // puede "reanudar" un registro de Vendedor sobre esa cuenta:
+            // hay que avisarle que primero borre la cuenta actual.
+            if (tipoExistente == null || !tipoExistente.equalsIgnoreCase("Vendedor")) {
+                return EstadoReanudacion.rolDistinto(usuarioIdExistente, tipoExistente);
             }
 
             boolean solicitudEnviada;
@@ -174,7 +199,7 @@ public class RegistroVendedorServlet extends HttpServlet {
                 }
             }
 
-            return new EstadoReanudacion(usuarioIdExistente, solicitudEnviada, suscripcionEnviada);
+            return EstadoReanudacion.reanudable(usuarioIdExistente, solicitudEnviada, suscripcionEnviada);
         }
     }
 
@@ -182,11 +207,24 @@ public class RegistroVendedorServlet extends HttpServlet {
         final int usuarioId;
         final boolean solicitudEnviada;
         final boolean suscripcionEnviada;
+        final boolean rolDistinto;
+        final String tipoExistente;
 
-        EstadoReanudacion(int usuarioId, boolean solicitudEnviada, boolean suscripcionEnviada) {
+        private EstadoReanudacion(int usuarioId, boolean solicitudEnviada, boolean suscripcionEnviada,
+                                   boolean rolDistinto, String tipoExistente) {
             this.usuarioId = usuarioId;
             this.solicitudEnviada = solicitudEnviada;
             this.suscripcionEnviada = suscripcionEnviada;
+            this.rolDistinto = rolDistinto;
+            this.tipoExistente = tipoExistente;
+        }
+
+        static EstadoReanudacion reanudable(int usuarioId, boolean solicitudEnviada, boolean suscripcionEnviada) {
+            return new EstadoReanudacion(usuarioId, solicitudEnviada, suscripcionEnviada, false, "Vendedor");
+        }
+
+        static EstadoReanudacion rolDistinto(int usuarioId, String tipoExistente) {
+            return new EstadoReanudacion(usuarioId, false, false, true, tipoExistente);
         }
     }
 }

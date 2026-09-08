@@ -1131,6 +1131,15 @@ btnSiguienteUsuario?.addEventListener("click", async () => {
     // /guardarSuscripcion, donde rompía con 500 por violar la llave
     // foránea. Ahora se valida antes de continuar.
     if (!res.ok || !data.usuarioId || data.usuarioId <= 0) {
+      // 🆕 Caso especial: el correo ya pertenece a esta misma persona
+      // (contraseña coincide) pero registrado con OTRO rol (ej.
+      // Comprador). No se puede reanudar un registro de Vendedor sobre
+      // esa cuenta; se le explica que debe borrar la cuenta actual desde
+      // su perfil antes de registrarse con el rol distinto.
+      if (data.rolDistinto) {
+        alert(data.mensaje || "Ya tienes una cuenta registrada con este correo pero con otro rol. Inicia sesión y elimina tu cuenta actual desde tu perfil para poder registrarte con un rol diferente.");
+        return;
+      }
       alert(data.mensaje || "No se pudo registrar el usuario.");
       return;
     }
@@ -1145,8 +1154,17 @@ btnSiguienteUsuario?.addEventListener("click", async () => {
     // de hacerlo repetir esos pasos, lo mandamos directo al que le falta.
     if (data.reanudado) {
       if (data.suscripcionEnviada) {
-        // Ya había completado Solicitud y Suscripción con este correo.
-        alert("Ya tienes un registro completo con este correo. Si necesitas ayuda, contáctanos.");
+        // 🔧 Antes esto dejaba la pantalla de registro en blanco (todos
+        // los pasos ocultos y nada que mostrar). Si ya completó Solicitud
+        // y Suscripción con este correo, no tiene nada pendiente: lo
+        // mandamos directo al login de vendedor en vez de dejarlo varado.
+        alert("Ya tienes una cuenta de vendedor registrada con este correo. Inicia sesión para continuar.");
+        ["registroModal", "registroVendedorUnificado", "rolesContainer", "pasoSolicitud", "pasoSuscripcion"].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = "none";
+        });
+        hideModal(registroModal);
+        showModal(modalVendedor);
         return;
       }
       if (data.solicitudEnviada) {
@@ -1242,14 +1260,40 @@ registroFormComprador?.addEventListener("submit", async (e) => {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: formData.toString()
     });
-    if (!res.ok) {
-      const msg = await res.text();
-      alert(res.status === 409 ? msg : "Error al registrar comprador: " + msg);
+    // 🔧 Antes se leía la respuesta con res.text() y se parseaba el
+    // usuarioId con parseInt(), pero el servlet SIEMPRE respondió JSON
+    // (ej. {"usuarioId":5}). parseInt sobre ese texto daba resultados
+    // inconsistentes en vez de leer el dato real. Ahora se parsea como
+    // JSON, igual que ya se hace en el registro de Vendedor.
+    const data = await res.json();
+
+    if (!res.ok || !data.usuarioId || data.usuarioId <= 0) {
+      // 🆕 Mismo correo + contraseña que una cuenta ya existente, pero
+      // con OTRO rol (ej. Vendedor): no se puede registrar como
+      // Comprador sobre esa cuenta sin antes borrarla.
+      if (data.rolDistinto) {
+        alert(data.mensaje || "Ya tienes una cuenta registrada con este correo pero con otro rol. Inicia sesión y elimina tu cuenta actual desde tu perfil para poder registrarte con un rol diferente.");
+        return;
+      }
+      // 🆕 Mismo correo + contraseña de una cuenta de Comprador que ya
+      // existía (a diferencia de Vendedor, el registro de Comprador es
+      // un solo paso, así que no hay nada que "reanudar"): se le avisa
+      // y se le manda al login de comprador en vez de repetir el alta.
+      if (data.yaRegistrado) {
+        alert(data.mensaje || "Ya tienes una cuenta de comprador registrada con este correo. Inicia sesión para continuar.");
+        ["registroModal", "formularioComprador", "rolesContainer"].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = "none";
+        });
+        hideModal(registroModal);
+        showModal(modalComprador);
+        return;
+      }
+      alert(data.mensaje || "No se pudo registrar el usuario.");
       return;
     }
-    const usuarioId = await res.text();
-    if (!usuarioId || parseInt(usuarioId) <= 0) throw new Error("No se pudo registrar el usuario");
-    usuarioIdVisible.textContent = "ID de usuario: " + usuarioId;
+
+    usuarioIdVisible.textContent = "ID de usuario: " + data.usuarioId;
     // 🔧 Antes el alert mostraba el ID de usuario ("...ID: " + usuarioId),
     // exponiendo un dato interno innecesario para el comprador. El ID
     // ya se guarda en el DOM/sessionStorage para las peticiones; el

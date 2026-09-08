@@ -1203,6 +1203,13 @@ mark {
   height: 100%;
   background: rgba(0, 0, 0, 0.85);
   z-index: 9999;
+  /* 🆕 Antes, si algún hijo (ej. .caracteristicas con min-width fijo)
+     se pasaba del ancho disponible, ese sobrante quedaba visible y
+     "cortaba" el modal por la derecha en vez de quedar oculto o
+     provocar scroll. Con overflow controlado, cualquier desborde
+     horizontal queda oculto y el vertical se puede scrollear. */
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* Contenedor del modal */
@@ -1211,7 +1218,17 @@ mark {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 450px;
+  width: 90%;
+  max-width: 450px;
+  /* 🆕 box-sizing:border-box para que el padding no se sume por fuera
+     del width/max-width (causa típica de que la tarjeta se corte a la
+     derecha en pantallas angostas). max-height + overflow-y:auto para
+     que, si el contenido interno crece mucho (ej. plan Avanzado con
+     muchos beneficios), sea la tarjeta la que scrollea en vez de
+     estirarse fuera de la pantalla. */
+  box-sizing: border-box;
+  max-height: 90vh;
+  overflow-y: auto;
   padding: 30px;
   border-radius: 15px;
   background: linear-gradient(145deg, #111, #1b1b1b);
@@ -1358,9 +1375,21 @@ mark {
   line-height: 1.5;
 
   min-height: 180px; /* altura mínima para evitar que se achique */
-  min-width: 300px;  /* ancho mínimo para que mantenga buen tamaño */
-  
-  overflow-y: auto;  /* si el texto es muy largo, añade scroll vertical */
+  /* 🔧 Antes tenía min-width:300px fijo. Dentro de la tarjeta angosta
+     del registro (.small-modal, ~380px de ancho MENOS el padding de
+     60px/30px) eso no cabía y desbordaba hacia la derecha — es la
+     causa de que el plan Avanzado (con más texto) se viera "de toda
+     la pantalla" y cortado. Ahora ocupa el 100% del espacio
+     disponible en vez de un ancho mínimo fijo. */
+  width: 100%;
+  box-sizing: border-box;
+
+  /* 🔧 Sin un max-height, overflow-y:auto no hacía nada (nada que
+     recortar) y el plan Avanzado, con su lista larga de beneficios,
+     estiraba toda la tarjeta de registro hasta salirse de la
+     pantalla. Con el tope, es esta caja la que scrollea internamente. */
+  max-height: 260px;
+  overflow-y: auto;
 
     transition: all 0.3s ease;
 }
@@ -1686,29 +1715,18 @@ Modificaciones para visivilidad en dispositivos
     margin-bottom: 8px;
   }
 
-  /* 🆕 Login / Registro / Recuperar contraseña a pantalla completa en
-     celular: en vez de la tarjeta chica y centrada, el modal ocupa
-     todo el alto y ancho de la pantalla, sin bordes redondeados ni
-     posicionamiento "flotante". Solo afecta a los modales dentro de
-     .modal-overlay (login, registro, recuperar), no a los demás
-     modales del sitio (agregar producto, mi tienda, etc.). */
-  .modal-overlay .modal-content {
-    position: fixed !important;
-    inset: 0 !important;
-    top: 0 !important;
-    left: 0 !important;
-    transform: none !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    max-width: 100vw !important;
-    max-height: 100vh !important;
-    border-radius: 0 !important;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    overflow-y: auto;
-    cursor: auto;
-  }
+  /* 🔧 Antes acá se forzaba el modal (login/registro/recuperar) a
+     pantalla completa (100vw/100vh) con !important. Esa regla tenía
+     más especificidad que las tarjetas pequeñas ya definidas para
+     vendedor/registro (.vendedor-modal .small-modal, #registroModal
+     .small-modal) y las pisaba en celulares: por eso el modal se veía
+     "de toda la pantalla" y, si algún contenido interno era más ancho
+     de lo esperado (ej. .caracteristicas con min-width fijo), se
+     cortaba a la derecha sin poder hacer scroll. Se quita para que
+     en todos los tamaños se use la misma tarjeta pequeña y centrada
+     (ver .small-modal y sus ajustes en los media queries de más abajo,
+     ~500px y ~600-1024px).
+  */
 }
 
 @media (max-width: 500px) {

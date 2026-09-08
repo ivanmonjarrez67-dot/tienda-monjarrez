@@ -2,11 +2,16 @@ package entidades.controladores;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import entidades.VRegistro;
 import entidades.Usuario;
 import entidades.EmailService;
 import entidades.ValidacionUtil;
+import entidades.DatabaseConnection;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -68,9 +73,45 @@ public class RegistroCompradorServlet extends HttpServlet {
                 EmailService.enviarBienvenidaComprador(correo, nombre);
 
             } else if (usuarioId == -1) {
-                response.setStatus(HttpServletResponse.SC_CONFLICT);
-                out.print("{\"usuarioId\":-1, \"mensaje\":\"El correo ya está registrado\"}");
-                System.out.println("[RegistroCompradorServlet] ⚠️ El correo ya existe.");
+                // 🆕 El correo ya existe. Igual que en RegistroVendedorServlet:
+                // si la contraseña enviada coincide (mismo hash) con la
+                // guardada, es la misma persona.
+                //   - si ya tenía tipo "Comprador", su registro ya estaba
+                //     completo desde antes (a diferencia de Vendedor, el
+                //     registro de Comprador es un solo paso), así que se le
+                //     avisa que inicie sesión en vez de repetir el registro.
+                //   - si ya tenía otro tipo (Vendedor), se le explica que
+                //     debe borrar su cuenta actual desde su perfil antes de
+                //     poder registrarse con el rol distinto.
+                // Si la contraseña NO coincide, es otra persona con un
+                // correo ajeno: se mantiene el error de siempre.
+                try {
+                    EstadoCuentaExistente estado = buscarEstadoCuentaExistente(correo, contraseñaHash);
+
+                    if (estado == null) {
+                        response.setStatus(HttpServletResponse.SC_CONFLICT);
+                        out.print("{\"usuarioId\":-1, \"mensaje\":\"El correo ya está registrado\"}");
+                        System.out.println("[RegistroCompradorServlet] ⚠️ El correo ya existe (contraseña no coincide).");
+                    } else if (estado.rolDistinto) {
+                        response.setStatus(HttpServletResponse.SC_CONFLICT);
+                        out.print("{\"usuarioId\":-1, \"rolDistinto\":true"
+                                + ", \"mensaje\":\"Ya tienes una cuenta registrada con este correo como " + estado.tipoExistente
+                                + ". Para registrarte con un rol diferente, primero inicia sesión y elimina tu cuenta actual desde tu perfil.\"}");
+                        System.out.println("[RegistroCompradorServlet] ⚠️ Intento de registro con rol distinto para usuario_id=" + estado.usuarioId
+                                + " (tipo existente: " + estado.tipoExistente + ")");
+                    } else {
+                        response.setStatus(HttpServletResponse.SC_OK);
+                        out.print("{\"usuarioId\":" + estado.usuarioId
+                                + ",\"yaRegistrado\":true"
+                                + ",\"mensaje\":\"Ya tienes una cuenta de comprador registrada con este correo.\"}");
+                        System.out.println("[RegistroCompradorServlet] 🔁 Cuenta de comprador ya existente reconocida, usuario_id=" + estado.usuarioId);
+                    }
+                } catch (SQLException e) {
+                    response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                    out.print("{\"usuarioId\":-2, \"mensaje\":\"Error al verificar el registro existente\"}");
+                    System.out.println("[RegistroCompradorServlet] 💥 Error verificando cuenta existente: " + e.getMessage());
+                }
+
             } else {
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 out.print("{\"usuarioId\":-2, \"mensaje\":\"Error al registrar el usuario\"}");
@@ -83,6 +124,56 @@ public class RegistroCompradorServlet extends HttpServlet {
                 "{\"usuarioId\":-2, \"mensaje\":\"Error interno: " + e.getMessage().replace("\"", "'") + "\"}"
             );
             System.out.println("[RegistroCompradorServlet] 💥 Excepción: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 🆕 Busca si el correo pertenece a un usuario existente cuya
+     * contraseña (ya hasheada con el mismo método que usa Usuario)
+     * coincide con la ingresada, y en ese caso indica si ese usuario ya
+     * era Comprador (cuenta ya completa) o de un rol distinto.
+     *
+     * Devuelve null si el correo no existe, o si existe pero la
+     * contraseña NO coincide (en ese caso es otra persona y debe seguir
+     * viendo el error de "correo ya registrado").
+     */
+    private EstadoCuentaExistente buscarEstadoCuentaExistente(String correo, String contraseñaHashIngresada) throws SQLException {
+        String sqlUsuario = "SELECT id, contraseña, tipo FROM Usuarios WHERE correo = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection()) {
+
+            int usuarioIdExistente = -1;
+            String hashGuardado = null;
+            String tipoExistente = null;
+            try (PreparedStatement ps = conn.prepareStatement(sqlUsuario)) {
+                ps.setString(1, correo);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        usuarioIdExistente = rs.getInt("id");
+                        hashGuardado = rs.getString("contraseña");
+                        tipoExistente = rs.getString("tipo");
+                    }
+                }
+            }
+
+            if (usuarioIdExistente <= 0 || hashGuardado == null || !hashGuardado.equals(contraseñaHashIngresada)) {
+                return null;
+            }
+
+            boolean esComprador = tipoExistente != null && tipoExistente.equalsIgnoreCase("Comprador");
+            return new EstadoCuentaExistente(usuarioIdExistente, !esComprador, tipoExistente);
+        }
+    }
+
+    private static class EstadoCuentaExistente {
+        final int usuarioId;
+        final boolean rolDistinto;
+        final String tipoExistente;
+
+        EstadoCuentaExistente(int usuarioId, boolean rolDistinto, String tipoExistente) {
+            this.usuarioId = usuarioId;
+            this.rolDistinto = rolDistinto;
+            this.tipoExistente = tipoExistente;
         }
     }
 }
