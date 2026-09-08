@@ -1796,8 +1796,16 @@ Modificaciones para visivilidad en dispositivos
     padding: 0; /* 🔧 antes 1px: 0 borde lateral — la imagen ahora ocupa todo el ancho de su columna */
   }
 
-  .mosaic-grid {
-    gap: 0; /* 🔧 antes 3px, igual que arriba */
+  .product-grid.mosaic-grid {
+    gap: 0; /* 🔧 antes 3px/4px: mismo selector con la misma especificidad
+                que la regla base (.product-grid.mosaic-grid, línea ~397)
+                para poder ganarle en móvil — antes usaba solo ".mosaic-grid"
+                (menos específico) y por eso el gap de 20px de la regla base
+                seguía ganando y dejaba ese espacio en medio de las columnas. */
+  }
+
+  .mosaic-grid .masonry-col {
+    gap: 0; /* 🆕 por si las tarjetas dentro de cada columna también usan gap propio */
   }
 
   /* 🔧 En móvil la tarjeta ya no tiene un ancho tope (antes heredaba
