@@ -1138,6 +1138,27 @@ btnSiguienteUsuario?.addEventListener("click", async () => {
     usuarioId = data.usuarioId;
     usuarioIdVisible.textContent = "ID de usuario: " + usuarioId;
     pasoUsuario.style.display = "none";
+
+    // 🆕 Si el backend detectó que este correo + contraseña ya tenían un
+    // registro a medias (el usuario se salió antes de terminar), nos
+    // manda reanudado:true junto con lo que ya alcanzó a enviar. En vez
+    // de hacerlo repetir esos pasos, lo mandamos directo al que le falta.
+    if (data.reanudado) {
+      if (data.suscripcionEnviada) {
+        // Ya había completado Solicitud y Suscripción con este correo.
+        alert("Ya tienes un registro completo con este correo. Si necesitas ayuda, contáctanos.");
+        return;
+      }
+      if (data.solicitudEnviada) {
+        // Ya envió la Solicitud, solo le falta la Suscripción.
+        pasoSuscripcion.style.display = "block";
+      } else {
+        // No había enviado ni la Solicitud: retoma desde ahí.
+        pasoSolicitud.style.display = "block";
+      }
+      return;
+    }
+
     pasoSolicitud.style.display = "block";
   } catch (err) {
     alert("Error al guardar usuario: " + err.message);
