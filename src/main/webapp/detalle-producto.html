@@ -213,6 +213,27 @@
     white-space: nowrap;
   }
 
+  .btn-compartir-producto {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    background: transparent;
+    color: #b98fe0;
+    border: 2px solid #6b3fa0;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 0.88rem;
+    border-radius: 9px;
+    padding: 12px 16px;
+    cursor: pointer;
+    margin-bottom: 12px;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .btn-compartir-producto:hover { background: #6b3fa0; color: #fff; }
+  .btn-compartir-producto i { font-size: 1rem; }
+
   .btn-info-internacional {
     display: flex;
     align-items: center;
@@ -280,6 +301,11 @@
           Opciones disponibles: <span class="variante-seleccionada-nombre" id="varianteSeleccionadaNombre"></span>
         </div>
         <div class="variantes-grid" id="variantesGrid"></div>
+
+        <button type="button" id="btnCompartirProducto" class="btn-compartir-producto">
+          <i class="fa-solid fa-share-nodes"></i>
+          Compartir
+        </button>
 
         <a href="#" id="btnSolicitarInfo" class="btn-info-internacional">
           <i class="fa-regular fa-envelope"></i>
@@ -363,6 +389,36 @@
       `mailto:${CORREO_CONSULTAS}?subject=${asunto}&body=${cuerpo}`;
   }
 
+  function configurarBotonCompartir() {
+    const btnCompartir = document.getElementById("btnCompartirProducto");
+    if (!btnCompartir) return;
+
+    const shareUrl = `${window.location.origin}/detalle-producto.html?id=${encodeURIComponent(producto.id)}`;
+    const shareTitle = producto.nombre || "Producto";
+
+    btnCompartir.addEventListener("click", async () => {
+      const shareData = {
+        title: `${shareTitle} - Tienda Monjarrez`,
+        text: `Mira este producto en Tienda Monjarrez: ${shareTitle}`,
+        url: shareUrl,
+      };
+      if (navigator.share) {
+        try {
+          await navigator.share(shareData);
+        } catch (err) {
+          // El usuario canceló el menú de compartir; no hacer nada.
+        }
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        alert("Enlace copiado al portapapeles.");
+      } catch (err) {
+        window.prompt("Copia este enlace para compartir:", shareUrl);
+      }
+    });
+  }
+
   function renderizar() {
     document.getElementById("tituloProducto").textContent = producto.nombre;
     document.getElementById("categoriaProducto").textContent = producto.categoria || "";
@@ -412,6 +468,8 @@
       document.getElementById("precioProductoCrc").textContent = fmtCrc(producto.precioVentaDesdeCrc);
       document.getElementById("precioProductoUsd").textContent = fmtUsd(producto.precioVentaDesde);
     }
+
+    configurarBotonCompartir();
 
     elCarga.style.display = "none";
     elContenido.style.display = "block";
