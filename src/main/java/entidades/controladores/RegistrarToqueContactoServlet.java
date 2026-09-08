@@ -41,9 +41,9 @@ public class RegistrarToqueContactoServlet extends HttpServlet {
             return;
         }
 
-        if (tipoContacto == null || !(tipoContacto.equals("whatsapp") || tipoContacto.equals("correo"))) {
+        if (tipoContacto == null || !(tipoContacto.equals("whatsapp") || tipoContacto.equals("correo") || tipoContacto.equals("envio"))) {
             response.setStatus(400);
-            out.print("{\"ok\":false,\"error\":\"tipo invalido, debe ser whatsapp o correo\"}");
+            out.print("{\"ok\":false,\"error\":\"tipo invalido, debe ser whatsapp, correo o envio\"}");
             return;
         }
 
