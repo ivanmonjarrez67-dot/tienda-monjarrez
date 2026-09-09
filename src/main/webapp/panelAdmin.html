@@ -97,6 +97,41 @@
   }
   button.refresh:hover{border-color:var(--accent);color:var(--accent);}
 
+  /* 🆕 Barra de "Archivados" estilo WhatsApp: fila fija arriba del
+     listado, con ícono + contador + flechita que se voltea al abrir.
+     Se oculta sola cuando no hay nada archivado. */
+  .archive-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 18px;
+    margin-bottom:10px;
+    cursor:pointer;
+    font-size:13.5px;
+    color:var(--muted);
+    transition:border-color .15s, color .15s;
+  }
+  .archive-bar:hover{border-color:#394142;color:var(--text);}
+  .archive-bar .archive-left{display:flex;align-items:center;gap:10px;}
+  .archive-bar .archive-icon{font-size:16px;}
+  .archive-bar .archive-count{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--muted);
+    background:rgba(138,150,154,0.12);
+    padding:2px 9px;
+    border-radius:20px;
+  }
+  .archive-bar .chevron{font-size:11px;color:var(--muted);transition:transform .15s;}
+  .archive-bar.open .chevron{transform:rotate(180deg);}
+  .archived-list{display:none;flex-direction:column;gap:8px;margin-bottom:16px;}
+  .archived-list.show{display:flex;}
+  .card.archivada{opacity:0.7;}
+  .card.archivada:hover{opacity:1;}
+
   .empty{
     padding:60px 20px;
     text-align:center;
@@ -225,7 +260,7 @@
   .pill.activa{background:rgba(63,174,130,0.15);color:var(--accent);border:1px solid rgba(63,174,130,0.4);}
   .venc-date{font-family:var(--mono);font-size:11px;color:var(--muted);}
 
-  .actions{display:flex;gap:8px;}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;}
   .btn{
     font-family:var(--sans);
     font-size:13px;
@@ -242,6 +277,11 @@
   .btn.aprobar:hover{filter:brightness(1.08);}
   .btn.revertir{background:transparent;color:var(--danger);border:1px solid rgba(198,91,78,0.5);}
   .btn.revertir:hover{background:rgba(198,91,78,0.1);}
+  /* 🆕 Botón "Archivar" (tarjetas activas) y "Desarchivar" (tarjetas archivadas) */
+  .btn.archivar{background:transparent;color:var(--muted);border:1px solid var(--line);}
+  .btn.archivar:hover{border-color:var(--warn);color:var(--warn);}
+  .btn.desarchivar{background:transparent;color:var(--accent);border:1px solid rgba(63,174,130,0.4);}
+  .btn.desarchivar:hover{background:rgba(63,174,130,0.1);}
   .btn:disabled{opacity:0.5;cursor:default;}
 
   .toast{
@@ -449,6 +489,19 @@
     <button class="refresh" onclick="cargar()">↻ actualizar</button>
   </div>
 
+  <!-- 🆕 Barra de "Archivados" estilo WhatsApp: solo aparece si hay al
+       menos una solicitud archivada; al hacer clic expande la lista con
+       la opción de "Desarchivar" en cada una. -->
+  <div class="archive-bar" id="archiveBar" style="display:none" onclick="toggleArchivados()">
+    <div class="archive-left">
+      <span class="archive-icon">🗄️</span>
+      <span>Archivados</span>
+      <span class="archive-count" id="archiveCount">0</span>
+    </div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="archived-list" id="archivedContenido"></div>
+
   <div id="contenido">
     <div class="loading">cargando solicitudes…</div>
   </div>
@@ -464,6 +517,12 @@ const ADMIN_ENDPOINT = '/admin/gestionAdmins';
 // guardado localmente al iniciar sesión (ver adminLogin.html).
 const PERFIL_ENDPOINT = '/admin/perfil';
 const LOGOUT_ENDPOINT = '/admin/logout';
+
+// 🆕 Estado de la barra de archivados: guardamos la última lista traída
+// para no volver a pedirla al servidor cada vez que se abre/cierra, y
+// si ya estaba abierta al refrescar, la volvemos a pintar sola.
+let archivadosCache = null;
+let archivadosAbiertos = false;
 
 function relojTick(){
   const ahora = new Date();
@@ -542,6 +601,124 @@ async function cargar(){
   }catch(e){
     contenido.innerHTML = `<div class="empty">No se pudo cargar la lista.<br>${e.message}</div>`;
   }
+  // 🆕 Refresca también el contador/lista de archivados en cada carga.
+  cargarArchivados();
+}
+
+// ---------------------------------------------------------
+// 🆕 Barra de "Archivados" (estilo WhatsApp)
+// ---------------------------------------------------------
+async function cargarArchivados(){
+  try{
+    const res = await fetch(ENDPOINT + '?vista=archivados');
+    if(res.status === 401){
+      window.location.href = 'adminLogin.html';
+      return;
+    }
+    if(!res.ok) return; // si falla, simplemente no mostramos la barra
+    const datos = await res.json();
+    archivadosCache = datos;
+
+    const bar = document.getElementById('archiveBar');
+    document.getElementById('archiveCount').textContent = datos.length;
+    bar.style.display = datos.length > 0 ? 'flex' : 'none';
+
+    if(archivadosAbiertos){
+      renderArchivados(datos);
+    }
+  }catch(e){
+    // silencioso
+  }
+}
+
+function toggleArchivados(){
+  archivadosAbiertos = !archivadosAbiertos;
+  const bar = document.getElementById('archiveBar');
+  const cont = document.getElementById('archivedContenido');
+  bar.classList.toggle('open', archivadosAbiertos);
+  cont.classList.toggle('show', archivadosAbiertos);
+
+  if(archivadosAbiertos){
+    if(archivadosCache){
+      renderArchivados(archivadosCache);
+    }else{
+      cont.innerHTML = '<div class="loading">cargando archivados…</div>';
+      cargarArchivados();
+    }
+  }
+}
+
+function renderArchivados(items){
+  const cont = document.getElementById('archivedContenido');
+  if(items.length === 0){
+    cont.innerHTML = '<div class="empty">No hay solicitudes archivadas.</div>';
+    return;
+  }
+
+  const cards = items.map(i => {
+    const tieneDescripcion = i.descripcion && i.descripcion.trim().length > 0;
+    const precioTexto = fmtPrecio(i.precio_promedio);
+
+    return `
+    <div class="card archivada">
+      <div class="card-top">
+        <div class="who">
+          <div class="name">${esc(i.nombre)}</div>
+          <div class="mail">${esc(i.correo)}</div>
+          <div class="loc">${esc(i.canton)}, ${esc(i.provincia)}</div>
+        </div>
+        <div class="plan">
+          <div class="row"><span>tipo:</span> ${esc(i.tipo_suscripcion || '—')}</div>
+          <div class="row"><span>tel:</span> ${esc(i.telefono || '—')}</div>
+          <div class="cedula">céd. ${esc(i.cedula || '—')}</div>
+        </div>
+        <div class="status">
+          <span class="pill pendiente">archivada</span>
+        </div>
+        <div class="actions">
+          <button class="btn desarchivar" onclick="archivarSolicitud(${i.solicitud_id}, 'desarchivar', this)">Desarchivar</button>
+        </div>
+      </div>
+      <div class="producto">
+        <div class="producto-desc ${tieneDescripcion ? '' : 'vacia'}">${tieneDescripcion ? esc(i.descripcion) : 'sin descripción de productos'}</div>
+        <div class="producto-meta">
+          <span class="chip pago">pago: ${esc(i.metodo_pago || '—')}</span>
+          <span class="chip precio">precio promedio: ${precioTexto}</span>
+        </div>
+      </div>
+      ${i.notas ? `<div class="notas"><label>notas / observaciones</label><div class="producto-desc">${esc(i.notas)}</div></div>` : ''}
+    </div>`;
+  }).join('');
+
+  cont.innerHTML = `<div class="cards">${cards}</div>`;
+}
+
+// 🆕 Archiva o desarchiva una solicitud puntual (por solicitud_id, no por
+// usuario_id: es una acción sobre la solicitud en sí, no sobre la
+// suscripción). Se usa tanto desde la tarjeta activa ("Archivar") como
+// desde la tarjeta dentro de la barra de archivados ("Desarchivar").
+async function archivarSolicitud(solicitudId, accion, btn){
+  const fila = btn.closest('.card');
+  fila.querySelectorAll('button').forEach(b => b.disabled = true);
+  try{
+    const res = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: `solicitud_id=${encodeURIComponent(solicitudId)}&accion=${encodeURIComponent(accion)}`
+    });
+    if(res.status === 401){
+      window.location.href = 'adminLogin.html';
+      return;
+    }
+    const data = await res.json();
+    if(!res.ok || data.error) throw new Error(data.error || 'error desconocido');
+    toast(accion === 'archivar' ? 'Solicitud archivada correctamente' : 'Solicitud desarchivada correctamente');
+    archivadosCache = null;
+    cargar();
+  }catch(e){
+    toast('Error: ' + e.message, true);
+    fila.querySelectorAll('button').forEach(b => b.disabled = false);
+  }
 }
 
 function render(items){
@@ -586,6 +763,7 @@ function render(items){
             ${esVencida ? 'Renovar' : 'Aprobar'}
           </button>
           ${i.suscrito === 1 ? `<button class="btn revertir" onclick="accionar(${i.usuario_id}, 'revertir', this)">Revertir</button>` : ''}
+          <button class="btn archivar" onclick="archivarSolicitud(${i.solicitud_id}, 'archivar', this)">Archivar</button>
         </div>
       </div>
       <div class="producto">

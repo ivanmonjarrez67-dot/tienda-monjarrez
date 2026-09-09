@@ -428,7 +428,7 @@ public class EmailService {
             + "<p>Revísala en el panel de administración para aprobar o rechazar.</p>";
 
         String html = plantillaBase(ICON_VENDEDOR, "Nueva solicitud de vendedor", cuerpo,
-                "Ir al panel", URL_TIENDA + "/admin/panelAdmin.html");
+                "Ir al panel", "https://tiendamonjarrez.com/panelAdmin.html");
         enviarAsync(EMAIL_NOTIFICACIONES, NOMBRE_NOTIFICACIONES, EMAIL_ADMIN_PERSONAL, "Admin",
                 "🔔 Nueva solicitud de vendedor: " + nombreVendedor, html);
     }
