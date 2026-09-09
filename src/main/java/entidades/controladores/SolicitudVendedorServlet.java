@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import entidades.DatabaseConnection;
+import entidades.EmailService;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -61,22 +62,35 @@ public class SolicitudVendedorServlet extends HttpServlet {
             }
         }
 
-        String sqlCheckUsuario = "SELECT id FROM Usuarios WHERE id = ?";
+        String sqlCheckUsuario = "SELECT nombre, correo FROM Usuarios WHERE id = ?";
         String sqlInsert = "INSERT INTO SolicitudesDeVendedor "
                    + "(usuario_id, provincia, canton, descripcion, precio_promedio, telefono, estado) "
                    + "VALUES (?, ?, ?, ?, ?, ?, 'Pendiente')";
+
+        // 🆕 Datos del usuario para la alerta interna al admin. Se llenan
+        // en la verificación de existencia (que ya hacíamos) y se usan
+        // DESPUÉS de cerrar la conexión, igual que en
+        // SolicitudesVendedorAdminServlet: un correo lento no debe dejar
+        // la conexión SQL abierta más de lo necesario.
+        String nombreUsuario = null;
+        String correoUsuario = null;
 
         try (Connection conn = DatabaseConnection.getConnection()) {
 
             // 🔧 Verificamos que el usuario exista antes de intentar el
             // INSERT, para devolver un mensaje claro en vez de un 500
             // genérico si el usuario_id no es válido (registro incompleto,
-            // usuario borrado, etc.).
+            // usuario borrado, etc.). 🆕 Ahora también traemos nombre y
+            // correo para poder avisarle al admin por correo.
             boolean usuarioExiste;
             try (PreparedStatement chk = conn.prepareStatement(sqlCheckUsuario)) {
                 chk.setInt(1, usuarioId);
                 try (ResultSet rs = chk.executeQuery()) {
                     usuarioExiste = rs.next();
+                    if (usuarioExiste) {
+                        nombreUsuario = rs.getString("nombre");
+                        correoUsuario = rs.getString("correo");
+                    }
                 }
             }
 
@@ -103,6 +117,18 @@ public class SolicitudVendedorServlet extends HttpServlet {
         } catch (SQLException e) {
             e.printStackTrace();
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error al guardar la solicitud.");
+            return;
+        }
+
+        // 📩 Avisar al admin (correo personal) que llegó una solicitud
+        // nueva — recién ahora, con la solicitud ya guardada y la conexión
+        // cerrada. Igual que con el correo de "suscripción aprobada", un
+        // fallo al enviar NUNCA debe hacer fallar el guardado en sí: la
+        // respuesta 200 ya se envió arriba, esto es un best-effort aparte.
+        try {
+            EmailService.enviarAlertaNuevaSolicitudVendedor(nombreUsuario, correoUsuario, provincia, canton);
+        } catch (Exception e) {
+            System.out.println("[SolicitudVendedorServlet] ⚠️ No se pudo enviar la alerta de nueva solicitud: " + e.getMessage());
         }
     }
 }

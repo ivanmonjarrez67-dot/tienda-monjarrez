@@ -47,6 +47,11 @@ import config.Config;
  * "Ir a mi tienda" no lleva a la portada genérica: usa el parámetro
  * ?accion=login-vendedor (ver index.html) para abrir directo el login de
  * Vendedor/a.
+ *
+ * 🆕 Se agregó enviarAlertaNuevaSolicitudVendedor(): alerta interna (no de
+ * marca) que le llega al correo personal del admin apenas se registra una
+ * nueva solicitud de vendedor, para no tener que revisar panelAdmin
+ * manualmente para saber si hay solicitudes pendientes.
  */
 public class EmailService {
 
@@ -74,6 +79,11 @@ public class EmailService {
     // despedida al eliminar la cuenta, para que se sienta como un mensaje
     // final "oficial" y no automatizado desde el dominio.
     private static final String EMAIL_PRINCIPAL       = "tiendamonjarrez@gmail.com";
+
+    // 🆕 Correo personal del admin, solo para avisos internos (ej. nueva
+    // solicitud de vendedor). Nunca se usa como remitente ni se muestra
+    // al cliente/vendedor en ningún correo saliente.
+    private static final String EMAIL_ADMIN_PERSONAL  = "ivanmonjarrez67@gmail.com";
 
     // ---------------------------------------------------------
     // 🆕 Base donde viven los íconos de los correos, como ARCHIVOS reales
@@ -390,5 +400,36 @@ public class EmailService {
         String html = plantillaBase(ICON_ELIMINADA, "Cuenta eliminada", cuerpo, "Volver a la tienda", URL_TIENDA);
         enviarAsync(EMAIL_PRINCIPAL, NOMBRE_PRINCIPAL, email, nombre,
                 "Tu cuenta en Tienda Monjarrez ha sido eliminada", html);
+    }
+
+    // ---------------------------------------------------------
+    // 🆕 Alerta interna: nueva solicitud de vendedor recibida.
+    // No es un correo "de marca" para el cliente ni el vendedor — es solo
+    // para que el admin se entere en tiempo real de que llegó una
+    // solicitud nueva, sin tener que estar revisando panelAdmin
+    // manualmente para saberlo.
+    //
+    // Va directo al correo personal del admin (EMAIL_ADMIN_PERSONAL),
+    // nunca se muestra al vendedor ni sale desde una dirección "de cara
+    // al público" distinta a las que ya existen. Reutiliza el remitente
+    // EMAIL_NOTIFICACIONES porque semánticamente es eso: una notificación
+    // automática del sistema.
+    //
+    // Debe llamarse justo después de insertar exitosamente la fila nueva
+    // en SolicitudesDeVendedor (paso 2 del registro de vendedor).
+    // ---------------------------------------------------------
+    public static void enviarAlertaNuevaSolicitudVendedor(String nombreVendedor, String correoVendedor,
+                                                           String provincia, String canton) {
+        String cuerpo =
+              "<p>Llegó una nueva solicitud de vendedor en Tienda Monjarrez.</p>"
+            + "<p><strong>Nombre:</strong> " + nombreVendedor + "<br>"
+            + "<strong>Correo:</strong> " + correoVendedor + "<br>"
+            + "<strong>Ubicación:</strong> " + canton + ", " + provincia + "</p>"
+            + "<p>Revísala en el panel de administración para aprobar o rechazar.</p>";
+
+        String html = plantillaBase(ICON_VENDEDOR, "Nueva solicitud de vendedor", cuerpo,
+                "Ir al panel", URL_TIENDA + "/admin/panelAdmin.html");
+        enviarAsync(EMAIL_NOTIFICACIONES, NOMBRE_NOTIFICACIONES, EMAIL_ADMIN_PERSONAL, "Admin",
+                "🔔 Nueva solicitud de vendedor: " + nombreVendedor, html);
     }
 }
