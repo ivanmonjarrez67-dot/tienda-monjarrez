@@ -15,6 +15,49 @@ import entidades.EmailService;
 @WebServlet("/admin/solicitudesVendedor")
 public class SolicitudesVendedorAdminServlet extends HttpServlet {
 
+    // Consulta principal: pendientes y vencidas, SIN las archivadas.
+    // 🆕 Se agregó "s.estado <> 'Archivado'" (con IS NULL por seguridad,
+    // aunque el INSERT siempre pone 'Pendiente') envolviendo el OR
+    // original entre paréntesis, para que una solicitud archivada nunca
+    // vuelva a aparecer aquí aunque esté vencida o sin activar.
+    private static final String SQL_ACTIVAS = """
+        SELECT u.id AS usuario_id, u.nombre, u.correo,
+               s.id AS solicitud_id, s.provincia, s.canton, s.descripcion, s.telefono, s.precio_promedio,
+               v.id AS vendedor_id, v.tipo_suscripcion, v.cedula, v.suscrito, v.metodo_de_pago,
+               sv.fecha_inicio, sv.fecha_vencimiento, n.nota AS notas,
+               CASE WHEN v.suscrito = 1 AND sv.fecha_vencimiento IS NOT NULL
+                         AND sv.fecha_vencimiento <= CAST(GETDATE() AS DATE)
+                    THEN 1 ELSE 0 END AS vencida
+        FROM Usuarios u
+        JOIN SolicitudesDeVendedor s ON s.usuario_id = u.id
+        JOIN Vendedores v ON v.usuario_id = u.id
+        LEFT JOIN SuscripcionVendedor sv ON sv.usuario_id = u.id
+        LEFT JOIN Notas n ON n.solicitud_id = s.id
+        WHERE (s.estado IS NULL OR s.estado <> 'Archivado')
+          AND (v.suscrito = 0
+               OR (v.suscrito = 1 AND sv.fecha_vencimiento IS NOT NULL
+                   AND sv.fecha_vencimiento <= CAST(GETDATE() AS DATE)))
+        ORDER BY s.id DESC
+        """;
+
+    // 🆕 Consulta para la barra de "Archivados": mismas columnas, para que
+    // el frontend pueda reusar el mismo formato de tarjeta. "vencida"
+    // siempre viene en 0 aquí porque no aplica mientras está archivada.
+    private static final String SQL_ARCHIVADAS = """
+        SELECT u.id AS usuario_id, u.nombre, u.correo,
+               s.id AS solicitud_id, s.provincia, s.canton, s.descripcion, s.telefono, s.precio_promedio,
+               v.id AS vendedor_id, v.tipo_suscripcion, v.cedula, v.suscrito, v.metodo_de_pago,
+               sv.fecha_inicio, sv.fecha_vencimiento, n.nota AS notas,
+               0 AS vencida
+        FROM Usuarios u
+        JOIN SolicitudesDeVendedor s ON s.usuario_id = u.id
+        JOIN Vendedores v ON v.usuario_id = u.id
+        LEFT JOIN SuscripcionVendedor sv ON sv.usuario_id = u.id
+        LEFT JOIN Notas n ON n.solicitud_id = s.id
+        WHERE s.estado = 'Archivado'
+        ORDER BY s.id DESC
+        """;
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
@@ -27,24 +70,11 @@ public class SolicitudesVendedorAdminServlet extends HttpServlet {
             return;
         }
 
-        String sql = """
-            SELECT u.id AS usuario_id, u.nombre, u.correo,
-                   s.id AS solicitud_id, s.provincia, s.canton, s.descripcion, s.telefono, s.precio_promedio,
-                   v.id AS vendedor_id, v.tipo_suscripcion, v.cedula, v.suscrito, v.metodo_de_pago,
-                   sv.fecha_inicio, sv.fecha_vencimiento, n.nota AS notas,
-                   CASE WHEN v.suscrito = 1 AND sv.fecha_vencimiento IS NOT NULL
-                             AND sv.fecha_vencimiento <= CAST(GETDATE() AS DATE)
-                        THEN 1 ELSE 0 END AS vencida
-            FROM Usuarios u
-            JOIN SolicitudesDeVendedor s ON s.usuario_id = u.id
-            JOIN Vendedores v ON v.usuario_id = u.id
-            LEFT JOIN SuscripcionVendedor sv ON sv.usuario_id = u.id
-            LEFT JOIN Notas n ON n.solicitud_id = s.id
-            WHERE v.suscrito = 0
-               OR (v.suscrito = 1 AND sv.fecha_vencimiento IS NOT NULL
-                   AND sv.fecha_vencimiento <= CAST(GETDATE() AS DATE))
-            ORDER BY s.id DESC
-            """;
+        // 🆕 ?vista=archivados devuelve la lista de solicitudes archivadas
+        // en vez de las activas/vencidas. Cualquier otro valor (o ninguno)
+        // mantiene el comportamiento original.
+        boolean vistaArchivados = "archivados".equals(req.getParameter("vista"));
+        String sql = vistaArchivados ? SQL_ARCHIVADAS : SQL_ACTIVAS;
 
         StringBuilder json = new StringBuilder("[");
         try (Connection conn = DatabaseConnection.getConnection();
@@ -100,7 +130,9 @@ public class SolicitudesVendedorAdminServlet extends HttpServlet {
 
         String accion = req.getParameter("accion");
 
-        if (!"aprobar".equals(accion) && !"revertir".equals(accion) && !"nota".equals(accion)) {
+        // 🆕 Se agregaron "archivar" y "desarchivar" a las acciones válidas.
+        if (!"aprobar".equals(accion) && !"revertir".equals(accion) && !"nota".equals(accion)
+                && !"archivar".equals(accion) && !"desarchivar".equals(accion)) {
             resp.setStatus(400);
             out.print("{\"error\":\"acción inválida\"}");
             return;
@@ -134,6 +166,44 @@ public class SolicitudesVendedorAdminServlet extends HttpServlet {
                 ps.setInt(1, solicitudId);
                 ps.setString(2, nota);
                 ps.setString(3, nota);
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                resp.setStatus(500);
+                out.print("{\"error\":\"" + esc(e.getMessage()) + "\"}");
+                return;
+            }
+            out.print("{\"ok\":true}");
+            return;
+        }
+
+        // ---------------------------------------------------------
+        // 🆕 Archivar / desarchivar una solicitud.
+        // No toca Vendedores.suscrito ni SuscripcionVendedor — solo
+        // reutiliza la columna SolicitudesDeVendedor.estado que ya existía
+        // (igual que "Pendiente"/"Activo"), sin agregar tablas ni
+        // columnas nuevas. Trabaja por solicitud_id (como "nota"), no por
+        // usuario_id, porque es una acción sobre la solicitud puntual.
+        //
+        // Al desarchivar se vuelve a 'Pendiente' de forma genérica: la
+        // solicitud reaparece en la lista activa y el admin decide de
+        // nuevo si aprobarla o no (no se intenta "adivinar" si antes
+        // estaba Activa/vencida).
+        // ---------------------------------------------------------
+        if ("archivar".equals(accion) || "desarchivar".equals(accion)) {
+            int solicitudId;
+            try {
+                solicitudId = Integer.parseInt(req.getParameter("solicitud_id"));
+            } catch (Exception e) {
+                resp.setStatus(400);
+                out.print("{\"error\":\"solicitud_id inválido\"}");
+                return;
+            }
+            String nuevoEstado = "archivar".equals(accion) ? "Archivado" : "Pendiente";
+            try (Connection conn = DatabaseConnection.getConnection();
+                 PreparedStatement ps = conn.prepareStatement(
+                         "UPDATE SolicitudesDeVendedor SET estado = ? WHERE id = ?")) {
+                ps.setString(1, nuevoEstado);
+                ps.setInt(2, solicitudId);
                 ps.executeUpdate();
             } catch (SQLException e) {
                 resp.setStatus(500);
