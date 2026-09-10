@@ -4057,6 +4057,33 @@ async function cargarMisProductos(usuarioId) {
               </a>`;
             }
 
+            // 🆕 Botón de WhatsApp de la TIENDA (proceso de compra
+            // mediante la tienda, no directo con el vendedor). Mismo
+            // estilo verde que el WhatsApp del vendedor, pero SOLO el
+            // icono (sin mostrar el número) porque el contacto de la
+            // tienda no debe quedar expuesto como texto en la página.
+            const numeroWhatsappTienda = "50664283281";
+            const mensajeWhatsappTienda = encodeURIComponent(
+              `Hola, les escribo desde la web de *Tienda Monjarrez* porque quiero hacer la compra del producto "${nombre}" a traves de la tienda. Quedo atento, muchas gracias!`
+            );
+            const tiendaWhatsappHtml = `<a class="contacto-btn contacto-whatsapp contacto-whatsapp-icono" href="https://wa.me/${numeroWhatsappTienda}?text=${mensajeWhatsappTienda}" target="_blank" rel="noopener" aria-label="Escribir por WhatsApp a la tienda" title="WhatsApp de la tienda" data-toque-tipo="tienda_whatsapp" data-toque-producto="${idProducto}">
+              <svg viewBox="0 0 32 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M16.001 2.667c-7.363 0-13.334 5.97-13.334 13.333 0 2.353.615 4.65 1.784 6.667L2.667 29.333l6.822-1.789a13.27 13.27 0 0 0 6.512 1.72h.006c7.362 0 13.333-5.97 13.333-13.334 0-3.56-1.386-6.907-3.903-9.424a13.24 13.24 0 0 0-9.436-3.839zm0 24.4a11.03 11.03 0 0 1-5.625-1.54l-.404-.24-4.05 1.062 1.082-3.948-.263-.406a11.02 11.02 0 0 1-1.694-5.895c0-6.11 4.972-11.081 11.084-11.081 2.96 0 5.744 1.154 7.837 3.25a11.01 11.01 0 0 1 3.244 7.837c0 6.111-4.972 11.081-11.211 11.081zm6.078-8.297c-.333-.167-1.966-.971-2.271-1.081-.305-.111-.526-.167-.748.166-.222.334-.86 1.082-1.054 1.304-.194.223-.388.25-.721.083-.333-.166-1.406-.518-2.678-1.652-.99-.883-1.659-1.973-1.853-2.306-.194-.334-.021-.514.146-.68.15-.15.333-.389.5-.583.166-.194.221-.334.333-.556.111-.223.055-.417-.028-.583-.083-.167-.748-1.803-1.026-2.469-.27-.649-.545-.561-.748-.571l-.638-.011c-.222 0-.583.083-.888.417-.305.333-1.166 1.14-1.166 2.777s1.194 3.222 1.361 3.444c.166.222 2.35 3.588 5.693 5.032.795.343 1.415.549 1.898.703.797.254 1.523.218 2.096.132.639-.095 1.966-.804 2.244-1.581.277-.777.277-1.443.194-1.581-.083-.139-.305-.222-.638-.389z"/></svg>
+            </a>`;
+
+            // 🆕 Botón de correo de la TIENDA (mismo patrón que el correo
+            // del vendedor: mailto con asunto/cuerpo precargado), fijo a
+            // tiendamonjarrez@gmail.com.
+            const asuntoCorreoTienda = encodeURIComponent(
+              `Compra mediante la tienda - "${nombre}" - Tienda Monjarrez`
+            );
+            const cuerpoCorreoTienda = encodeURIComponent(
+              `Hola,\n\nQuiero hacer la compra del producto "${nombre}" a traves de Tienda Monjarrez.\n\nQuedo atento a su respuesta, muchas gracias.\n\nSaludos cordiales.`
+            );
+            const tiendaCorreoHtml = `<a class="contacto-btn contacto-correo" href="mailto:tiendamonjarrez@gmail.com?subject=${asuntoCorreoTienda}&body=${cuerpoCorreoTienda}" data-toque-tipo="tienda_correo" data-toque-producto="${idProducto}">
+              <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6zm-2 0-8 5-8-5h16zm0 12H4V8l8 5 8-5v10z"/></svg>
+              tiendamonjarrez@gmail.com
+            </a>`;
+
             // 🆕 Botón "Consultar posibilidad de envíos": mismo patrón
             // que correoHtml, pero fijo a envios@tiendamonjarrez.com y con
             // asunto/cuerpo enfocados en logística de envío a zonas
@@ -4112,8 +4139,15 @@ async function cargarMisProductos(usuarioId) {
         <button type="button" id="btnLeerMasDescripcion" class="btn-leer-mas" style="display:none;">Leer más</button>
         <h3>Ubicación</h3>
         <p>${ubicacionHtml}</p>
-        <h3>Contacto</h3>
-        <p>${telefonoHtml}<br>${correoHtml}</p>
+        <h3>Procesos de compra</h3>
+        <div class="procesos-compra-caja procesos-compra-vendedor">
+          <h4>Hacer el proceso de compra directamente con el vendedor</h4>
+          <p>${telefonoHtml}<br>${correoHtml}</p>
+        </div>
+        <div class="procesos-compra-caja procesos-compra-tienda">
+          <h4>Hacer el proceso de compra mediante la tienda</h4>
+          <p class="procesos-compra-tienda-botones">${tiendaWhatsappHtml}${tiendaCorreoHtml}</p>
+        </div>
         <h3>Opciones de envío</h3>
         <p class="envio-alejado-texto">¿Este producto está en una zona alejada? Con gusto validamos si es posible coordinar el envío.</p>
         <p>${envioHtml}</p>
@@ -4500,6 +4534,83 @@ async function cargarMisProductos(usuarioId) {
       }
       #infoModalContent .btn-leer-mas:hover {
         text-decoration: underline;
+      }
+
+      /* 🆕 Un poco más de identidad visual al panel "Ver detalles" en
+         general (antes era texto plano sin jerarquía): título de
+         empresa con acento de marca, subtítulos con línea de acento y
+         más aire entre secciones. */
+      #infoModalContent h2 {
+        margin: 4px 0 12px;
+        font-size: 20px;
+        font-weight: 700;
+        color: #2c2c2c;
+      }
+      #infoModalContent h3 {
+        margin: 22px 0 8px;
+        padding-bottom: 6px;
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+        color: #333;
+        border-bottom: 2px solid #eee;
+      }
+      #infoModalContent h3:first-of-type {
+        margin-top: 16px;
+      }
+      #infoModalContent > p {
+        line-height: 1.6;
+      }
+      #infoModalContent > p strong {
+        color: #111;
+      }
+
+      /* 🆕 Los dos cuadros de "Procesos de compra": uno con el color del
+         botón "Ver detalles" (compra directa con el vendedor) y otro
+         dorado (compra mediante la tienda), para diferenciarlos a
+         simple vista. */
+      #infoModalContent .procesos-compra-caja {
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin: 10px 0;
+        background: rgba(0, 0, 0, 0.015);
+      }
+      #infoModalContent .procesos-compra-caja h4 {
+        margin: 0 0 10px;
+        font-size: 13.5px;
+        font-weight: 700;
+        line-height: 1.4;
+        color: #333;
+      }
+      #infoModalContent .procesos-compra-vendedor {
+        border: 2px solid #809CBF;
+      }
+      #infoModalContent .procesos-compra-vendedor h4 {
+        color: #5d7d9e;
+      }
+      #infoModalContent .procesos-compra-tienda {
+        border: 2px solid #D4AF37;
+      }
+      #infoModalContent .procesos-compra-tienda h4 {
+        color: #a3841f;
+      }
+      #infoModalContent .procesos-compra-tienda-botones {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+      }
+
+      /* 🆕 Botón de WhatsApp solo-icono (usado para el contacto de la
+         tienda, sin mostrar el número): mismo verde, pero cuadrado y
+         centrado en vez de la píldora alargada con texto. */
+      #infoModalContent .contacto-whatsapp-icono {
+        padding: 10px;
+        margin: 0;
+      }
+      #infoModalContent .contacto-whatsapp-icono svg {
+        width: 20px;
+        height: 20px;
       }
     </style>
     <div id="ayudaModal">
