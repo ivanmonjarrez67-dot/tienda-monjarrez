@@ -37,8 +37,11 @@ public class ListaProductosServletBusquda extends HttpServlet {
         // precio_anterior/imagen2/imagen3 en los resultados de búsqueda.
         // 🆕 LEFT JOIN con ProductosExtranjeros (tabla nueva, solo
         // producto_id) para la bandera de "producto internacional".
+        // 🆕 Se agrega p.categoria al SELECT, por el mismo motivo que en
+        // ListaProductosServlet: para que el producto (venga de una
+        // búsqueda o del catálogo completo) siempre traiga su categoría.
         String sql = "SELECT p.id, p.nombre, p.descripcion, p.imagen, p.precio, p.Nombre_Empresa, "
-                   + "p.telefono, p.correo, p.provincia, p.ciudad, pe.producto_id AS extranjero_id, "
+                   + "p.telefono, p.correo, p.provincia, p.ciudad, p.categoria, pe.producto_id AS extranjero_id, "
                    + "d.precio_anterior, ia.imagen2, ia.imagen3 "
                    + "FROM Productos p "
                    + "LEFT JOIN Descuentos d ON d.producto_id = p.id "
@@ -78,6 +81,7 @@ public class ListaProductosServletBusquda extends HttpServlet {
                 out.print("\"correo\":\"" + JsonUtils.escapar(rs.getString("correo")) + "\",");
                 out.print("\"provincia\":\"" + JsonUtils.escapar(rs.getString("provincia")) + "\",");
                 out.print("\"ciudad\":\"" + JsonUtils.escapar(rs.getString("ciudad")) + "\",");
+                out.print("\"categoria\":\"" + JsonUtils.escapar(rs.getString("categoria")) + "\",");
                 out.print("\"es_extranjero\":" + (rs.getObject("extranjero_id") != null) + ",");
 
                 double precioAnterior = rs.getDouble("precio_anterior");

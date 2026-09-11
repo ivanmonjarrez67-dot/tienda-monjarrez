@@ -22,8 +22,12 @@ public class ListaProductosServlet extends HttpServlet {
         // producto_id (sin columna extra en Productos). Si existe fila,
         // el producto se marca como internacional; si no, "pe.producto_id"
         // llega NULL y se traduce a "false" al armar el JSON.
+        // 🆕 Se agrega p.categoria al SELECT: antes este endpoint no la
+        // traía, así que detalle-nacional.html (la página de detalle de
+        // productos de vendedor nacional) no tenía con qué buscar "más
+        // productos de esta categoría" para el producto que carga por id.
         String sql = "SELECT p.id, p.nombre, p.descripcion, p.imagen, p.precio, p.Nombre_Empresa, "
-                   + "p.telefono, p.correo, p.provincia, p.ciudad, pe.producto_id AS extranjero_id, "
+                   + "p.telefono, p.correo, p.provincia, p.ciudad, p.categoria, pe.producto_id AS extranjero_id, "
                    + "d.precio_anterior, ia.imagen2, ia.imagen3 "
                    + "FROM Productos p "
                    + "LEFT JOIN Descuentos d ON d.producto_id = p.id "
@@ -54,6 +58,7 @@ public class ListaProductosServlet extends HttpServlet {
                 out.print("\"correo\":\"" + JsonUtils.escapar(rs.getString("correo")) + "\",");
                 out.print("\"provincia\":\"" + JsonUtils.escapar(rs.getString("provincia")) + "\",");
                 out.print("\"ciudad\":\"" + JsonUtils.escapar(rs.getString("ciudad")) + "\",");
+                out.print("\"categoria\":\"" + JsonUtils.escapar(rs.getString("categoria")) + "\",");
                 out.print("\"es_extranjero\":" + (rs.getObject("extranjero_id") != null) + ",");
 
                 double precioAnterior = rs.getDouble("precio_anterior");
