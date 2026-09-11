@@ -30,13 +30,19 @@ import jakarta.servlet.http.HttpSession;
  *   5. Productos                       (usuario_id) — ya sin hijos pendientes
  *   6. SuscripcionVendedor             (usuario_id)
  *   7. SolicitudesDeVendedor           (usuario_id)
- *   8. Vendedores                      (usuario_id)
- *   9. Usuarios                        (al final, porque las demás tablas dependen de este id)
+ *   8. IconosVendedor                  (vendedor_id, de la fila del usuario en Vendedores)
+ *   9. Vendedores                      (usuario_id) — ya sin hijos pendientes
+ *  10. Usuarios                        (al final, porque las demás tablas dependen de este id)
  *
  * 🆕 Productos tiene sus propias tablas hijas (imágenes adicionales,
  * descuentos, productos extranjeros) que apuntan a Productos.id. Hay que
  * vaciarlas ANTES de borrar Productos, o SQL Server rechaza el DELETE por
  * la llave foránea (ese era el error "FK_ProductosExtranjeros_Productos").
+ *
+ * 🆕 Mismo caso con IconosVendedor: su FK (FK_IconosVendedor_Vendedores)
+ * apunta a Vendedores.id, no a usuario_id directo. Por eso el DELETE usa
+ * una subconsulta a Vendedores en vez de un usuario_id = ? plano, y tiene
+ * que ejecutarse ANTES de borrar Vendedores.
  *
  * Todo se hace dentro de una sola transacción: si algo falla, se revierte
  * todo (rollback) y la cuenta no queda a medio borrar.
@@ -113,6 +119,15 @@ public class EliminarPerfilServlet extends HttpServlet {
                 ejecutarDelete(conn, "DELETE FROM Productos WHERE usuario_id = ?", usuarioId);
                 ejecutarDelete(conn, "DELETE FROM SuscripcionVendedor WHERE usuario_id = ?", usuarioId);
                 ejecutarDelete(conn, "DELETE FROM SolicitudesDeVendedor WHERE usuario_id = ?", usuarioId);
+
+                // 🆕 IconosVendedor.vendedor_id apunta a Vendedores.id (no a
+                // usuario_id), así que hay que resolverlo con una
+                // subconsulta y borrarlo ANTES de Vendedores, o SQL Server
+                // rechaza el DELETE de Vendedores por FK_IconosVendedor_Vendedores.
+                ejecutarDelete(conn,
+                    "DELETE FROM IconosVendedor WHERE vendedor_id IN " +
+                    "(SELECT id FROM Vendedores WHERE usuario_id = ?)", usuarioId);
+
                 ejecutarDelete(conn, "DELETE FROM Vendedores WHERE usuario_id = ?", usuarioId);
 
                 int filasBorradas = ejecutarDelete(conn, "DELETE FROM Usuarios WHERE id = ?", usuarioId);

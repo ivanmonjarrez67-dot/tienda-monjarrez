@@ -54,15 +54,35 @@ public class EliminarProductoServlet extends HttpServlet {
                 }
             }
 
-            // 2️⃣ Borrar producto de la BD
-            try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM Productos WHERE id = ?")) {
-                stmt.setInt(1, id);
-                int filas = stmt.executeUpdate();
+            // 🆕 2️⃣ Borrar primero las tablas hijas que apuntan a
+            // Productos.id (misma causa del error "FK_ProductosExtranjeros_Productos"
+            // que ya se había resuelto en EliminarPerfilServlet, pero acá
+            // faltaba aplicarlo). Todo dentro de una transacción: si algo
+            // falla, se revierte y el producto no queda a medio borrar.
+            boolean autoCommitOriginal = conn.getAutoCommit();
+            int filas;
+            try {
+                conn.setAutoCommit(false);
+
+                ejecutarDelete(conn, "DELETE FROM ImagenesAdicionalesProducto WHERE producto_id = ?", id);
+                ejecutarDelete(conn, "DELETE FROM Descuentos WHERE producto_id = ?", id);
+                ejecutarDelete(conn, "DELETE FROM ProductosExtranjeros WHERE producto_id = ?", id);
+
+                filas = ejecutarDelete(conn, "DELETE FROM Productos WHERE id = ?", id);
 
                 if (filas == 0) {
+                    conn.rollback();
+                    conn.setAutoCommit(autoCommitOriginal);
                     response.sendError(HttpServletResponse.SC_NOT_FOUND, "No se encontró un producto con ese ID.");
                     return;
                 }
+
+                conn.commit();
+            } catch (SQLException ex) {
+                conn.rollback();
+                throw ex;
+            } finally {
+                conn.setAutoCommit(autoCommitOriginal);
             }
 
             // 3️⃣ Si el producto tenía imagen → borrarla del servidor
@@ -86,6 +106,14 @@ public class EliminarProductoServlet extends HttpServlet {
         } catch (SQLException e) {
             e.printStackTrace();
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error en base de datos.");
+        }
+    }
+
+    /** Ejecuta un DELETE parametrizado por id y devuelve las filas afectadas. */
+    private int ejecutarDelete(Connection conn, String sql, int id) throws SQLException {
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            return stmt.executeUpdate();
         }
     }
 
