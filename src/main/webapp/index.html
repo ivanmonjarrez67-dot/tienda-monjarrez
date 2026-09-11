@@ -2781,39 +2781,64 @@ async function cargarMisProductos(usuarioId) {
         pointer-events: auto;
       }
 
+      /* 🔧 Antes era un panel lateral de 400px que se deslizaba desde la
+         izquierda. Ahora es un modal centrado a pantalla completa (mismo
+         patrón que detalle-producto.html de Importaciones Monjarrez),
+         pero en blanco suave — el fondo oscuro/negro se queda EXCLUSIVO
+         de los productos importados, este panel sigue siendo claro. */
       .side-modal {
         position: fixed;
-        top: 0;
-        left: -420px; /* oculto a la izquierda por defecto */
-        width: 400px;
-        max-width: 100%;
-        height: 100%;
-        background: #fff;
-        box-shadow: 2px 0 18px rgba(0, 0, 0, 0.25); /* sombra del lado derecho */
+        inset: 0;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
         overflow-y: auto;
-        transition: left 0.28s ease; /* animación desde la izquierda */
+        padding: 48px 20px;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.22s ease;
         z-index: 1001;
-        font-family: Arial, sans-serif;
+        font-family: "Poppins", Arial, sans-serif;
         -webkit-overflow-scrolling: touch;
       }
       .side-modal.open {
-        left: 0; /* visible */
+        opacity: 1;
+        visibility: visible;
       }
 
       .side-modal .side-modal-content {
-        padding: 20px;
         position: relative;
+        width: 100%;
+        max-width: 1040px;
+        margin: auto;
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        padding: 28px 28px 36px;
       }
 
       .close-info {
         position: absolute;
-        top: 12px;
-        right: 14px;
+        top: 14px;
+        right: 16px;
         border: none;
-        background: transparent;
-        font-size: 26px;
+        background: #f2f2f2;
+        color: #444;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        font-size: 22px;
         line-height: 1;
         cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s ease, color 0.15s ease;
+        z-index: 2;
+      }
+      .close-info:hover {
+        background: #e6e6e6;
+        color: #111;
       }
 
       /* Encabezado y texto */
@@ -2827,14 +2852,16 @@ async function cargarMisProductos(usuarioId) {
         color: #222;
       }
 
-      /* Responsive: en móviles usar 100% ancho */
+      /* Responsive: en móviles, tarjeta a pantalla completa sin bordes */
       @media (max-width: 768px) {
         .side-modal {
-          width: 100%;
-          left: -100%;
+          padding: 0;
         }
-        .side-modal.open {
-          left: 0;
+        .side-modal .side-modal-content {
+          max-width: 100%;
+          min-height: 100%;
+          border-radius: 0;
+          padding: 20px 16px 32px;
         }
       }
     </style>
@@ -3965,6 +3992,10 @@ async function cargarMisProductos(usuarioId) {
             const precioAnterior = target.dataset.precioAnterior || "";
             const imagen2 = target.dataset.imagen2 || "";
             const imagen3 = target.dataset.imagen3 || "";
+            // 🆕 Categoría del producto: se captura al abrir "Ver detalles"
+            // para poder mostrar, debajo del producto grande, el catálogo
+            // de otros productos de esa misma categoría.
+            const categoria = target.dataset.categoria || "";
 
             // 🆕 Precio anterior tachado, solo si viene y es mayor al precio real.
             let precioAnteriorHtml = "";
@@ -3975,6 +4006,11 @@ async function cargarMisProductos(usuarioId) {
               precioAnteriorHtml = ` <span class="producto-precio-anterior">₡${precioAnteriorNum.toLocaleString("es-CR", { maximumFractionDigits: 0 })}</span>
                 <span class="producto-descuento-badge">-${porcentaje}%</span>`;
             }
+            // 🆕 Precio principal grande, con separador de miles (antes se
+            // insertaba "precio" tal cual venía, como número crudo).
+            const precioFormateado = !isNaN(precioNum)
+              ? precioNum.toLocaleString("es-CR", { maximumFractionDigits: 0 })
+              : precio;
 
             // 🆕 Nota de "producto de reventa internacional": se muestra
             // junto al precio solo si el vendedor marcó el producto como
@@ -4003,10 +4039,29 @@ async function cargarMisProductos(usuarioId) {
               imagenHtml = construirGaleriaHTML(
                 [imagen, imagen2, imagen3],
                 nombre,
-                "width:100%; margin:10px 0; border-radius:8px;"
+                "width:100%; border-radius:8px;"
               );
             } else if (imagen) {
-              imagenHtml = `<img src="${imagen}" alt="Imagen de empresa" style="width:100%; margin:10px 0; border-radius:8px;">`;
+              imagenHtml = `<img src="${imagen}" alt="Imagen de empresa" style="width:100%; border-radius:8px;">`;
+            }
+
+            // 🆕 Tira de miniaturas (vista previa pequeña de cada imagen),
+            // igual que en el detalle de los productos importados. Se
+            // arma aparte del carrusel de puntitos: al hacer clic en una
+            // miniatura, se simula un clic sobre el punto correspondiente
+            // del carrusel (mismo listener global de ".galeria-dot" en
+            // script.js), así no se duplica la lógica de cambio de imagen.
+            const imagenesGaleria = [imagen, imagen2, imagen3].filter(Boolean);
+            let miniaturasHtml = "";
+            if (imagenesGaleria.length > 1) {
+              miniaturasHtml = imagenesGaleria
+                .map(
+                  (img, i) => `
+                <div class="mini-thumb${i === 0 ? " activa" : ""}" data-index="${i}">
+                  <img src="${img}" alt="${nombre}">
+                </div>`
+                )
+                .join("");
             }
 
             // 🆕 Botón de ubicación → abre Google Maps con la búsqueda de
@@ -4137,28 +4192,50 @@ async function cargarMisProductos(usuarioId) {
             // de la plantilla de abajo, así que esta línea era redundante.
             document.getElementById("infoModalContent").innerHTML = `
         <button class="close-info" aria-label="Cerrar">&times;</button>
-        <h2>${empresa}</h2>
-        ${imagenHtml}
-        <p><strong>Nombre:</strong> ${nombre}</p>
-        <p id="descripcionProducto" class="descripcion-texto"><strong>Descripción:</strong> ${descripcion}</p>
-        <button type="button" id="btnLeerMasDescripcion" class="btn-leer-mas" style="display:none;">Leer más</button>
-        <h3>Ubicación</h3>
-        <p>${ubicacionHtml}</p>
-        <h3>Procesos de compra</h3>
-        <div class="procesos-compra-caja procesos-compra-vendedor">
-          <h4>Hacer el proceso de compra directamente con el vendedor</h4>
-          <p>${telefonoHtml}<br>${correoHtml}</p>
+
+        <div class="detalle-nacional-header">
+          <span class="detalle-nacional-logo">Tienda <span class="detalle-nacional-logo-rojo">Monjarrez</span></span>
         </div>
-        <div class="procesos-compra-caja procesos-compra-tienda">
-          <h4>Hacer el proceso de compra mediante la tienda</h4>
-          <p>${tiendaWhatsappHtml}<br>${tiendaCorreoHtml}</p>
+
+        <div class="detalle-nacional-layout">
+          ${imagenesGaleria.length > 1 ? `<div class="detalle-nacional-miniaturas">${miniaturasHtml}</div>` : ""}
+          <div class="detalle-nacional-imagen-principal">${imagenHtml}</div>
+          <div class="detalle-nacional-info">
+            <span class="badge-nacional"><i class="fa-solid fa-store"></i> Producto de Vendedor Nacional</span>
+            <h2 class="detalle-nacional-titulo">${nombre}</h2>
+            <div class="detalle-nacional-vendedor">Vendido por: <strong>${empresa}</strong></div>
+
+            <div class="detalle-nacional-precio">₡${precioFormateado}${precioAnteriorHtml}</div>
+            ${notaExtranjeroHtml}
+            ${compartirHtml ? `<p class="detalle-nacional-compartir-wrap">${compartirHtml}</p>` : ""}
+
+            <h3>Ubicación</h3>
+            <p>${ubicacionHtml}</p>
+
+            <h3>Descripción</h3>
+            <p id="descripcionProducto" class="descripcion-texto">${descripcion}</p>
+            <button type="button" id="btnLeerMasDescripcion" class="btn-leer-mas" style="display:none;">Leer más</button>
+
+            <h3>Procesos de compra</h3>
+            <div class="procesos-compra-caja procesos-compra-vendedor">
+              <h4>Hacer el proceso de compra directamente con el vendedor</h4>
+              <p>${telefonoHtml}<br>${correoHtml}</p>
+            </div>
+            <div class="procesos-compra-caja procesos-compra-tienda">
+              <h4>Hacer el proceso de compra mediante la tienda</h4>
+              <p>${tiendaWhatsappHtml}<br>${tiendaCorreoHtml}</p>
+            </div>
+
+            <h3>Opciones de envío</h3>
+            <p class="envio-alejado-texto">¿Este producto está en una zona alejada? Con gusto validamos si es posible coordinar el envío.</p>
+            <p>${envioHtml}</p>
+          </div>
         </div>
-        <h3>Opciones de envío</h3>
-        <p class="envio-alejado-texto">¿Este producto está en una zona alejada? Con gusto validamos si es posible coordinar el envío.</p>
-        <p>${envioHtml}</p>
-        <p><strong>Precio:</strong> ₡${precio}${precioAnteriorHtml}</p>
-        ${notaExtranjeroHtml}
-        ${compartirHtml ? `<h3>Compartir</h3><p>${compartirHtml}</p>` : ""}
+
+        <div class="detalle-nacional-relacionados" id="detalleNacionalRelacionados" style="display:none;">
+          <h3>Más productos en esta categoría</h3>
+          <div class="mosaic-grid" id="detalleNacionalRelacionadosGrid"></div>
+        </div>
       `;
 
             // Reasignar listener para cerrar después de crear contenido nuevo
@@ -4168,6 +4245,84 @@ async function cargarMisProductos(usuarioId) {
             if (closeBtnNew) {
               closeBtnNew.addEventListener("click", closePanel);
             }
+
+            // 🆕 Conecta la tira de miniaturas con el carrusel de puntitos
+            // que ya arma construirGaleriaHTML (sin duplicar su lógica):
+            // al hacer clic en una miniatura, se simula el clic sobre el
+            // punto correspondiente; y si el carrusel cambia de imagen
+            // (por punto o por swipe), la miniatura activa se actualiza
+            // sola mediante un MutationObserver sobre los puntos.
+            (function vincularMiniaturas() {
+              const contenedor = document.getElementById("infoModalContent");
+              const miniaturasWrap = contenedor.querySelector(".detalle-nacional-miniaturas");
+              const galeria = contenedor.querySelector(".detalle-nacional-imagen-principal .producto-galeria");
+              if (!miniaturasWrap || !galeria) return;
+
+              miniaturasWrap.addEventListener("click", (ev) => {
+                const thumb = ev.target.closest(".mini-thumb");
+                if (!thumb) return;
+                const idx = thumb.dataset.index;
+                const dot = galeria.querySelector(`.galeria-dot[data-index="${idx}"]`);
+                if (dot) {
+                  dot.click();
+                } else {
+                  const imgPrincipal = galeria.querySelector(".galeria-img");
+                  const imgThumb = thumb.querySelector("img");
+                  if (imgPrincipal && imgThumb) imgPrincipal.src = imgThumb.src;
+                }
+                miniaturasWrap.querySelectorAll(".mini-thumb").forEach((t) => {
+                  t.classList.toggle("activa", t === thumb);
+                });
+              });
+
+              const dots = galeria.querySelectorAll(".galeria-dot");
+              if (dots.length) {
+                const observador = new MutationObserver(() => {
+                  const dotActivo = galeria.querySelector(".galeria-dot.active");
+                  if (!dotActivo) return;
+                  const idxActivo = dotActivo.dataset.index;
+                  miniaturasWrap.querySelectorAll(".mini-thumb").forEach((t) => {
+                    t.classList.toggle("activa", t.dataset.index === idxActivo);
+                  });
+                });
+                dots.forEach((d) => observador.observe(d, { attributes: true, attributeFilter: ["class"] }));
+              }
+            })();
+
+            // 🆕 Catálogo de "productos de la misma categoría" debajo del
+            // producto grande: reutiliza pintarMosaico() y
+            // construirTarjetaProductoHTML() (expuestas en window desde
+            // script.js) para que las tarjetas se vean IGUAL que en el
+            // catálogo normal, en vez de duplicar esa lógica acá.
+            (function cargarRelacionados() {
+              const seccion = document.getElementById("detalleNacionalRelacionados");
+              const gridRelacionados = document.getElementById("detalleNacionalRelacionadosGrid");
+              if (!seccion || !gridRelacionados || !categoria) return;
+
+              fetch(`/api/productos-filtrados?categoria=${encodeURIComponent(categoria)}`)
+                .then((res) => res.json())
+                .then((productos) => {
+                  const otros = (productos || []).filter((p) => String(p.id) !== String(idProducto));
+                  if (
+                    !otros.length ||
+                    typeof window.pintarMosaico !== "function" ||
+                    typeof window.construirTarjetaProductoHTML !== "function"
+                  ) {
+                    seccion.style.display = "none";
+                    return;
+                  }
+                  window.pintarMosaico(gridRelacionados, otros, window.construirTarjetaProductoHTML);
+                  seccion.style.display = "block";
+                })
+                .catch(() => {
+                  seccion.style.display = "none";
+                });
+            })();
+
+            // Vuelve a subir el scroll del panel al abrir un producto
+            // nuevo (por ejemplo, al hacer clic en uno de los productos
+            // relacionados dentro del mismo panel).
+            modal.scrollTop = 0;
 
             // 🆕 "Leer más / Leer menos" en la descripción del producto:
             // se recorta a 4 líneas por defecto (clase "truncada") y el
@@ -4258,7 +4413,13 @@ async function cargarMisProductos(usuarioId) {
             // panel "Ver detalles", los puntos se veían pero no
             // reaccionaban al clic. Ahora se deja pasar específicamente
             // el clic sobre un punto de galería.
-            if (e.target.closest(".galeria-dot")) return;
+            // 🆕 Tampoco se bloquea el clic en ".more-info-btn": ahora el
+            // panel puede mostrar, debajo del producto grande, el
+            // catálogo de otros productos de la misma categoría — y esos
+            // botones "Ver detalles" deben poder llegar al listener
+            // delegado en document (más abajo) para refrescar este mismo
+            // panel con el nuevo producto.
+            if (e.target.closest(".galeria-dot") || e.target.closest(".more-info-btn")) return;
             e.stopPropagation();
           });
 
@@ -4405,9 +4566,20 @@ async function cargarMisProductos(usuarioId) {
         background: #a32323;
       }
 
-      /* Botones de contacto en el panel "Ver detalles" del producto:
-         WhatsApp en verde, correo en rojo (mismo estilo de botón
-         que el correo del modal de Ayuda). */
+      /* 🔧 Paleta reducida del panel "Ver detalles" (productos
+         nacionales): antes tenía 5 colores distintos entre los botones
+         de contacto (verde, rojo, turquesa, azul, morado). Ahora solo se
+         usan 3: rojo de marca (insignia + descuento), verde (SOLO
+         WhatsApp) y gris neutro para todo lo demás — correo, envío,
+         ubicación y compartir comparten el mismo estilo gris. */
+      #infoModalContent {
+        --nacional-rojo: #a13341;
+        --nacional-verde: #25d366;
+        --nacional-gris: #5a5a5a;
+        --nacional-gris-claro: #ececec;
+        background: #fffdf9;
+      }
+
       #infoModalContent .contacto-btn {
         display: inline-flex;
         align-items: center;
@@ -4418,7 +4590,7 @@ async function cargarMisProductos(usuarioId) {
         text-decoration: none;
         font-size: 14px;
         font-weight: 600;
-        transition: background 0.2s ease;
+        transition: background 0.2s ease, color 0.2s ease;
         margin: 6px 8px 6px 0;
       }
       #infoModalContent .contacto-btn svg {
@@ -4426,34 +4598,31 @@ async function cargarMisProductos(usuarioId) {
         height: 18px;
         flex-shrink: 0;
       }
+      /* Único color "vivo" fuera del rojo de marca: WhatsApp. */
       #infoModalContent .contacto-whatsapp {
-        background: #25d366;
+        background: var(--nacional-verde);
       }
       #infoModalContent .contacto-whatsapp:hover {
         background: #1ebe57;
       }
-      #infoModalContent .contacto-correo {
+      /* Correo, envío, ubicación y compartir: mismo gris neutro. */
+      #infoModalContent .contacto-correo,
+      #infoModalContent .contacto-envio,
+      #infoModalContent .contacto-ubicacion,
+      #infoModalContent .contacto-compartir {
         background: transparent;
-        color: #a13341; /* antes #e53935: muy vivo */
-        border: 2px solid #a13341;
+        color: var(--nacional-gris);
+        border: 2px solid #cfcfcf;
+        font-family: inherit;
+        cursor: pointer;
       }
-      #infoModalContent .contacto-correo:hover {
-        background: #a13341;
+      #infoModalContent .contacto-correo:hover,
+      #infoModalContent .contacto-envio:hover,
+      #infoModalContent .contacto-ubicacion:hover,
+      #infoModalContent .contacto-compartir:hover {
+        background: var(--nacional-gris);
         color: #fff;
-      }
-
-      /* 🆕 Botón "Consultar posibilidad de envíos" — mismo color
-         turquesa/verde-azulado que el aviso de envío del hero-banner
-         (rgb(90,168,158) / #5aa89e), para que se identifique como la
-         misma función en toda la tienda. */
-      #infoModalContent .contacto-envio {
-        background: transparent;
-        color: #5aa89e;
-        border: 2px solid #5aa89e;
-      }
-      #infoModalContent .contacto-envio:hover {
-        background: #5aa89e;
-        color: #fff;
+        border-color: var(--nacional-gris);
       }
       #infoModalContent .envio-alejado-texto {
         font-size: 13px;
@@ -4462,21 +4631,20 @@ async function cargarMisProductos(usuarioId) {
         line-height: 1.5;
       }
 
-      /* 🆕 Nota "producto de reventa internacional": tono morado sutil,
-         a juego con el resto de avisos del sitio (.mercado-aviso), pero
-         discreta ya que es una aclaración junto al precio, no una alerta. */
+      /* 🆕 Nota "producto de reventa internacional": gris neutro (antes
+         morado), para mantenerse dentro de la paleta reducida. */
       #infoModalContent .nota-precio-extranjero {
         display: flex;
         align-items: flex-start;
         gap: 8px;
         margin: 6px 0 14px;
         padding: 10px 12px;
-        background: rgba(124, 108, 224, 0.08);
-        border: 1px solid rgba(124, 108, 224, 0.3);
+        background: #f5f5f5;
+        border: 1px solid #e0e0e0;
         border-radius: 10px;
         font-size: 12.5px;
         line-height: 1.5;
-        color: #4a4470;
+        color: #555;
       }
       #infoModalContent .nota-precio-extranjero-icono {
         flex-shrink: 0;
@@ -4484,31 +4652,14 @@ async function cargarMisProductos(usuarioId) {
         line-height: 1.4;
       }
 
-      /* Botón de ubicación → abre Google Maps */
-      #infoModalContent .contacto-ubicacion {
-        background: transparent;
-        color: #4285F4;
-        border: 2px solid #4285F4;
+      /* 🆕 Botón "Compartir" a todo lo ancho, como en el detalle de los
+         productos importados. */
+      #infoModalContent .detalle-nacional-compartir-wrap {
+        margin: 4px 0 14px;
       }
-      #infoModalContent .contacto-ubicacion:hover {
-        background: #4285F4;
-        color: #fff;
-      }
-
-      /* 🆕 Botón "Compartir": es un <button>, no un <a>, así que se
-         resetean estilos por defecto de botón para que se vea igual
-         que el resto de .contacto-btn. Color morado para diferenciarlo
-         de los botones de contacto directo con el vendedor. */
-      #infoModalContent .contacto-compartir {
-        background: transparent;
-        color: #6b3fa0;
-        border: 2px solid #6b3fa0;
-        font-family: inherit;
-        cursor: pointer;
-      }
-      #infoModalContent .contacto-compartir:hover {
-        background: #6b3fa0;
-        color: #fff;
+      #infoModalContent .detalle-nacional-compartir-wrap .contacto-compartir {
+        width: 100%;
+        justify-content: center;
       }
 
       /* 🆕 Descripción del producto con "Leer más / Leer menos": por
@@ -4518,6 +4669,7 @@ async function cargarMisProductos(usuarioId) {
          desborda esas 4 líneas. */
       #infoModalContent .descripcion-texto {
         margin: 0;
+        line-height: 1.6;
       }
       #infoModalContent .descripcion-texto.truncada {
         display: -webkit-box;
@@ -4531,7 +4683,7 @@ async function cargarMisProductos(usuarioId) {
         background: none;
         border: none;
         padding: 0;
-        color: #a13341;
+        color: var(--nacional-rojo);
         font-weight: 600;
         font-size: 14px;
         cursor: pointer;
@@ -4541,27 +4693,152 @@ async function cargarMisProductos(usuarioId) {
         text-decoration: underline;
       }
 
-      /* 🆕 Fondo cálido y con color para todo el panel "Ver detalles"
-         (antes era blanco liso). Degradado dorado muy suave arriba que
-         se funde a blanco, para que se sienta con más vida sin quitarle
-         legibilidad al texto negro que ya fuerza styles.css. */
-      #infoModalContent {
-        background: linear-gradient(180deg, #fdf6e3 0%, #ffffff 260px);
+      /* 🆕 Encabezado con el logo "Tienda Monjarrez" arriba de la
+         tarjeta, igual que pide el detalle de productos importados. */
+      #infoModalContent .detalle-nacional-header {
+        display: flex;
+        align-items: center;
+        margin: 0 0 18px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #eee;
+      }
+      #infoModalContent .detalle-nacional-logo {
+        font-family: "Poppins", Arial, sans-serif;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #1a1a1a;
+      }
+      #infoModalContent .detalle-nacional-logo-rojo {
+        color: var(--nacional-rojo);
       }
 
-      /* 🆕 Un poco más de identidad visual al panel en general (antes
-         era texto plano sin jerarquía): título de empresa con acento de
-         marca y subtítulos con una barra dorada en vez de una simple
-         línea gris, para que combinen con el resto del panel sin verse
-         como otro cuadro más. */
-      #infoModalContent h2 {
-        margin: 4px 0 14px;
-        padding-bottom: 10px;
-        font-size: 20px;
+      /* 🆕 Insignia "Producto de Vendedor Nacional" (equivalente a
+         "Producto internacional" del detalle de productos importados,
+         pero en rojo de marca en vez de rojo vivo, y sobre fondo claro). */
+      #infoModalContent .badge-nacional {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(161, 51, 65, 0.08);
+        color: var(--nacional-rojo);
+        border: 1px solid rgba(161, 51, 65, 0.35);
+        font-size: 0.7rem;
         font-weight: 700;
-        color: #2c2c2c;
-        border-bottom: 1px solid rgba(212, 175, 55, 0.35);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        margin-bottom: 10px;
       }
+
+      #infoModalContent .detalle-nacional-titulo {
+        font-size: 1.3rem;
+        line-height: 1.4;
+        margin: 0 0 6px;
+        color: #1a1a1a;
+        font-weight: 700;
+      }
+
+      /* 🆕 Nombre de la tienda/vendedor debajo del título. */
+      #infoModalContent .detalle-nacional-vendedor {
+        font-size: 0.85rem;
+        color: #777;
+        margin: 0 0 14px;
+      }
+      #infoModalContent .detalle-nacional-vendedor strong {
+        color: #333;
+      }
+
+      /* 🆕 Precio grande y formateado, con el anterior tachado + badge de
+         descuento (.producto-precio-anterior / .producto-descuento-badge
+         ya existen y se reutilizan tal cual). */
+      #infoModalContent .detalle-nacional-precio {
+        font-size: 1.9rem;
+        font-weight: 800;
+        color: #1a1a1a;
+        margin: 4px 0 10px;
+      }
+
+      /* 🆕 Layout de la imagen destacada + miniaturas + info, calcado del
+         detalle de productos importados (90px miniaturas / imagen / info
+         en escritorio, apilado en móvil). */
+      #infoModalContent .detalle-nacional-layout {
+        display: grid;
+        grid-template-columns: 84px 1fr 1fr;
+        gap: 20px;
+        align-items: start;
+      }
+      @media (max-width: 820px) {
+        #infoModalContent .detalle-nacional-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      #infoModalContent .detalle-nacional-miniaturas {
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+        overflow-x: auto;
+        order: 2;
+      }
+      @media (min-width: 821px) {
+        #infoModalContent .detalle-nacional-miniaturas {
+          flex-direction: column;
+          overflow-x: visible;
+          order: 0;
+        }
+      }
+      #infoModalContent .mini-thumb {
+        width: 60px;
+        height: 60px;
+        flex: 0 0 auto;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 2px solid var(--nacional-gris-claro);
+        cursor: pointer;
+        background: #fafafa;
+        transition: border-color 0.15s ease;
+      }
+      #infoModalContent .mini-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      #infoModalContent .mini-thumb.activa {
+        border-color: var(--nacional-rojo);
+      }
+
+      #infoModalContent .detalle-nacional-imagen-principal {
+        order: 1;
+        background: #fafafa;
+        border: 1px solid #eee;
+        border-radius: 12px;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      #infoModalContent .detalle-nacional-imagen-principal .producto-galeria {
+        width: 100%;
+      }
+      #infoModalContent .detalle-nacional-imagen-principal .galeria-img {
+        width: 100%;
+        max-height: 420px;
+        object-fit: contain;
+        background: #fff;
+        border-radius: 8px;
+        display: block;
+        margin: 0 auto;
+      }
+
+      #infoModalContent .detalle-nacional-info {
+        order: 3;
+      }
+      @media (min-width: 821px) {
+        #infoModalContent .detalle-nacional-info { order: 2; }
+      }
+
       #infoModalContent h3 {
         margin: 20px 0 8px;
         padding-left: 10px;
@@ -4569,8 +4846,8 @@ async function cargarMisProductos(usuarioId) {
         font-weight: 700;
         letter-spacing: 0.3px;
         text-transform: uppercase;
-        color: #a3841f;
-        border-left: 3px solid #D4AF37;
+        color: #555;
+        border-left: 3px solid #ccc;
         border-bottom: none;
       }
       #infoModalContent h3:first-of-type {
@@ -4583,12 +4860,9 @@ async function cargarMisProductos(usuarioId) {
         color: #111;
       }
 
-      /* 🆕 Los dos cuadros de "Procesos de compra": uno con el color del
-         botón "Ver detalles" (compra directa con el vendedor) y otro
-         dorado (compra mediante la tienda), para diferenciarlos a
-         simple vista. Más compactos que la primera versión (menos
-         padding/margen y botones más chicos) para que no dominen el
-         panel, sobre todo el del vendedor. */
+      /* 🆕 Los dos cuadros de "Procesos de compra": el de la tienda usa
+         un tinte del rojo de marca (es el canal "oficial" recomendado),
+         el del vendedor usa gris neutro — dos colores, no cinco. */
       #infoModalContent .procesos-compra-caja {
         border-radius: 8px;
         padding: 8px 10px;
@@ -4611,18 +4885,30 @@ async function cargarMisProductos(usuarioId) {
         height: 15px;
       }
       #infoModalContent .procesos-compra-vendedor {
-        border: 1.5px solid #809CBF;
-        background: rgba(128, 156, 191, 0.05);
+        border: 1.5px solid #ddd;
+        background: #fafafa;
       }
       #infoModalContent .procesos-compra-vendedor h4 {
-        color: #5d7d9e;
+        color: #555;
       }
       #infoModalContent .procesos-compra-tienda {
-        border: 1.5px solid #D4AF37;
-        background: rgba(212, 175, 55, 0.06);
+        border: 1.5px solid rgba(161, 51, 65, 0.3);
+        background: rgba(161, 51, 65, 0.05);
       }
       #infoModalContent .procesos-compra-tienda h4 {
-        color: #a3841f;
+        color: var(--nacional-rojo);
+      }
+
+      /* 🆕 Catálogo de productos de la misma categoría, debajo del
+         producto grande. Reutiliza .mosaic-grid / .producto /
+         .more-info-btn tal cual los pinta el catálogo normal. */
+      #infoModalContent .detalle-nacional-relacionados {
+        margin-top: 32px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+      }
+      #infoModalContent .detalle-nacional-relacionados h3 {
+        border-left-color: var(--nacional-rojo);
       }
     </style>
     <div id="ayudaModal">

@@ -558,12 +558,21 @@ function construirTarjetaProductoHTML(producto) {
           data-correo="${producto.correo || ''}"
           data-precio="${producto.precio || ''}"
           data-precio-anterior="${producto.precio_anterior || ''}"
+          data-categoria="${producto.categoria || ''}"
           data-extranjero="${producto.es_extranjero ? '1' : '0'}"
         >
           Ver detalles
         </button>
       `;
 }
+// 🆕 Se exponen en window (mismo motivo que window.construirGaleriaHTML,
+// ver comentario arriba): el panel "Ver detalles" de index.html vive en
+// otro <script> aparte y necesita reutilizar esta misma función y
+// pintarMosaico() para armar el catálogo de "productos de la misma
+// categoría" que se muestra debajo del producto grande, sin duplicar
+// esta lógica.
+window.construirTarjetaProductoHTML = construirTarjetaProductoHTML;
+window.pintarMosaico = pintarMosaico;
 
 function mostrarEsqueletoCarga(grid, cantidad = 8) {
   if (!grid) return;
