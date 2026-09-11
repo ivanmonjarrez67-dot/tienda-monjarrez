@@ -3979,6 +3979,19 @@ async function cargarMisProductos(usuarioId) {
           const target = e.target;
           if (target.classList && target.classList.contains("more-info-btn")) {
             const idProducto = target.dataset.id || "";
+
+            // 🆕 Ahora "Ver detalles" ya no abre el panel lateral (se veía
+            // recortado y no mostraba la información completa). En su
+            // lugar abre la página de detalle completa, estilo Temu, en
+            // una pestaña nueva — igual que ya hacían los productos de
+            // Importaciones Monjarrez con detalle-producto.html. Todo el
+            // código de abajo que arma el panel queda sin usarse (no se
+            // borra para no arriesgar romper nada que dependa de él),
+            // porque este return corta la ejecución acá mismo.
+            if (idProducto) {
+              window.open(`/detalle-nacional.html?id=${encodeURIComponent(idProducto)}`, "_blank");
+            }
+            return;
             const empresa = target.dataset.empresa || "Empresa no disponible";
             const imagen = target.dataset.imagen || "";
             const nombre = target.dataset.nombre || "";

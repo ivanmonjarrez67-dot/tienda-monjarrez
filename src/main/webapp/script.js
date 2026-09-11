@@ -600,14 +600,13 @@ function abrirProductoDesdeUrl() {
   const params = new URLSearchParams(window.location.search);
   const idProducto = params.get("producto");
   if (!idProducto) return;
-  const btn = document.querySelector(`.more-info-btn[data-id="${idProducto}"]`);
-  if (btn) {
-    btn.click();
-    btn.scrollIntoView({ behavior: "smooth", block: "center" });
-  }
-  // Limpiar el parámetro de la URL para que no se reabra el panel si el
-  // usuario navega y regresa, sin necesidad de recargar la página.
-  window.history.replaceState({}, document.title, window.location.pathname);
+  // 🔧 Antes esto buscaba el botón "Ver detalles" de la tarjeta y le
+  // hacía click() para abrir el panel lateral. Ahora "Ver detalles" abre
+  // la página de detalle completa en una pestaña nueva (ver index.html),
+  // y como este click() sería disparado por código (no por un gesto
+  // directo del usuario), el navegador lo bloquearía como pop-up. En su
+  // lugar, navegamos esta misma pestaña directo a esa página de detalle.
+  window.location.replace(`/detalle-nacional.html?id=${encodeURIComponent(idProducto)}`);
 }
 
 const gridProductosInicial = document.getElementById("productGrid");

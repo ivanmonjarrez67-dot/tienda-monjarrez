@@ -266,6 +266,59 @@
     padding: 80px 20px;
     color: var(--text-dim);
   }
+
+  /* ---------- Productos relacionados ---------- */
+  .relacionados {
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .relacionados h2 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 0 0 16px;
+    border-left: 3px solid var(--red);
+    padding-left: 10px;
+    color: var(--text);
+  }
+  .relacionados-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
+  }
+  .rel-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    text-decoration: none;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .rel-card:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
+  .rel-card-img {
+    aspect-ratio: 1 / 1;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .rel-card-img img { width: 100%; height: 100%; object-fit: contain; }
+  .rel-card-body { padding: 10px 12px 12px; flex: 1; display: flex; flex-direction: column; }
+  .rel-card-nombre {
+    font-size: 0.8rem;
+    line-height: 1.35;
+    margin: 0 0 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex: 1;
+  }
+  .rel-card-precio { font-size: 0.95rem; font-weight: 700; color: #ffb020; margin: 0; }
 </style>
 </head>
 <body>
@@ -313,6 +366,11 @@
         </a>
         <div class="aviso-internacional">Te responderemos por correo con la disponibilidad y el detalle final de tu pedido.</div>
       </div>
+    </div>
+
+    <div class="relacionados" id="relacionadosSeccion" style="display:none;">
+      <h2>Más productos en esta categoría</h2>
+      <div class="relacionados-grid" id="relacionadosGrid"></div>
     </div>
   </div>
   <div id="estadoError" class="estado-error" style="display:none;">
@@ -419,6 +477,49 @@
     });
   }
 
+  function fmtCrcEntero(n) {
+    const num = Number(n);
+    if (isNaN(num)) return "";
+    return "₡" + num.toLocaleString("es-CR", { maximumFractionDigits: 0 });
+  }
+
+  function construirTarjetaRelacionada(p) {
+    const a = document.createElement("a");
+    a.className = "rel-card";
+    a.href = `detalle-producto.html?id=${encodeURIComponent(p.id)}`;
+    a.innerHTML = `
+      <div class="rel-card-img"><img src="${esc(p.imagen)}" alt="${esc(p.nombre)}" loading="lazy"></div>
+      <div class="rel-card-body">
+        <p class="rel-card-nombre">${esc(p.nombre)}</p>
+        <p class="rel-card-precio">${fmtCrcEntero(p.precioCrc)}</p>
+      </div>
+    `;
+    return a;
+  }
+
+  // 🆕 "Más productos en esta categoría": reutiliza el mismo endpoint
+  // /listaProductosCJ que ya carga la sección "Importaciones Monjarrez"
+  // en el catálogo, filtrando en el navegador por la categoría de este
+  // producto (el endpoint no tiene un parámetro de categoría propio).
+  function cargarRelacionados() {
+    const seccion = document.getElementById("relacionadosSeccion");
+    const grid = document.getElementById("relacionadosGrid");
+    if (!producto.categoria) return;
+
+    fetch("/listaProductosCJ")
+      .then((res) => res.json())
+      .then((productos) => {
+        const otros = (productos || []).filter(
+          (p) => String(p.id) !== String(producto.id) && p.categoria === producto.categoria
+        );
+        if (!otros.length) return;
+        grid.innerHTML = "";
+        otros.forEach((p) => grid.appendChild(construirTarjetaRelacionada(p)));
+        seccion.style.display = "block";
+      })
+      .catch(() => {});
+  }
+
   function renderizar() {
     document.getElementById("tituloProducto").textContent = producto.nombre;
     document.getElementById("categoriaProducto").textContent = producto.categoria || "";
@@ -470,6 +571,7 @@
     }
 
     configurarBotonCompartir();
+    cargarRelacionados();
 
     elCarga.style.display = "none";
     elContenido.style.display = "block";
