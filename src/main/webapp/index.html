@@ -3065,6 +3065,12 @@ async function cargarMisProductos(usuarioId) {
       .perfil-card label:first-of-type {
         margin-top: 0 !important;
       }
+      /* 🆕 El icono de tienda se insertó antes de "Nombre", así que
+         "Nombre" dejó de ser el label:first-of-type; se fuerza su
+         margen a 0 igual que antes para no descuadrar la tarjeta. */
+      .perfil-card label[for="perfilNombre"] {
+        margin-top: 0 !important;
+      }
 
       /* --- Acordeones (Administrar notificaciones / Cambiar contraseña) --- */
       .perfil-accordion {
@@ -3168,6 +3174,20 @@ async function cargarMisProductos(usuarioId) {
           <!-- 🆕 Tarjeta de identidad: nombre, correo, tipo de cuenta y
                plan de suscripción agrupados visualmente. -->
           <div class="perfil-card">
+            <!-- 🆕 Icono de tienda: solo aplica a cuentas Vendedor, se
+                 muestra/oculta en cargarPerfil() según perfil.tipo. -->
+            <div class="perfil-icono-wrap" id="perfilIconoWrap" style="display:none;">
+              <div class="perfil-icono-circulo">
+                <img id="perfilIconoPreview" class="perfil-icono-img" alt="Icono de tienda" style="display:none;" />
+                <i class="fa-solid fa-store perfil-icono-placeholder" id="perfilIconoPlaceholder"></i>
+                <label for="perfilIconoInput" class="perfil-icono-boton-mas" title="Cambiar icono de tienda">
+                  <i class="fa-solid fa-plus"></i>
+                </label>
+                <input type="file" id="perfilIconoInput" accept="image/*" style="display:none;">
+              </div>
+              <p class="perfil-icono-texto">Icono de tienda</p>
+            </div>
+
             <label for="perfilNombre">Nombre</label>
             <input type="text" id="perfilNombre" />
 
@@ -4923,6 +4943,29 @@ async function cargarMisProductos(usuarioId) {
       #infoModalContent .detalle-nacional-relacionados h3 {
         border-left-color: var(--nacional-rojo);
       }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
     </style>
     <div id="ayudaModal">
       <div class="ayuda-card">
@@ -5460,6 +5503,28 @@ function mostrarContenido(tipo, registrado = true) {
     else document.getElementById("contenidoCompradorActivo").style.display = "block";
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

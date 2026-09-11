@@ -200,8 +200,20 @@
     font-size: 0.85rem;
     color: var(--text-dim);
     margin: 0 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
   .vendedor-producto strong { color: #333; }
+
+  .icono-vendedor-producto {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #ddd;
+    flex-shrink: 0;
+  }
 
   .precio-nacional {
     font-size: 1.9rem;
@@ -425,7 +437,10 @@
         <p class="descripcion-texto" id="descripcionProducto"></p>
         <button type="button" id="btnLeerMasDescripcion" class="btn-leer-mas" style="display:none;">Leer más</button>
 
-        <div class="vendedor-producto">Vendido por: <strong id="vendedorProducto"></strong></div>
+        <div class="vendedor-producto">
+          <img id="iconoVendedorProducto" class="icono-vendedor-producto" alt="" style="display:none;" />
+          Vendido por: <strong id="vendedorProducto"></strong>
+        </div>
 
         <div class="precio-nacional" id="precioProducto"></div>
         <div id="notaExtranjero"></div>
@@ -716,6 +731,13 @@
   function renderizar(producto) {
     document.getElementById("tituloProducto").textContent = producto.nombre || "";
     document.getElementById("vendedorProducto").textContent = producto.empresa || "Empresa no disponible";
+    const iconoVendedorImg = document.getElementById("iconoVendedorProducto");
+    if (producto.iconoVendedor) {
+      iconoVendedorImg.src = producto.iconoVendedor;
+      iconoVendedorImg.style.display = "inline-block";
+    } else {
+      iconoVendedorImg.style.display = "none";
+    }
     document.getElementById("breadcrumb").textContent =
       "Tienda Monjarrez" + (producto.categoria ? " / " + producto.categoria : "");
 

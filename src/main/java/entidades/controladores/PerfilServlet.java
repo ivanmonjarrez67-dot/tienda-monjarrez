@@ -18,10 +18,11 @@ import jakarta.servlet.http.HttpSession;
 
 /**
  * Devuelve la información del usuario actualmente logueado (nombre, correo,
- * tipo, si es un "Vendedor Destacado", sus intereses de notificación por
- * categoría, y sus provincias de preferencia — ambos leídos de la tabla
- * aparte Intereses, que tiene columnas separadas "interes" y "provincia"
- * (cada fila usa solo una de las dos, la otra queda NULL).
+ * tipo, si es un "Vendedor Destacado", su icono de tienda, sus intereses de
+ * notificación por categoría, y sus provincias de preferencia — estos
+ * últimos dos leídos de la tabla aparte Intereses, que tiene columnas
+ * separadas "interes" y "provincia" (cada fila usa solo una de las dos, la
+ * otra queda NULL).
  *
  * IMPORTANTE: lee el usuario_id de la SESIÓN del servidor (HttpSession),
  * nunca de un parámetro que mande el cliente — así nadie puede pedir el
@@ -78,10 +79,14 @@ public class PerfilServlet extends HttpServlet {
             boolean esDestacado = false;
             String tipoSuscripcion = null;
             boolean suscrito = false;
+            String iconoUrl = null; // 🆕
 
-            // Si es Vendedor, revisamos su suscripción
+            // Si es Vendedor, revisamos su suscripción y su icono de tienda
             if ("Vendedor".equalsIgnoreCase(tipo)) {
-                String sqlVendedor = "SELECT suscrito, tipo_suscripcion FROM Vendedores WHERE usuario_id = ?";
+                String sqlVendedor = "SELECT v.suscrito, v.tipo_suscripcion, iv.icono "
+                                   + "FROM Vendedores v "
+                                   + "LEFT JOIN IconosVendedor iv ON iv.vendedor_id = v.id "
+                                   + "WHERE v.usuario_id = ?";
                 try (PreparedStatement stmtV = conn.prepareStatement(sqlVendedor)) {
                     stmtV.setInt(1, usuarioId);
                     try (ResultSet rsV = stmtV.executeQuery()) {
@@ -90,6 +95,7 @@ public class PerfilServlet extends HttpServlet {
                             suscrito = suscritoInt == 1;
                             tipoSuscripcion = rsV.getString("tipo_suscripcion"); // "Básica" o "Avanzada"
                             esDestacado = suscrito && "Avanzada".equalsIgnoreCase(tipoSuscripcion);
+                            iconoUrl = rsV.getString("icono"); // 🆕 null si no tiene icono
                         }
                     }
                 }
@@ -125,6 +131,7 @@ public class PerfilServlet extends HttpServlet {
                 out.print("\"esDestacado\":" + esDestacado + ",");
                 out.print("\"suscrito\":" + suscrito + ",");
                 out.print("\"tipoSuscripcion\":" + (tipoSuscripcion != null ? "\"" + escapeJson(tipoSuscripcion) + "\"" : "null") + ",");
+                out.print("\"iconoUrl\":" + (iconoUrl != null ? "\"" + escapeJson(iconoUrl) + "\"" : "null") + ","); // 🆕
                 out.print("\"intereses\":" + stringArrayJson(intereses) + ",");
                 out.print("\"provincias\":" + stringArrayJson(provincias));
                 out.print("}");

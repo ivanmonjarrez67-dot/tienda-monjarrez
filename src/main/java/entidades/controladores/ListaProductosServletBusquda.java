@@ -40,13 +40,20 @@ public class ListaProductosServletBusquda extends HttpServlet {
         // 🆕 Se agrega p.categoria al SELECT, por el mismo motivo que en
         // ListaProductosServlet: para que el producto (venga de una
         // búsqueda o del catálogo completo) siempre traiga su categoría.
+        // 🆕 Se agrega p.usuario_id y el mismo enlace Productos ->
+        // Vendedores -> IconosVendedor que en ListaProductosServlet, para
+        // que los resultados de búsqueda también traigan el icono del
+        // vendedor.
         String sql = "SELECT p.id, p.nombre, p.descripcion, p.imagen, p.precio, p.Nombre_Empresa, "
-                   + "p.telefono, p.correo, p.provincia, p.ciudad, p.categoria, pe.producto_id AS extranjero_id, "
-                   + "d.precio_anterior, ia.imagen2, ia.imagen3 "
+                   + "p.telefono, p.correo, p.provincia, p.ciudad, p.categoria, p.usuario_id, "
+                   + "pe.producto_id AS extranjero_id, "
+                   + "d.precio_anterior, ia.imagen2, ia.imagen3, iv.icono AS icono_vendedor "
                    + "FROM Productos p "
                    + "LEFT JOIN Descuentos d ON d.producto_id = p.id "
                    + "LEFT JOIN ImagenesAdicionalesProducto ia ON ia.producto_id = p.id "
-                   + "LEFT JOIN ProductosExtranjeros pe ON pe.producto_id = p.id";
+                   + "LEFT JOIN ProductosExtranjeros pe ON pe.producto_id = p.id "
+                   + "LEFT JOIN Vendedores v ON v.usuario_id = p.usuario_id "
+                   + "LEFT JOIN IconosVendedor iv ON iv.vendedor_id = v.id";
 
         if (!condiciones.isEmpty()) {
             sql += " WHERE " + String.join(" AND ", condiciones);
@@ -89,7 +96,9 @@ public class ListaProductosServletBusquda extends HttpServlet {
                 String imagen2 = rs.getString("imagen2");
                 out.print("\"imagen2\":" + (imagen2 == null ? "null" : "\"" + JsonUtils.escapar(imagen2) + "\"") + ",");
                 String imagen3 = rs.getString("imagen3");
-                out.print("\"imagen3\":" + (imagen3 == null ? "null" : "\"" + JsonUtils.escapar(imagen3) + "\""));
+                out.print("\"imagen3\":" + (imagen3 == null ? "null" : "\"" + JsonUtils.escapar(imagen3) + "\"") + ",");
+                String iconoVendedor = rs.getString("icono_vendedor");
+                out.print("\"iconoVendedor\":" + (iconoVendedor == null ? "null" : "\"" + JsonUtils.escapar(iconoVendedor) + "\""));
 
                 out.print("}");
             }

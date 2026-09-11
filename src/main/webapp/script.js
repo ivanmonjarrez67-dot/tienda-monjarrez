@@ -81,6 +81,41 @@ conectarSubidaImagen("imagenProducto3", "imageUrl3", "previewImagen3");
 conectarSubidaImagen("editImagenProducto2", "editImageUrl2", "editPreviewImagen2");
 conectarSubidaImagen("editImagenProducto3", "editImageUrl3", "editPreviewImagen3");
 
+// 🆕 Icono de tienda (panel de Perfil, solo Vendedor): sube el archivo a
+// Cloudinary reutilizando /GuardarProductoArchivo (igual que las imágenes
+// de producto) y guarda la URL resultante en /api/perfil/icono.
+(function () {
+  const input = document.getElementById("perfilIconoInput");
+  const preview = document.getElementById("perfilIconoPreview");
+  const placeholder = document.getElementById("perfilIconoPlaceholder");
+  if (!input) return;
+
+  input.addEventListener("change", () => {
+    if (input.files.length === 0) return;
+    const file = input.files[0];
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = "block";
+    placeholder.style.display = "none";
+
+    const formData = new FormData();
+    formData.append("imagenProducto", file);
+
+    fetch("/GuardarProductoArchivo", { method: "POST", body: formData })
+      .then((resp) => (resp.ok ? resp.text() : resp.text().then((msg) => { throw new Error(msg); })))
+      .then((url) =>
+        fetch("/api/perfil/icono", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ icono: url.trim() }).toString(),
+        })
+      )
+      .then((resp) => {
+        if (!resp.ok) return resp.text().then((msg) => { throw new Error(msg); });
+      })
+      .catch((err) => alert("Error al subir el icono: " + err.message));
+  });
+})();
+
 function cargarProductosMiTienda() {
   const idDiv = document.getElementById("usuarioIdVisibleMitienda");
   if (!idDiv) return;
@@ -1763,6 +1798,10 @@ if (welcomeContainer) {
   const divTipo = document.getElementById("perfilTipo");
   const planWrap = document.getElementById("perfilPlanWrap");
   const divPlan = document.getElementById("perfilPlan");
+  // 🆕 Icono de tienda (solo cuentas Vendedor)
+  const iconoWrap = document.getElementById("perfilIconoWrap");
+  const iconoPreview = document.getElementById("perfilIconoPreview");
+  const iconoPlaceholder = document.getElementById("perfilIconoPlaceholder");
   const mensaje = document.getElementById("perfilMensaje");
   const btnGuardar = document.getElementById("perfilGuardarBtn");
   const btnBorrar = document.getElementById("perfilBorrarCuentaBtn");
@@ -1833,6 +1872,18 @@ if (welcomeContainer) {
         planWrap.style.display = "block";
       } else {
         planWrap.style.display = "none";
+      }
+      // 🆕 Icono de tienda: solo se muestra para cuentas Vendedor;
+      // se precarga si ya tiene uno guardado.
+      const esVendedor = perfil.tipo && perfil.tipo.toLowerCase() === "vendedor";
+      if (iconoWrap) iconoWrap.style.display = esVendedor ? "flex" : "none";
+      if (esVendedor && perfil.iconoUrl) {
+        iconoPreview.src = perfil.iconoUrl;
+        iconoPreview.style.display = "block";
+        iconoPlaceholder.style.display = "none";
+      } else {
+        iconoPreview.style.display = "none";
+        iconoPlaceholder.style.display = "block";
       }
       const interesesGuardados = Array.isArray(perfil.intereses) ? perfil.intereses : [];
       Object.entries(checksInteres).forEach(([categoria, checkbox]) => {
