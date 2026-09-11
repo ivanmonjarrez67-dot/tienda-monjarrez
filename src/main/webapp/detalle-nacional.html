@@ -74,25 +74,34 @@
   }
   .producto-layout {
     display: grid;
-    grid-template-columns: 90px 1fr 1fr;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "image"
+      "thumbs"
+      "info"
+      "extra";
     gap: 20px;
   }
-  @media (max-width: 820px) {
+  @media (min-width: 821px) {
     .producto-layout {
-      grid-template-columns: 1fr;
+      grid-template-columns: 90px 1fr 1fr;
+      grid-template-areas:
+        "thumbs image info"
+        "thumbs extra info";
+      align-items: start;
     }
   }
 
   /* ---------- Galería ---------- */
   .miniaturas {
+    grid-area: thumbs;
     display: flex;
     flex-direction: row;
     gap: 8px;
     overflow-x: auto;
-    order: 2;
   }
   @media (min-width: 821px) {
-    .miniaturas { flex-direction: column; overflow-x: visible; order: 0; }
+    .miniaturas { flex-direction: column; overflow-x: visible; }
   }
   .miniatura {
     width: 64px;
@@ -109,7 +118,7 @@
   .miniatura.activa { border-color: var(--rojo); }
 
   .imagen-principal {
-    order: 1;
+    grid-area: image;
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -127,8 +136,16 @@
   }
 
   /* ---------- Panel de info ---------- */
-  .panel-info { order: 3; }
-  @media (min-width: 821px) { .panel-info { order: 2; } }
+  /* 🆕 El panel se divide en dos bloques: ".panel-info" (lo esencial:
+     nombre, descripción, precio, compartir) y ".panel-info-secundaria"
+     (ubicación, procesos de compra, envío). En computadora, el segundo
+     bloque se acomoda DEBAJO de la imagen grande (ese espacio quedaba
+     vacío porque la imagen es cuadrada y mucho más corta que toda la
+     columna de información de la derecha). En celular ambos bloques
+     simplemente quedan uno debajo del otro, en el mismo orden de
+     siempre — no cambia nada ahí. */
+  .panel-info { grid-area: info; }
+  .panel-info-secundaria { grid-area: extra; }
 
   .badge-nacional {
     display: inline-flex;
@@ -402,7 +419,9 @@
             Compartir
           </button>
         </p>
+      </div>
 
+      <div class="panel-info-secundaria">
         <h3 class="seccion-titulo">Ubicación</h3>
         <p id="ubicacionProducto"></p>
 
