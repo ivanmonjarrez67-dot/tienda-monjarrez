@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tienda Monjarrez — Perfil del emprendedor</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+  integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer"
+/>
+<style>
+  :root {
+    --bg: #fffdf9;
+    --bg-card: #fafafa;
+    --border: #ececec;
+    --rojo: #a13341;
+    --verde: #25d366;
+    --verde-hover: #1ebe57;
+    --gris: #5a5a5a;
+    --text: #1a1a1a;
+    --text-dim: #777;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Poppins", sans-serif;
+    min-height: 100vh;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 10;
+  }
+  .logo { font-size: 1.3rem; font-weight: 700; color: var(--text); }
+  .logo .rojo { color: var(--rojo); }
+  .volver {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.15s ease;
+  }
+  .volver:hover { color: var(--text); }
+
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 28px 20px 60px;
+  }
+
+  /* ---------- Tarjeta de encabezado del vendedor ---------- */
+  .vendedor-hero {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 24px;
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    flex-wrap: wrap;
+  }
+  .vendedor-avatar {
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    background: var(--rojo);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.9rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    overflow: hidden;
+    border: 3px solid rgba(161, 51, 65, 0.15);
+  }
+  .vendedor-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .vendedor-hero-info { flex: 1; min-width: 220px; }
+  .vendedor-nombre {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0 0 8px;
+  }
+  .badge-emprendedor {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(161, 51, 65, 0.08);
+    color: var(--rojo);
+    border: 1px solid rgba(161, 51, 65, 0.35);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding: 5px 11px;
+    border-radius: 999px;
+  }
+  .vendedor-ubicacion {
+    margin: 10px 0 0;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .vendedor-ubicacion i { color: var(--rojo); }
+
+  /* Estadísticas al estilo Temu: número grande + etiqueta debajo */
+  .vendedor-stats {
+    display: flex;
+    gap: 28px;
+    padding-left: 22px;
+    border-left: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  @media (max-width: 640px) {
+    .vendedor-stats { border-left: none; padding-left: 0; padding-top: 16px; border-top: 1px solid var(--border); width: 100%; }
+  }
+  .vendedor-stat { text-align: center; min-width: 70px; }
+  .vendedor-stat-num { font-size: 1.15rem; font-weight: 800; color: var(--text); }
+  .vendedor-stat-label { font-size: 0.7rem; color: var(--text-dim); }
+
+  /* ---------- Sección de productos ---------- */
+  .vendedor-productos {
+    margin-top: 32px;
+  }
+  .vendedor-productos h2 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 0 0 16px;
+    border-left: 3px solid var(--rojo);
+    padding-left: 10px;
+  }
+  .productos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 14px;
+  }
+  .rel-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    text-decoration: none;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .rel-card:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+  .rel-card-img {
+    aspect-ratio: 1 / 1;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .rel-card-img img { width: 100%; height: 100%; object-fit: contain; }
+  .rel-card-body { padding: 10px 12px 12px; flex: 1; display: flex; flex-direction: column; }
+  .rel-card-nombre {
+    font-size: 0.8rem;
+    line-height: 1.35;
+    margin: 0 0 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex: 1;
+  }
+  .rel-card-precio { font-size: 0.95rem; font-weight: 700; color: var(--text); margin: 0; }
+  .rel-card-precio-anterior {
+    text-decoration: line-through;
+    color: #999;
+    font-size: 0.72rem;
+    margin-left: 5px;
+    font-weight: 500;
+  }
+
+  .estado-carga, .estado-error {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--text-dim);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Tienda <span class="rojo">Monjarrez</span></div>
+  <a class="volver" href="/"><i class="fa-solid fa-arrow-left"></i> Volver a la tienda</a>
+</header>
+
+<main>
+  <div id="estadoCarga" class="estado-carga">Cargando perfil del emprendedor…</div>
+
+  <div id="contenidoVendedor" style="display:none;">
+    <div class="vendedor-hero">
+      <div id="vendedorAvatar" class="vendedor-avatar"></div>
+      <div class="vendedor-hero-info">
+        <h1 class="vendedor-nombre" id="vendedorNombre"></h1>
+        <span class="badge-emprendedor"><i class="fa-solid fa-seedling"></i> Emprendedor Nacional</span>
+        <p class="vendedor-ubicacion" id="vendedorUbicacion" style="display:none;">
+          <i class="fa-solid fa-location-dot"></i> <span id="vendedorUbicacionTexto"></span>
+        </p>
+      </div>
+      <div class="vendedor-stats">
+        <div class="vendedor-stat">
+          <div class="vendedor-stat-num" id="statArticulos">0</div>
+          <div class="vendedor-stat-label">Artículos</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vendedor-productos">
+      <h2 id="tituloProductos">Productos de este emprendimiento</h2>
+      <div class="productos-grid" id="productosGrid"></div>
+    </div>
+  </div>
+
+  <div id="estadoError" class="estado-error" style="display:none;">
+    No se pudo cargar este vendedor. <a href="/" style="color:var(--rojo);">Volver al catálogo</a>
+  </div>
+</main>
+
+<script>
+(function () {
+  const params = new URLSearchParams(window.location.search);
+  const usuarioId = params.get("usuario_id");
+  const empresaParam = (params.get("empresa") || "").trim();
+
+  const elCarga = document.getElementById("estadoCarga");
+  const elContenido = document.getElementById("contenidoVendedor");
+  const elError = document.getElementById("estadoError");
+
+  function esc(s) {
+    if (s === null || s === undefined) return "";
+    const div = document.createElement("div");
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  function fmtCrc(n) {
+    const num = Number(n);
+    if (isNaN(num)) return "";
+    return "₡" + num.toLocaleString("es-CR", { maximumFractionDigits: 0 });
+  }
+
+  function inicialesEmpresa(nombreEmpresa) {
+    const limpio = String(nombreEmpresa || "").trim();
+    if (!limpio) return "?";
+    const palabras = limpio.split(/\s+/).slice(0, 2);
+    return palabras.map((p) => p.charAt(0)).join("").toUpperCase();
+  }
+
+  // El valor con el que más se repite provincia/ciudad entre los
+  // productos del vendedor, para mostrar una ubicación representativa
+  // (un mismo vendedor puede tener productos en distintas zonas, así
+  // que se usa la más frecuente en vez de asumir que todas son iguales).
+  function valorMasFrecuente(lista) {
+    const conteo = new Map();
+    let mejor = "";
+    let mejorConteo = 0;
+    lista.forEach((v) => {
+      if (!v) return;
+      const n = (conteo.get(v) || 0) + 1;
+      conteo.set(v, n);
+      if (n > mejorConteo) {
+        mejorConteo = n;
+        mejor = v;
+      }
+    });
+    return mejor;
+  }
+
+  function construirTarjetaProducto(p) {
+    const precioNum = parseFloat(p.precio);
+    const precioAnteriorNum = parseFloat(p.precio_anterior);
+    let precioHtml = precioNum ? fmtCrc(precioNum) : "";
+    if (!isNaN(precioAnteriorNum) && !isNaN(precioNum) && precioAnteriorNum > precioNum) {
+      precioHtml += `<span class="rel-card-precio-anterior">${fmtCrc(precioAnteriorNum)}</span>`;
+    }
+    const a = document.createElement("a");
+    a.className = "rel-card";
+    a.href = `detalle-nacional.html?id=${encodeURIComponent(p.id)}`;
+    a.innerHTML = `
+      <div class="rel-card-img"><img src="${esc(p.imagen)}" alt="${esc(p.nombre)}" loading="lazy"></div>
+      <div class="rel-card-body">
+        <p class="rel-card-nombre">${esc(p.nombre)}</p>
+        <p class="rel-card-precio">${precioHtml}</p>
+      </div>
+    `;
+    return a;
+  }
+
+  function renderizar(productosDelVendedor, empresaMostrar) {
+    const primero = productosDelVendedor[0];
+
+    document.getElementById("vendedorNombre").textContent = empresaMostrar;
+
+    const avatarEl = document.getElementById("vendedorAvatar");
+    if (primero && primero.iconoVendedor) {
+      avatarEl.innerHTML = `<img src="${esc(primero.iconoVendedor)}" alt="">`;
+    } else {
+      avatarEl.textContent = inicialesEmpresa(empresaMostrar);
+    }
+
+    const provincias = productosDelVendedor.map((p) => p.provincia).filter(Boolean);
+    const ciudades = productosDelVendedor.map((p) => p.ciudad).filter(Boolean);
+    const provinciaTop = valorMasFrecuente(provincias);
+    const ciudadTop = valorMasFrecuente(ciudades);
+    if (provinciaTop || ciudadTop) {
+      document.getElementById("vendedorUbicacionTexto").textContent =
+        [ciudadTop, provinciaTop].filter(Boolean).join(", ");
+      document.getElementById("vendedorUbicacion").style.display = "flex";
+    }
+
+    document.getElementById("statArticulos").textContent = productosDelVendedor.length;
+    document.getElementById("tituloProductos").textContent =
+      `Productos de ${empresaMostrar}`;
+
+    const grid = document.getElementById("productosGrid");
+    grid.innerHTML = "";
+    productosDelVendedor.forEach((p) => grid.appendChild(construirTarjetaProducto(p)));
+
+    elCarga.style.display = "none";
+    elContenido.style.display = "block";
+  }
+
+  if (!usuarioId && !empresaParam) {
+    elCarga.style.display = "none";
+    elError.style.display = "block";
+    return;
+  }
+
+  fetch("/api/productos")
+    .then((res) => {
+      if (!res.ok) throw new Error("respuesta " + res.status);
+      return res.json();
+    })
+    .then((productos) => {
+      productos = productos || [];
+
+      // Prioridad: usuario_id (match exacto e inequívoco). Si no viene
+      // en la URL o el producto no trae ese campo en la API todavía,
+      // se recurre al nombre de empresa (sin distinguir mayúsculas ni
+      // espacios extra al inicio/fin) como respaldo.
+      let delVendedor = [];
+      if (usuarioId) {
+        delVendedor = productos.filter(
+          (p) => p.usuario_id !== undefined && p.usuario_id !== null && String(p.usuario_id) === String(usuarioId)
+        );
+      }
+      if (!delVendedor.length && empresaParam) {
+        const empresaNormalizada = empresaParam.toLowerCase();
+        delVendedor = productos.filter(
+          (p) => (p.empresa || "").trim().toLowerCase() === empresaNormalizada
+        );
+      }
+
+      if (!delVendedor.length) throw new Error("vendedor sin productos");
+
+      const empresaMostrar = empresaParam || delVendedor[0].empresa || "Emprendimiento";
+      renderizar(delVendedor, empresaMostrar);
+    })
+    .catch((err) => {
+      console.error("Error al cargar el perfil del vendedor:", err);
+      elCarga.style.display = "none";
+      elError.style.display = "block";
+    });
+})();
+</script>
+
+</body>
+</html>

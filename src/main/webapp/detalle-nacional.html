@@ -203,16 +203,63 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
   }
-  .vendedor-producto strong { color: #333; }
+
+  /* 🆕 "Vendido por" ahora es un botón/enlace con borde, en vez de
+     texto suelto. Lleva a perfil-vendedor.html?empresa=... (y, si el
+     producto trae usuario_id, también ?usuario_id=... para poder
+     agrupar por vendedor de forma exacta). Mismo look que los demás
+     contacto-btn del sitio pero en blanco/gris, para que combine con
+     el fondo suave estilo Temu sin competir con el verde de WhatsApp. */
+  .btn-vendedor-nacional {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    border: 1.5px solid #e2d9da;
+    border-radius: 999px;
+    padding: 5px 14px 5px 6px;
+    text-decoration: none;
+    color: var(--text);
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  }
+  .btn-vendedor-nacional:hover {
+    border-color: var(--rojo);
+    background: rgba(161, 51, 65, 0.05);
+    box-shadow: 0 2px 8px rgba(161, 51, 65, 0.12);
+  }
+  .btn-vendedor-nacional:active { transform: translateY(1px); }
 
   .icono-vendedor-producto {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     object-fit: cover;
     border: 1px solid #ddd;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--rojo);
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    overflow: hidden;
+  }
+  .icono-vendedor-producto img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .btn-vendedor-nacional .fa-chevron-right {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    margin-left: 2px;
   }
 
   .precio-nacional {
@@ -439,8 +486,11 @@
 
         <div class="vendedor-producto">
           Vendido por:
-          <img id="iconoVendedorProducto" class="icono-vendedor-producto" alt="" style="display:none;" />
-          <strong id="vendedorProducto"></strong>
+          <a id="btnVendedorNacional" class="btn-vendedor-nacional" href="#">
+            <span id="iconoVendedorProducto" class="icono-vendedor-producto"></span>
+            <strong id="vendedorProducto"></strong>
+            <i class="fa-solid fa-chevron-right"></i>
+          </a>
         </div>
 
         <div class="precio-nacional" id="precioProducto"></div>
@@ -729,16 +779,48 @@
       .catch(() => {});
   }
 
+  // 🆕 Iniciales del emprendimiento para el avatar de respaldo, igual
+  // que hace Temu cuando el vendedor no tiene foto de perfil (ej.
+  // "Kun leather product" -> "Kun"). Toma hasta 2 palabras del nombre.
+  function inicialesEmpresa(nombreEmpresa) {
+    const limpio = String(nombreEmpresa || "").trim();
+    if (!limpio) return "?";
+    const palabras = limpio.split(/\s+/).slice(0, 2);
+    return palabras.map((p) => p.charAt(0)).join("").toUpperCase();
+  }
+
+  function construirVendedor(producto) {
+    const empresa = producto.empresa || "Empresa no disponible";
+    document.getElementById("vendedorProducto").textContent = empresa;
+
+    const iconoWrap = document.getElementById("iconoVendedorProducto");
+    if (producto.iconoVendedor) {
+      iconoWrap.textContent = "";
+      const img = document.createElement("img");
+      img.src = producto.iconoVendedor;
+      img.alt = "";
+      iconoWrap.appendChild(img);
+    } else {
+      iconoWrap.textContent = inicialesEmpresa(empresa);
+    }
+
+    // Se prioriza usuario_id (más exacto) y se agrega también el
+    // nombre de empresa como respaldo/legibilidad en la URL, por si
+    // la API todavía no expone usuario_id en /api/productos.
+    const linkParams = new URLSearchParams();
+    if (producto.usuario_id !== undefined && producto.usuario_id !== null && producto.usuario_id !== "") {
+      linkParams.set("usuario_id", producto.usuario_id);
+    }
+    linkParams.set("empresa", empresa);
+    const btnVendedor = document.getElementById("btnVendedorNacional");
+    btnVendedor.href = `perfil-vendedor.html?${linkParams.toString()}`;
+    btnVendedor.target = "_blank";
+    btnVendedor.rel = "noopener";
+  }
+
   function renderizar(producto) {
     document.getElementById("tituloProducto").textContent = producto.nombre || "";
-    document.getElementById("vendedorProducto").textContent = producto.empresa || "Empresa no disponible";
-    const iconoVendedorImg = document.getElementById("iconoVendedorProducto");
-    if (producto.iconoVendedor) {
-      iconoVendedorImg.src = producto.iconoVendedor;
-      iconoVendedorImg.style.display = "inline-block";
-    } else {
-      iconoVendedorImg.style.display = "none";
-    }
+    construirVendedor(producto);
     document.getElementById("breadcrumb").textContent =
       "Tienda Monjarrez" + (producto.categoria ? " / " + producto.categoria : "");
 

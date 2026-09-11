@@ -66,6 +66,16 @@ public class ListaProductosServlet extends HttpServlet {
                 out.print("\"provincia\":\"" + JsonUtils.escapar(rs.getString("provincia")) + "\",");
                 out.print("\"ciudad\":\"" + JsonUtils.escapar(rs.getString("ciudad")) + "\",");
                 out.print("\"categoria\":\"" + JsonUtils.escapar(rs.getString("categoria")) + "\",");
+
+                // 🔧 FIX: p.usuario_id ya venía en el SELECT pero nunca se
+                // imprimía en el JSON, así que el frontend (detalle-nacional.html
+                // y perfil-vendedor.html) nunca podía agrupar/enlazar por
+                // usuario_id y siempre caía al respaldo por nombre de empresa.
+                // Se usa getInt (no getString) porque la columna es numérica,
+                // así que sale como número en el JSON (ej. "usuario_id":42),
+                // sin comillas.
+                out.print("\"usuario_id\":" + rs.getInt("usuario_id") + ",");
+
                 out.print("\"es_extranjero\":" + (rs.getObject("extranjero_id") != null) + ",");
 
                 double precioAnterior = rs.getDouble("precio_anterior");
