@@ -531,94 +531,6 @@ document.addEventListener("pointerup", (e) => {
 });
 
 
-// 🆕 Escape básico para texto que se inserta en HTML armado con
-// template strings (nombre de empresa, etc.). El resto de esta función
-// ya insertaba varios campos sin escapar (data-* incluidos); no se
-// tocan esos para no ampliar el alcance de este cambio, pero el badge
-// nuevo sí queda protegido porque el nombre de empresa es visible
-// directamente como texto (no solo dentro de un atributo).
-function escHtml(valor) {
-  return String(valor ?? "").replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  }[c]));
-}
-
-// 🆕 Iniciales del emprendimiento para el avatar del badge cuando el
-// vendedor no tiene ícono subido (mismo criterio que en
-// detalle-nacional.html y perfil-vendedor.html, para que el respaldo
-// se vea igual en todo el sitio).
-function inicialesEmpresaBadge(nombreEmpresa) {
-  const limpio = String(nombreEmpresa || "").trim();
-  if (!limpio) return "?";
-  return limpio.split(/\s+/).slice(0, 2).map((p) => p.charAt(0)).join("").toUpperCase();
-}
-
-// 🆕 Estilos del badge "Vendido por" con ícono, estilo Temu. Se
-// inyectan una sola vez (guardados por id) porque este archivo no
-// tiene acceso a styles.css y el badge necesita reglas propias que
-// antes no existían (el <span class="producto-badge"> viejo era solo
-// texto plano).
-(function inyectarEstilosBadgeVendedor() {
-  if (document.getElementById("estilos-badge-vendedor")) return;
-  const style = document.createElement("style");
-  style.id = "estilos-badge-vendedor";
-  style.textContent = `
-    .producto-badge-vendedor {
-      position: absolute;
-      bottom: 8px;
-      left: 8px;
-      z-index: 2;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      max-width: calc(100% - 16px);
-      background: rgba(255,255,255,0.95);
-      border: 1px solid #e2d9da;
-      border-radius: 999px;
-      padding: 3px 10px 3px 3px;
-      text-decoration: none;
-      color: #1a1a1a;
-      font-size: 0.7rem;
-      font-weight: 600;
-      line-height: 1.2;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-    }
-    .producto-badge-vendedor:hover {
-      border-color: #a13341;
-      background: #fff;
-      box-shadow: 0 2px 8px rgba(161, 51, 65, 0.18);
-    }
-    .producto-badge-avatar {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      flex-shrink: 0;
-      overflow: hidden;
-      background: #a13341;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.56rem;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-    .producto-badge-avatar img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    .producto-badge-nombre {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 130px;
-    }
-  `;
-  document.head.appendChild(style);
-})();
-
 function construirTarjetaProductoHTML(producto) {
   // 🆕 Precio visible directo en la tarjeta (antes solo vivía dentro de
   // data-precio, oculto hasta abrir "Ver detalles"). Se formatea con
@@ -641,44 +553,17 @@ function construirTarjetaProductoHTML(producto) {
   const precioHtml = precioFormateado
     ? `<p class="producto-precio">₡${precioFormateado} ${precioAnteriorHtml}</p>`
     : "";
-  // 🆕 El badge de empresa ahora es un botón con el logo del vendedor
-  // (o sus iniciales si no subió ícono) que lleva a su perfil
-  // (perfil-vendedor.html), igual que el botón "Vendido por" de
-  // detalle-nacional.html. Se prioriza usuario_id para el match exacto
-  // y se manda también "empresa" como respaldo/legibilidad.
-  let badgeHtml = "";
-  if (producto.empresa) {
-    const avatarHtml = producto.iconoVendedor
-      ? `<img src="${escHtml(producto.iconoVendedor)}" alt="">`
-      : escHtml(inicialesEmpresaBadge(producto.empresa));
-    const linkParams = new URLSearchParams();
-    if (producto.usuario_id !== undefined && producto.usuario_id !== null && producto.usuario_id !== "") {
-      linkParams.set("usuario_id", producto.usuario_id);
-    }
-    linkParams.set("empresa", producto.empresa);
-    badgeHtml = `<a class="producto-badge-vendedor" href="perfil-vendedor.html?${linkParams.toString()}" target="_blank" rel="noopener" title="Ver perfil de ${escHtml(producto.empresa)}">
-      <span class="producto-badge-avatar">${avatarHtml}</span>
-      <span class="producto-badge-nombre">${escHtml(producto.empresa)}</span>
-    </a>`;
-  }
 
-  let galeriaHtml = construirGaleriaHTML(
+  const galeriaHtml = construirGaleriaHTML(
     [producto.imagen, producto.imagen2, producto.imagen3],
     producto.nombre || "",
     "width:100%;height:auto;object-fit:contain;display:block;"
   );
 
-  // 🔧 El badge del nombre de empresa se inserta DENTRO del contenedor de
-  // la imagen (.producto-galeria, que ya es position:relative) en vez de
-  // quedar como hermano suelto de toda la tarjeta. Así "bottom" (ver
-  // styles.css) lo ancla a la esquina inferior de la FOTO, no al fondo de
-  // toda la tarjeta (que quedaría flotando sobre el precio/botón).
-  if (badgeHtml) {
-    galeriaHtml = galeriaHtml.replace(
-      /(<div class="producto-galeria"[^>]*>)/,
-      `$1${badgeHtml}`
-    );
-  }
+  // 🔧 Ya NO se muestra el nombre/ícono del vendedor sobre la imagen en
+  // el catálogo de la página principal. "Vendido por" queda únicamente
+  // dentro de "Ver detalles" (detalle-nacional.html), que es donde debe
+  // vivir esa información.
 
   return `
         ${galeriaHtml}
