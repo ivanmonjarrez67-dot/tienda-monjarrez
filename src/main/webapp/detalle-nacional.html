@@ -119,6 +119,7 @@
 
   .imagen-principal {
     grid-area: image;
+    position: relative;
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -383,9 +384,13 @@
     margin-left: 6px;
     font-weight: 600;
   }
+  /* 🎨 Igual que en la página principal: el anaranjado queda SOLO para
+     lo que es descuento/ahorro en colones (esta insignia y "Ahorra ₡X
+     extra"); el rojo vino de la marca (var(--rojo)) es para lo que es
+     urgencia (franja sobre la foto y "Solo quedan X" / "Último día"). */
   .producto-descuento-badge {
     display: inline-block;
-    background: var(--rojo);
+    background: linear-gradient(135deg, #ff8a3d, #e05e00);
     color: #fff;
     font-size: 0.42em;
     font-weight: bold;
@@ -394,6 +399,61 @@
     margin-left: 6px;
     vertical-align: middle;
   }
+
+  /* 🆕 Franja de urgencia sobre la foto principal, mayúscula sin
+     negrita (mismo criterio que en la página principal). */
+  .producto-franja-urgencia {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 2;
+    background: linear-gradient(135deg, #b33a3a, var(--rojo));
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.3px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  }
+
+  /* 🆕 "Solo quedan X" / "Casi agotados" / "Último día": rojo vino de
+     la marca, mayúscula sin negrita. */
+  .producto-quedan-badge {
+    margin: 8px 0 0;
+    color: var(--rojo);
+    text-transform: uppercase;
+    font-weight: 500;
+    font-size: 0.82rem;
+    line-height: 1.2;
+  }
+
+  /* 🆕 "Ahorra ₡X extra": anaranjado (habla de plata ahorrada, no de
+     urgencia), mayúscula sin negrita. */
+  .producto-ahorra-extra {
+    margin: 4px 0 0;
+    color: #e05e00;
+    text-transform: uppercase;
+    font-weight: 500;
+    font-size: 0.8rem;
+    line-height: 1.2;
+  }
+
+  .producto-contador {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin: 6px 0 0;
+    background: #fff3e6;
+    color: #d35400;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 4px;
+  }
+  .producto-contador i { color: #ff6600; font-size: 0.9em; }
+  .producto-contador-reloj { font-variant-numeric: tabular-nums; letter-spacing: 0.5px; }
 
   .estado-carga, .estado-error {
     text-align: center;
@@ -476,6 +536,7 @@
       <div class="miniaturas" id="miniaturas"></div>
       <div class="imagen-principal">
         <img id="imagenPrincipal" src="" alt="" />
+        <div id="franjaUrgenciaProducto"></div>
       </div>
       <div class="panel-info">
         <span class="badge-nacional"><i class="fa-solid fa-store"></i> Producto de Vendedor Nacional</span>
@@ -493,6 +554,7 @@
           </a>
         </div>
 
+        <div id="badgesUrgenciaProducto"></div>
         <div class="precio-nacional" id="precioProducto"></div>
         <div id="notaExtranjero"></div>
 
@@ -561,6 +623,94 @@
     return "₡" + num.toLocaleString("es-CR", { maximumFractionDigits: 0 });
   }
 
+  // 🆕 ================= Motor de urgencia (igual que en la página
+  // principal / script.js) ================= Se copia aquí tal cual
+  // porque esta página no carga script.js (vive aparte, cargando el
+  // producto por su propio fetch a /api/productos). Debe ser el MISMO
+  // cálculo — misma fórmula, mismas semillas — para que un producto
+  // muestre exactamente la misma franja/badge que ya vio en el
+  // catálogo al entrar a "Ver detalles".
+  function pseudoAleatorio(semilla) {
+    const x = Math.sin(semilla) * 10000;
+    return x - Math.floor(x);
+  }
+  const MS_DIA_URGENCIA = 24 * 60 * 60 * 1000;
+  function cicloUrgenciaProducto(idProducto) {
+    const id = parseInt(idProducto, 10) || 0;
+    const desfaseMs = Math.floor(pseudoAleatorio(id * 12.9898) * MS_DIA_URGENCIA);
+    const ahora = Date.now();
+    const numeroCiclo = Math.floor((ahora - desfaseMs) / MS_DIA_URGENCIA);
+    const finCiclo = numeroCiclo * MS_DIA_URGENCIA + desfaseMs + MS_DIA_URGENCIA;
+    return {
+      semillaCiclo: id * 100000 + numeroCiclo,
+      msRestantes: finCiclo - ahora,
+    };
+  }
+  const FRASES_URGENCIA = [
+    "🔥 Oferta de temporada",
+    "⚡ Oferta relámpago",
+    "🔥 Alta demanda",
+    "📈 Tendencia ahora",
+  ];
+  function calcularUrgenciaProducto(producto) {
+    const ciclo = cicloUrgenciaProducto(producto.id);
+    const r1 = pseudoAleatorio(ciclo.semillaCiclo + 1);
+    const r2 = pseudoAleatorio(ciclo.semillaCiclo + 2);
+    const r3 = pseudoAleatorio(ciclo.semillaCiclo + 3);
+    const r4 = pseudoAleatorio(ciclo.semillaCiclo + 4);
+    const r5 = pseudoAleatorio(ciclo.semillaCiclo + 5);
+
+    const precioBase = parseFloat(producto.precio);
+    let precioFalsoTachado = null;
+    let porcentajeFalso = null;
+    if (!isNaN(precioBase) && precioBase > 0) {
+      porcentajeFalso = Math.round(30 + r1 * 35);
+      precioFalsoTachado = Math.round(precioBase / (1 - porcentajeFalso / 100));
+    }
+
+    const mostrarFranja = r2 < 0.28;
+    const cantidadRestante = 2 + Math.floor(r3 * 13);
+    let frase;
+    if (r5 < 0.3) {
+      frase = "Último día";
+    } else if (cantidadRestante <= 3) {
+      frase = "Casi agotados";
+    } else {
+      frase = `Solo quedan ${cantidadRestante}`;
+    }
+    const fraseSecundaria = FRASES_URGENCIA[Math.floor(r4 * FRASES_URGENCIA.length)];
+
+    return {
+      precioFalsoTachado,
+      porcentajeFalso,
+      msRestantes: ciclo.msRestantes,
+      mostrarFranja,
+      frase,
+      fraseSecundaria,
+    };
+  }
+  function formatearCuentaRegresiva(ms) {
+    if (ms < 0) ms = 0;
+    const totalSeg = Math.floor(ms / 1000);
+    const h = Math.floor(totalSeg / 3600);
+    const m = Math.floor((totalSeg % 3600) / 60);
+    const s = totalSeg % 60;
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  }
+  // 🆕 Reloj del contador "Termina en HH:MM:SS" (esta página no carga
+  // script.js, así que necesita su propio intervalo, igual que el que
+  // ya corre en el catálogo).
+  setInterval(() => {
+    document.querySelectorAll(".producto-contador[data-fin-ms]").forEach((el) => {
+      const finMs = parseInt(el.dataset.finMs, 10);
+      if (isNaN(finMs)) return;
+      const reloj = el.querySelector(".producto-contador-reloj");
+      if (reloj) reloj.textContent = formatearCuentaRegresiva(finMs - Date.now());
+    });
+  }, 1000);
+  // 🆕 ================= Fin del motor de urgencia =================
+
   function construirGaleria(producto) {
     const imagenes = [producto.imagen, producto.imagen2, producto.imagen3].filter(Boolean);
     const miniaturasWrap = document.getElementById("miniaturas");
@@ -590,13 +740,42 @@
   function construirPrecio(producto) {
     const precioNum = parseFloat(producto.precio);
     const precioAnteriorNum = parseFloat(producto.precio_anterior);
+    const tieneDescuentoReal = !isNaN(precioAnteriorNum) && !isNaN(precioNum) && precioAnteriorNum > precioNum;
+
+    // 🆕 Mismo motor de urgencia que el catálogo: franja sobre la foto,
+    // "Solo quedan X" / "Último día" y "Ahorra ₡X extra".
+    const urgencia = calcularUrgenciaProducto(producto);
+
     let html = precioNum ? fmtCrc(precioNum) : "";
-    if (!isNaN(precioAnteriorNum) && !isNaN(precioNum) && precioAnteriorNum > precioNum) {
+    let contadorHtml = "";
+    let montoAhorro = 0;
+    if (tieneDescuentoReal) {
       const porcentaje = Math.round((1 - precioNum / precioAnteriorNum) * 100);
       html += ` <span class="producto-precio-anterior">${fmtCrc(precioAnteriorNum)}</span>` +
         ` <span class="producto-descuento-badge">-${porcentaje}%</span>`;
+      montoAhorro = precioAnteriorNum - precioNum;
+    } else if (urgencia.precioFalsoTachado) {
+      html += ` <span class="producto-precio-anterior">${fmtCrc(urgencia.precioFalsoTachado)}</span>` +
+        ` <span class="producto-descuento-badge">-${urgencia.porcentajeFalso}%</span>`;
+      contadorHtml = `<div class="producto-contador" data-fin-ms="${Date.now() + urgencia.msRestantes}">
+          <i class="fa-solid fa-bolt"></i> Termina en <span class="producto-contador-reloj">${formatearCuentaRegresiva(urgencia.msRestantes)}</span>
+        </div>`;
+      montoAhorro = urgencia.precioFalsoTachado - precioNum;
     }
-    document.getElementById("precioProducto").innerHTML = html;
+    document.getElementById("precioProducto").innerHTML = html + contadorHtml;
+
+    const franjaHtml = urgencia.mostrarFranja
+      ? `<div class="producto-franja-urgencia">${urgencia.fraseSecundaria}</div>`
+      : "";
+    document.getElementById("franjaUrgenciaProducto").innerHTML = franjaHtml;
+
+    const quedanBadgeHtml = urgencia.mostrarFranja
+      ? `<div class="producto-quedan-badge">${urgencia.frase}</div>`
+      : "";
+    const ahorraExtraHtml = montoAhorro > 0
+      ? `<div class="producto-ahorra-extra">Ahorra ${fmtCrc(Math.round(montoAhorro))} extra</div>`
+      : "";
+    document.getElementById("badgesUrgenciaProducto").innerHTML = quedanBadgeHtml + ahorraExtraHtml;
 
     if (producto.es_extranjero) {
       document.getElementById("notaExtranjero").innerHTML = `

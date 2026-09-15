@@ -593,7 +593,19 @@ function calcularUrgenciaProducto(producto) {
   // ~28% de los productos muestran la franja de urgencia en cada ciclo.
   const mostrarFranja = r2 < 0.28;
   const cantidadRestante = 2 + Math.floor(r3 * 13); // entre 2 y 14
-  const frase = cantidadRestante <= 3 ? "Casi agotados" : `Solo quedan ${cantidadRestante}`;
+
+  // 🆕 "Último día" entra a la misma rotación que "Solo quedan X" / "Casi
+  // agotados" (r5 decide cuál de las tres le toca a este ciclo).
+  const r5 = pseudoAleatorio(ciclo.semillaCiclo + 5);
+  let frase;
+  if (r5 < 0.3) {
+    frase = "Último día";
+  } else if (cantidadRestante <= 3) {
+    frase = "Casi agotados";
+  } else {
+    frase = `Solo quedan ${cantidadRestante}`;
+  }
+
   const fraseSecundaria = FRASES_URGENCIA[Math.floor(r4 * FRASES_URGENCIA.length)];
 
   return {
@@ -641,16 +653,29 @@ function construirTarjetaProductoHTML(producto) {
 
   let precioAnteriorHtml = "";
   let contadorHtml = "";
+  // 🆕 Monto real que se "ahorra" (rebaja real o, si no hay, la de
+  // mentira del motor de urgencia) para pintar "Ahorra ₡X extra".
+  let montoAhorro = 0;
   if (tieneDescuentoReal) {
     precioAnteriorHtml = `<span class="producto-precio-anterior">₡${precioAnteriorNumerico.toLocaleString("es-CR", { maximumFractionDigits: 0 })}</span>
        <span class="producto-descuento-badge">-${Math.round((1 - precioNumerico / precioAnteriorNumerico) * 100)}%</span>`;
+    montoAhorro = precioAnteriorNumerico - precioNumerico;
   } else if (urgencia.precioFalsoTachado) {
     precioAnteriorHtml = `<span class="producto-precio-anterior">₡${urgencia.precioFalsoTachado.toLocaleString("es-CR", { maximumFractionDigits: 0 })}</span>
        <span class="producto-descuento-badge">-${urgencia.porcentajeFalso}%</span>`;
     contadorHtml = `<div class="producto-contador" data-fin-ms="${Date.now() + urgencia.msRestantes}">
         <i class="fa-solid fa-bolt"></i> Termina en <span class="producto-contador-reloj">${formatearCuentaRegresiva(urgencia.msRestantes)}</span>
       </div>`;
+    montoAhorro = urgencia.precioFalsoTachado - precioNumerico;
   }
+
+  // 🆕 "Ahorra ₡X extra": acompaña a cualquier descuento (real o del
+  // motor de urgencia). Usa el color naranja de la marca porque, a
+  // diferencia de la franja/badge de arriba (que hablan de urgencia),
+  // esta frase habla puntualmente de un ahorro en colones.
+  const ahorraExtraHtml = montoAhorro > 0
+    ? `<div class="producto-ahorra-extra">Ahorra ₡${Math.round(montoAhorro).toLocaleString("es-CR", { maximumFractionDigits: 0 })} extra</div>`
+    : "";
 
   const precioHtml = precioFormateado
     ? `<p class="producto-precio">₡${precioFormateado} ${precioAnteriorHtml}</p>${contadorHtml}`
@@ -681,6 +706,7 @@ function construirTarjetaProductoHTML(producto) {
         </div>
         <h3>${producto.nombre || ''}</h3>
         ${quedanBadgeHtml}
+        ${ahorraExtraHtml}
         ${precioHtml}
         <button class="more-info-btn"
           data-id="${producto.id ?? ''}"

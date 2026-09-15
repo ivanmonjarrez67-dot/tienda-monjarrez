@@ -425,7 +425,13 @@
         display: inline;
       }
 
-      /* 🆕 Precio anterior tachado + insignia de descuento (rebajas) */
+      /* 🆕 Precio anterior tachado + insignia de descuento (rebajas).
+         🎨 Paleta propia de la tienda (ya no la naranja/roja genérica
+         de Temu): el anaranjado queda reservado SOLO para lo que es
+         descuento/ahorro en colones (esta insignia y "Ahorra ₡X
+         extra" más abajo); el rojo vino de la marca es para todo lo
+         que es urgencia (franja sobre la foto y "Solo quedan X" /
+         "Último día"). */
       .producto-precio-anterior {
         text-decoration: line-through;
         color: #999;
@@ -434,7 +440,7 @@
       }
       .producto-descuento-badge {
         display: inline-block;
-        background: darkred;
+        background: linear-gradient(135deg, #ff8a3d, #e05e00);
         color: #fff;
         font-size: 0.72em;
         font-weight: bold;
@@ -442,6 +448,19 @@
         border-radius: 4px;
         margin-left: 4px;
         vertical-align: middle;
+      }
+
+      /* 🆕 "Ahorra ₡X extra": mismo anaranjado que la insignia de
+         descuento (habla de plata ahorrada, no de urgencia), en
+         mayúscula pero SIN negrita — letra normal, para que no se
+         vea "gritada" como en Temu. */
+      .producto-ahorra-extra {
+        margin: 2px 14px 0;
+        color: #e05e00;
+        text-transform: uppercase;
+        font-weight: 500;
+        font-size: 0.72rem;
+        line-height: 1.2;
       }
 
       /* 🆕 Tarjeta completa clicable en el catálogo (estilo Temu): el
@@ -465,30 +484,35 @@
       }
 
       /* 🆕 Franja de urgencia sobre la foto ("OFERTA DE TEMPORADA",
-         "OFERTA RELÁMPAGO"...), estilo Temu. */
+         "ALTA DEMANDA"...): rojo vino de la marca (el mismo degradado
+         que ya usa el botón flotante del menú), mayúscula pero SIN
+         negrita para que se lea distinto a Temu. */
       .producto-franja-urgencia {
         position: absolute;
         top: 6px;
         left: 6px;
         z-index: 2;
-        background: linear-gradient(90deg, #ff6b00, #ff9500);
+        background: linear-gradient(135deg, #b33a3a, #7a1414);
         color: #fff;
         font-size: 0.62rem;
-        font-weight: bold;
+        font-weight: 500;
+        text-transform: uppercase;
         padding: 2px 8px;
         border-radius: 4px;
-        letter-spacing: 0.2px;
+        letter-spacing: 0.3px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
       }
 
-      /* 🆕 "Solo quedan X" / "Casi agotados": mismos márgenes laterales
-         que .producto h3 / .producto-precio (14px) para que quede
-         alineado con el resto del texto de la tarjeta, no pegado al
-         borde. */
+      /* 🆕 "Solo quedan X" / "Casi agotados" / "Último día": mismos
+         márgenes laterales que .producto h3 / .producto-precio (14px)
+         para que quede alineado con el resto del texto de la tarjeta,
+         no pegado al borde. Rojo vino (urgencia, no descuento) en
+         mayúscula sin negrita. */
       .producto-quedan-badge {
         margin: 2px 14px 0;
-        color: #ff6600;
-        font-weight: 700;
+        color: #7a1414;
+        text-transform: uppercase;
+        font-weight: 500;
         font-size: 0.74rem;
         line-height: 1.2;
       }
@@ -519,7 +543,8 @@
          .producto-precio en ese breakpoint (ver styles.css). */
       @media (max-width: 500px) {
         .producto-quedan-badge,
-        .producto-contador {
+        .producto-contador,
+        .producto-ahorra-extra {
           margin-left: 8px;
           margin-right: 8px;
         }
