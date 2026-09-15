@@ -531,6 +531,94 @@ document.addEventListener("pointerup", (e) => {
 });
 
 
+// 🆕 ===================== Motor de urgencia estilo Temu =====================
+// Todo lo de aquí abajo es "aleatorio" pero DETERMINÍSTICO: no usa
+// Math.random(), sino una semilla numérica (producto + ciclo de tiempo).
+// Con la misma semilla siempre da el mismo resultado, así que dos personas
+// viendo la tienda en el mismo momento ven exactamente lo mismo (no cambia
+// solo con recargar la página), y cada producto tiene su propio horario de
+// cambio (no todos vencen a la misma hora, como en Temu).
+function pseudoAleatorio(semilla) {
+  const x = Math.sin(semilla) * 10000;
+  return x - Math.floor(x);
+}
+
+const MS_DIA_URGENCIA = 24 * 60 * 60 * 1000;
+
+// Ciclo de 24h propio de cada producto: el desfase de inicio (0 a 24h) sale
+// del ID del producto, así el "vencimiento" de cada uno cae en una hora
+// distinta del día.
+function cicloUrgenciaProducto(idProducto) {
+  const id = parseInt(idProducto, 10) || 0;
+  const desfaseMs = Math.floor(pseudoAleatorio(id * 12.9898) * MS_DIA_URGENCIA);
+  const ahora = Date.now();
+  const numeroCiclo = Math.floor((ahora - desfaseMs) / MS_DIA_URGENCIA);
+  const finCiclo = numeroCiclo * MS_DIA_URGENCIA + desfaseMs + MS_DIA_URGENCIA;
+  return {
+    // Cambia solo cuando este producto entra a un nuevo ciclo de 24h.
+    semillaCiclo: id * 100000 + numeroCiclo,
+    msRestantes: finCiclo - ahora,
+  };
+}
+
+const FRASES_URGENCIA = [
+  "🔥 Oferta de temporada",
+  "⚡ Oferta relámpago",
+  "🔥 Alta demanda",
+  "📈 Tendencia ahora",
+];
+
+// Calcula, para UN producto y su ciclo actual: el precio "tachado" falso +
+// % de descuento (para jugar con el precio sin nunca bajar del precio base
+// real), si le toca mostrar la franja de urgencia este ciclo, la frase
+// ("Solo quedan X" / "Casi agotados") y cuánto falta para que cambie.
+function calcularUrgenciaProducto(producto) {
+  const ciclo = cicloUrgenciaProducto(producto.id);
+  const r1 = pseudoAleatorio(ciclo.semillaCiclo + 1);
+  const r2 = pseudoAleatorio(ciclo.semillaCiclo + 2);
+  const r3 = pseudoAleatorio(ciclo.semillaCiclo + 3);
+  const r4 = pseudoAleatorio(ciclo.semillaCiclo + 4);
+
+  const precioBase = parseFloat(producto.precio);
+  let precioFalsoTachado = null;
+  let porcentajeFalso = null;
+  if (!isNaN(precioBase) && precioBase > 0) {
+    // % "de mentira" entre 30% y 65% — SIEMPRE se calcula inflando el
+    // precio tachado a partir del precio base real, nunca al revés, así
+    // el precio que paga/ve el cliente jamás baja del precio establecido.
+    porcentajeFalso = Math.round(30 + r1 * 35);
+    precioFalsoTachado = Math.round(precioBase / (1 - porcentajeFalso / 100));
+  }
+
+  // ~28% de los productos muestran la franja de urgencia en cada ciclo.
+  const mostrarFranja = r2 < 0.28;
+  const cantidadRestante = 2 + Math.floor(r3 * 13); // entre 2 y 14
+  const frase = cantidadRestante <= 3 ? "Casi agotados" : `Solo quedan ${cantidadRestante}`;
+  const fraseSecundaria = FRASES_URGENCIA[Math.floor(r4 * FRASES_URGENCIA.length)];
+
+  return {
+    precioFalsoTachado,
+    porcentajeFalso,
+    msRestantes: ciclo.msRestantes,
+    mostrarFranja,
+    frase,
+    fraseSecundaria,
+  };
+}
+
+// Formatea milisegundos restantes como HH:MM:SS (las "cajitas" de reloj
+// que usa Temu en sus ofertas relámpago).
+function formatearCuentaRegresiva(ms) {
+  if (ms < 0) ms = 0;
+  const totalSeg = Math.floor(ms / 1000);
+  const h = Math.floor(totalSeg / 3600);
+  const m = Math.floor((totalSeg % 3600) / 60);
+  const s = totalSeg % 60;
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+// 🆕 ===================== Fin del motor de urgencia =====================
+
 function construirTarjetaProductoHTML(producto) {
   // 🆕 Precio visible directo en la tarjeta (antes solo vivía dentro de
   // data-precio, oculto hasta abrir "Ver detalles"). Se formatea con
@@ -540,18 +628,39 @@ function construirTarjetaProductoHTML(producto) {
     ? precioNumerico.toLocaleString("es-CR", { maximumFractionDigits: 0 })
     : null;
 
-  // 🆕 Precio anterior tachado (rebaja): viene de la tabla Descuentos vía
-  // el JSON del backend (producto.precio_anterior). Solo se muestra si es
-  // mayor al precio real.
+  // 🆕 Precio anterior tachado (rebaja REAL): viene de la tabla Descuentos
+  // vía el JSON del backend (producto.precio_anterior), cargada a mano por
+  // el vendedor. Solo se muestra si es mayor al precio real.
   const precioAnteriorNumerico = parseFloat(producto.precio_anterior);
-  const tieneDescuento = !isNaN(precioAnteriorNumerico) && precioAnteriorNumerico > precioNumerico;
-  const precioAnteriorHtml = tieneDescuento
-    ? `<span class="producto-precio-anterior">₡${precioAnteriorNumerico.toLocaleString("es-CR", { maximumFractionDigits: 0 })}</span>
-       <span class="producto-descuento-badge">-${Math.round((1 - precioNumerico / precioAnteriorNumerico) * 100)}%</span>`
-    : "";
+  const tieneDescuentoReal = !isNaN(precioAnteriorNumerico) && precioAnteriorNumerico > precioNumerico;
+
+  // 🆕 Motor de urgencia: calcula el precio tachado FALSO (solo si el
+  // producto no tiene ya una rebaja real, para no pisarla) y si le toca
+  // franja de urgencia este ciclo (independiente de si hay o no rebaja).
+  const urgencia = calcularUrgenciaProducto(producto);
+
+  let precioAnteriorHtml = "";
+  let contadorHtml = "";
+  if (tieneDescuentoReal) {
+    precioAnteriorHtml = `<span class="producto-precio-anterior">₡${precioAnteriorNumerico.toLocaleString("es-CR", { maximumFractionDigits: 0 })}</span>
+       <span class="producto-descuento-badge">-${Math.round((1 - precioNumerico / precioAnteriorNumerico) * 100)}%</span>`;
+  } else if (urgencia.precioFalsoTachado) {
+    precioAnteriorHtml = `<span class="producto-precio-anterior">₡${urgencia.precioFalsoTachado.toLocaleString("es-CR", { maximumFractionDigits: 0 })}</span>
+       <span class="producto-descuento-badge">-${urgencia.porcentajeFalso}%</span>`;
+    contadorHtml = `<div class="producto-contador" data-fin-ms="${Date.now() + urgencia.msRestantes}">
+        <i class="fa-solid fa-bolt"></i> Termina en <span class="producto-contador-reloj">${formatearCuentaRegresiva(urgencia.msRestantes)}</span>
+      </div>`;
+  }
 
   const precioHtml = precioFormateado
-    ? `<p class="producto-precio">₡${precioFormateado} ${precioAnteriorHtml}</p>`
+    ? `<p class="producto-precio">₡${precioFormateado} ${precioAnteriorHtml}</p>${contadorHtml}`
+    : "";
+
+  const ribbonUrgenciaHtml = urgencia.mostrarFranja
+    ? `<div class="producto-franja-urgencia">${urgencia.fraseSecundaria}</div>`
+    : "";
+  const quedanBadgeHtml = urgencia.mostrarFranja
+    ? `<div class="producto-quedan-badge">${urgencia.frase}</div>`
     : "";
 
   const galeriaHtml = construirGaleriaHTML(
@@ -566,8 +675,12 @@ function construirTarjetaProductoHTML(producto) {
   // vivir esa información.
 
   return `
-        ${galeriaHtml}
+        <div class="producto-media-wrap">
+          ${ribbonUrgenciaHtml}
+          ${galeriaHtml}
+        </div>
         <h3>${producto.nombre || ''}</h3>
+        ${quedanBadgeHtml}
         ${precioHtml}
         <button class="more-info-btn"
           data-id="${producto.id ?? ''}"
@@ -598,6 +711,31 @@ function construirTarjetaProductoHTML(producto) {
 // esta lógica.
 window.construirTarjetaProductoHTML = construirTarjetaProductoHTML;
 window.pintarMosaico = pintarMosaico;
+
+// 🆕 Tarjeta completa clicable en el catálogo de compradores (estilo
+// Temu): tocar cualquier parte de la tarjeta abre el detalle del
+// producto, igual que antes hacía el botón "Ver detalles" (que ahora
+// queda oculto vía CSS, solo como "guardián" de los data-* que ya usa
+// el resto del código — no se tocó su lógica de apertura).
+document.addEventListener("click", function (e) {
+  const card = e.target.closest("#productGrid .producto");
+  if (!card) return;
+  if (e.target.closest(".galeria-dot")) return; // no interferir con el carrusel de fotos
+  if (e.target.closest(".more-info-btn")) return; // ese clic ya lo maneja su propio listener
+  const btn = card.querySelector(".more-info-btn");
+  if (btn) btn.click();
+});
+
+// 🆕 Reloj de las ofertas (estilo Temu): actualiza el texto de cada
+// contador visible una vez por segundo, sin reconstruir la tarjeta.
+setInterval(() => {
+  document.querySelectorAll(".producto-contador[data-fin-ms]").forEach((el) => {
+    const finMs = parseInt(el.dataset.finMs, 10);
+    if (isNaN(finMs)) return;
+    const reloj = el.querySelector(".producto-contador-reloj");
+    if (reloj) reloj.textContent = formatearCuentaRegresiva(finMs - Date.now());
+  });
+}, 1000);
 
 function mostrarEsqueletoCarga(grid, cantidad = 8) {
   if (!grid) return;
