@@ -631,6 +631,34 @@ function formatearCuentaRegresiva(ms) {
 }
 // 🆕 ===================== Fin del motor de urgencia =====================
 
+// 🆕 ============= "ARTÍCULO MÁS VENDIDO #N" (top 20 del día) =============
+// Cada día (mismo criterio de "día" que el motor de urgencia: bloques
+// de 24h desde el epoch) se eligen 20 productos distintos del catálogo
+// COMPLETO y se les reparte, sin repetir, un puesto del #1 al #20. Es
+// determinístico (misma semilla = mismo resultado para todos), así que
+// no cambia solo con recargar la página, y sí cambia al día siguiente.
+// mapaBestsellerHoy se llena una sola vez con el catálogo COMPLETO
+// (nunca con un subconjunto filtrado/buscado) para que el puesto de un
+// producto no cambie según qué filtro esté viendo el comprador.
+let mapaBestsellerHoy = new Map();
+
+function puntajeBestsellerProducto(idProducto, dia) {
+  const id = parseInt(idProducto, 10) || 0;
+  return pseudoAleatorio(id * 7.9218 + dia * 31.415);
+}
+
+function calcularBestsellersDelDia(productos) {
+  const dia = Math.floor(Date.now() / MS_DIA_URGENCIA);
+  const conPuntaje = (productos || [])
+    .filter((p) => p && p.id !== undefined && p.id !== null && p.id !== "")
+    .map((p) => ({ id: String(p.id), puntaje: puntajeBestsellerProducto(p.id, dia) }));
+  conPuntaje.sort((a, b) => b.puntaje - a.puntaje);
+  const mapa = new Map();
+  conPuntaje.slice(0, 20).forEach((item, idx) => mapa.set(item.id, idx + 1));
+  return mapa;
+}
+// 🆕 ========= Fin de "ARTÍCULO MÁS VENDIDO #N" =========
+
 function construirTarjetaProductoHTML(producto) {
   // 🆕 Precio visible directo en la tarjeta (antes solo vivía dentro de
   // data-precio, oculto hasta abrir "Ver detalles"). Se formatea con
@@ -684,9 +712,18 @@ function construirTarjetaProductoHTML(producto) {
   const ribbonUrgenciaHtml = urgencia.mostrarFranja
     ? `<div class="producto-franja-urgencia">${urgencia.fraseSecundaria}</div>`
     : "";
-  const quedanBadgeHtml = urgencia.mostrarFranja
-    ? `<div class="producto-quedan-badge">${urgencia.frase}</div>`
-    : "";
+
+  // 🆕 "Artículo más vendido #N": solo para los 20 productos que le
+  // tocaron hoy (ver mapaBestsellerHoy más arriba). Va en el mismo
+  // lugar donde iría "Solo quedan X" / "Último día", debajo del
+  // nombre, y le gana ese lugar: si el producto es uno de los 20 del
+  // día se muestra ESTO en vez de "Solo quedan X".
+  const puestoBestseller = mapaBestsellerHoy.get(String(producto.id ?? ""));
+  const quedanBadgeHtml = puestoBestseller
+    ? `<div class="producto-bestseller-badge">Artículo más vendido #${puestoBestseller}</div>`
+    : urgencia.mostrarFranja
+      ? `<div class="producto-quedan-badge">${urgencia.frase}</div>`
+      : "";
 
   const galeriaHtml = construirGaleriaHTML(
     [producto.imagen, producto.imagen2, producto.imagen3],
@@ -806,6 +843,9 @@ fetch("/api/productos")
   .then((productos) => {
     const grid = document.getElementById("productGrid");
     grid.classList.remove("skeleton-grid");
+    // 🆕 Catálogo COMPLETO: acá (y solo acá / en cargarProductos() sin
+    // filtro) se recalcula el top 20 de "Artículo más vendido" del día.
+    mapaBestsellerHoy = calcularBestsellersDelDia(productos);
     pintarMosaico(grid, productos, construirTarjetaProductoHTML);
     abrirProductoDesdeUrl();
     // 🆕 Este fetch es el catálogo COMPLETO (sin filtros ni búsqueda), así
@@ -934,6 +974,10 @@ function cargarProductos() {
         window.Monji?.buscando("No encontré productos en esta categoría, pero tranquilo: tenemos acceso a un mega mercado. Escríbenos y te ayudamos a conseguirlo 🔍");
         return;
       }
+      // 🆕 Catálogo completo (sin filtro ni categoría): se refresca el
+      // top 20 de "Artículo más vendido" por si cambió el día desde la
+      // carga inicial, ANTES de pintar las tarjetas.
+      if (esCatalogoCompleto) mapaBestsellerHoy = calcularBestsellersDelDia(productos);
       pintarMosaico(grid, productos, construirTarjetaProductoHTML);
       if (esCatalogoCompleto) mostrarAvisoFinCatalogo();
       else limpiarAvisoFinCatalogo();

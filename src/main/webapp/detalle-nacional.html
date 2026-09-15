@@ -418,6 +418,23 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
   }
 
+  /* 🆕 "Artículo más vendido #N": ocupa el mismo lugar que "Solo
+     quedan X" (junto al precio) — le gana ese lugar cuando el
+     producto es uno de los 20 elegidos hoy. Vino más oscuro, en
+     formato de insignia (con fondo), mayúscula sin negrita. */
+  .producto-bestseller-badge {
+    display: inline-block;
+    margin: 8px 0 0;
+    background: linear-gradient(135deg, #7a1414, #4d0d0d);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.3px;
+  }
+
   /* 🆕 "Solo quedan X" / "Casi agotados" / "Último día": rojo vino de
      la marca, mayúscula sin negrita. */
   .producto-quedan-badge {
@@ -711,6 +728,26 @@
   }, 1000);
   // 🆕 ================= Fin del motor de urgencia =================
 
+  // 🆕 ========= "Artículo más vendido #N" (igual que en script.js) =========
+  // Se calcula sobre el catálogo COMPLETO que ya se pide más abajo
+  // (fetch a /api/productos) para decidir si ESTE producto es uno de
+  // los 20 que le tocaron hoy, y con qué puesto.
+  function puntajeBestsellerProducto(idProducto, dia) {
+    const id = parseInt(idProducto, 10) || 0;
+    return pseudoAleatorio(id * 7.9218 + dia * 31.415);
+  }
+  function calcularBestsellersDelDia(productos) {
+    const dia = Math.floor(Date.now() / MS_DIA_URGENCIA);
+    const conPuntaje = (productos || [])
+      .filter((p) => p && p.id !== undefined && p.id !== null && p.id !== "")
+      .map((p) => ({ id: String(p.id), puntaje: puntajeBestsellerProducto(p.id, dia) }));
+    conPuntaje.sort((a, b) => b.puntaje - a.puntaje);
+    const mapa = new Map();
+    conPuntaje.slice(0, 20).forEach((item, idx) => mapa.set(item.id, idx + 1));
+    return mapa;
+  }
+  // 🆕 ========= Fin de "Artículo más vendido #N" =========
+
   function construirGaleria(producto) {
     const imagenes = [producto.imagen, producto.imagen2, producto.imagen3].filter(Boolean);
     const miniaturasWrap = document.getElementById("miniaturas");
@@ -737,7 +774,7 @@
     }
   }
 
-  function construirPrecio(producto) {
+  function construirPrecio(producto, puestoBestseller) {
     const precioNum = parseFloat(producto.precio);
     const precioAnteriorNum = parseFloat(producto.precio_anterior);
     const tieneDescuentoReal = !isNaN(precioAnteriorNum) && !isNaN(precioNum) && precioAnteriorNum > precioNum;
@@ -769,9 +806,13 @@
       : "";
     document.getElementById("franjaUrgenciaProducto").innerHTML = franjaHtml;
 
-    const quedanBadgeHtml = urgencia.mostrarFranja
-      ? `<div class="producto-quedan-badge">${urgencia.frase}</div>`
-      : "";
+    // 🆕 "Artículo más vendido #N" le gana el lugar a "Solo quedan X" /
+    // "Último día" cuando el producto es uno de los 20 elegidos hoy.
+    const quedanBadgeHtml = puestoBestseller
+      ? `<div class="producto-bestseller-badge">Artículo más vendido #${puestoBestseller}</div>`
+      : urgencia.mostrarFranja
+        ? `<div class="producto-quedan-badge">${urgencia.frase}</div>`
+        : "";
     const ahorraExtraHtml = montoAhorro > 0
       ? `<div class="producto-ahorra-extra">Ahorra ${fmtCrc(Math.round(montoAhorro))} extra</div>`
       : "";
@@ -997,7 +1038,7 @@
     btnVendedor.rel = "noopener";
   }
 
-  function renderizar(producto) {
+  function renderizar(producto, puestoBestseller) {
     document.getElementById("tituloProducto").textContent = producto.nombre || "";
     construirVendedor(producto);
     document.getElementById("breadcrumb").textContent =
@@ -1005,7 +1046,9 @@
 
     construirGaleria(producto);
     construirDescripcion(producto);
-    construirPrecio(producto);
+    // 🆕 "Artículo más vendido #N" (si aplica) se pinta junto al
+    // precio, en el mismo lugar que "Solo quedan X".
+    construirPrecio(producto, puestoBestseller);
     construirUbicacion(producto);
     construirContactoVendedor(producto);
     configurarCompartir(producto);
@@ -1027,7 +1070,8 @@
       .then((productos) => {
         const producto = (productos || []).find((p) => String(p.id) === String(productoId));
         if (!producto) throw new Error("producto no encontrado");
-        renderizar(producto);
+        const mapaBestsellerHoy = calcularBestsellersDelDia(productos);
+        renderizar(producto, mapaBestsellerHoy.get(String(producto.id)));
       })
       .catch((err) => {
         console.error("Error al cargar el detalle del producto:", err);

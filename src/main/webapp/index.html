@@ -503,6 +503,27 @@
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
       }
 
+      /* 🆕 "Artículo más vendido #N": ocupa el mismo lugar que "Solo
+         quedan X" (debajo del nombre) — le gana ese lugar a "Solo
+         quedan X" cuando el producto es uno de los 20 elegidos hoy.
+         Vino más oscuro que la franja de la foto (mismo color que el
+         botón "Ver detalles") en formato de insignia (con fondo) para
+         que se note que es un logro/mención, no una urgencia más;
+         mayúscula sin negrita, igual que las demás frases. */
+      .producto-bestseller-badge {
+        display: inline-block;
+        margin: 2px 14px 0;
+        background: linear-gradient(135deg, #7a1414, #4d0d0d);
+        color: #fff;
+        font-size: 0.68rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        padding: 2px 9px;
+        border-radius: 4px;
+        letter-spacing: 0.3px;
+        line-height: 1.4;
+      }
+
       /* 🆕 "Solo quedan X" / "Casi agotados" / "Último día": mismos
          márgenes laterales que .producto h3 / .producto-precio (14px)
          para que quede alineado con el resto del texto de la tarjeta,
@@ -544,7 +565,8 @@
       @media (max-width: 500px) {
         .producto-quedan-badge,
         .producto-contador,
-        .producto-ahorra-extra {
+        .producto-ahorra-extra,
+        .producto-bestseller-badge {
           margin-left: 8px;
           margin-right: 8px;
         }
