@@ -426,12 +426,11 @@
       }
 
       /* 🆕 Precio anterior tachado + insignia de descuento (rebajas).
-         🎨 Paleta propia de la tienda (ya no la naranja/roja genérica
-         de Temu): el anaranjado queda reservado SOLO para lo que es
-         descuento/ahorro en colones (esta insignia y "Ahorra ₡X
-         extra" más abajo); el rojo vino de la marca es para todo lo
-         que es urgencia (franja sobre la foto y "Solo quedan X" /
-         "Último día"). */
+         🎨 El % de descuento vuelve al rojo vino de la marca (como
+         estaba antes de la paleta naranja tipo Temu). El anaranjado
+         queda solo para "Ahorra ₡X extra" más abajo (habla puntual de
+         plata ahorrada); el resto de lo que es urgencia (franja sobre
+         la foto y "Solo quedan X" / "Último día") también es vino. */
       .producto-precio-anterior {
         text-decoration: line-through;
         color: #999;
@@ -440,7 +439,7 @@
       }
       .producto-descuento-badge {
         display: inline-block;
-        background: linear-gradient(135deg, #ff8a3d, #e05e00);
+        background: linear-gradient(135deg, #b33a3a, #7a1414);
         color: #fff;
         font-size: 0.72em;
         font-weight: bold;
@@ -450,10 +449,9 @@
         vertical-align: middle;
       }
 
-      /* 🆕 "Ahorra ₡X extra": mismo anaranjado que la insignia de
-         descuento (habla de plata ahorrada, no de urgencia), en
-         mayúscula pero SIN negrita — letra normal, para que no se
-         vea "gritada" como en Temu. */
+      /* 🆕 "Ahorra ₡X extra": anaranjado (habla de plata ahorrada, no
+         de urgencia), en mayúscula pero SIN negrita — letra normal,
+         para que no se vea "gritada" como en Temu. */
       .producto-ahorra-extra {
         margin: 2px 14px 0;
         color: #e05e00;

@@ -384,13 +384,12 @@
     margin-left: 6px;
     font-weight: 600;
   }
-  /* 🎨 Igual que en la página principal: el anaranjado queda SOLO para
-     lo que es descuento/ahorro en colones (esta insignia y "Ahorra ₡X
-     extra"); el rojo vino de la marca (var(--rojo)) es para lo que es
-     urgencia (franja sobre la foto y "Solo quedan X" / "Último día"). */
+  /* 🎨 Igual que en la página principal: el % de descuento vuelve al
+     rojo vino de la marca (var(--rojo)); el anaranjado queda solo
+     para "Ahorra ₡X extra" (plata ahorrada, no urgencia). */
   .producto-descuento-badge {
     display: inline-block;
-    background: linear-gradient(135deg, #ff8a3d, #e05e00);
+    background: linear-gradient(135deg, #b33a3a, var(--rojo));
     color: #fff;
     font-size: 0.42em;
     font-weight: bold;
