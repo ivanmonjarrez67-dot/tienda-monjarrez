@@ -223,11 +223,21 @@ public class PedidoServlet extends HttpServlet {
                 //    Se hace DESPUÉS del commit y en su propio try/catch: si
                 //    algo falla acá (Brevo caído, PDF, etc.) el pedido ya
                 //    quedó guardado y la respuesta al front no se ve afectada.
+                //
+                // 🔧 FIX: antes solo se imprimía correoErr.getMessage(), que
+                // para errores como NoClassDefFoundError (ej. si falta la
+                // librería OpenPDF en el classpath de despliegue) suele venir
+                // vacío o poco útil, dejando el fallo prácticamente invisible
+                // en el log. Ahora se imprime el stack trace completo con
+                // printStackTrace(), para poder ver EXACTAMENTE en qué clase/
+                // línea explota (generación del PDF, alguna de las consultas
+                // SQL de vendedor/comprador, etc.) la próxima vez que un
+                // pedido no mande los correos.
                 try {
                     enviarCorreosDePedido(conn, pedidoId, usuarioId, metodoPago, referenciaPago, total);
                 } catch (Exception correoErr) {
-                    System.out.println("[PedidoServlet] No se pudieron enviar los correos del pedido #"
-                            + pedidoId + ": " + correoErr.getMessage());
+                    System.out.println("[PedidoServlet] No se pudieron enviar los correos del pedido #" + pedidoId + ":");
+                    correoErr.printStackTrace();
                 }
 
                 response.getWriter().print("{\"ok\":true,\"pedido_id\":" + pedidoId + "}");
