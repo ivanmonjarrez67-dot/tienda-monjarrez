@@ -156,6 +156,11 @@
     <div id="campoReferenciaSinpe">
       <input type="text" id="inputReferenciaSinpe" placeholder="Número de comprobante (opcional)">
     </div>
+    <div id="avisoSinpe" style="display:none; background:#fff8e6; border:1px solid #f0d98c; border-radius:8px; padding:10px 12px; margin-bottom:14px; font-size:0.82rem; color:#6b5200;">
+      <p style="margin:0 0 8px;"><i class="fa-solid fa-circle-info"></i> Antes de pagar, confirma con el/los vendedor(es) que acepten SINPE y a qué número:</p>
+      <div id="avisoSinpeVendedores" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px;"></div>
+      <p style="margin:0;">¿Dudas? <a href="https://wa.me/50664283281" target="_blank" rel="noopener">WhatsApp de la tienda</a> · <a href="mailto:soporte@tiendamonjarrez.com">soporte@tiendamonjarrez.com</a></p>
+    </div>
     <label class="pago-opcion" data-valor="efectivo">
       <input type="radio" name="metodoPagoPedido" value="efectivo">
       <span><i class="fa-solid fa-money-bill-wave"></i> Efectivo contra entrega</span>
@@ -167,7 +172,7 @@
   </div>
 </div>
 
-<script src="carrito.js"></script>
+<script src="carrito.js?v=2"></script>
 <script>
 (function () {
   function fmtCrc(n) { return window.Carrito.fmtCrc(n); }
@@ -177,6 +182,33 @@
   const elVacio = document.getElementById("estadoVacio");
   const elContenido = document.getElementById("carritoContenido");
   const listaEl = document.getElementById("carritoLista");
+  let itemsActuales = [];
+
+  // ---- Aviso de SINPE: WhatsApp de cada vendedor presente en el carrito ----
+  // Requiere que /api/carrito devuelva "telefono" y "empresa" por item
+  // (mismos campos que ya usa detalle-nacional.html para el vendedor).
+  function construirWhatsappVendedor(telefono, empresa) {
+    const soloDigitos = String(telefono || "").replace(/\D/g, "");
+    if (!soloDigitos) return "";
+    const numero = soloDigitos.length === 8 ? `506${soloDigitos}` : soloDigitos;
+    const msg = encodeURIComponent(
+      "Hola, quiero confirmar si aceptan pago por SINPE Móvil para mi pedido en Tienda Monjarrez y a qué número debo hacerlo. ¡Gracias!"
+    );
+    return `<a href="https://wa.me/${numero}?text=${msg}" target="_blank" rel="noopener"
+      style="display:inline-flex;align-items:center;gap:6px;background:#25d366;color:#fff;padding:6px 10px;border-radius:16px;text-decoration:none;font-weight:600;font-size:0.78rem;">
+      <i class="fa-brands fa-whatsapp"></i> ${esc(empresa || "Vendedor")}
+    </a>`;
+  }
+
+  function renderizarAvisoSinpe(items) {
+    const cont = document.getElementById("avisoSinpeVendedores");
+    const vistos = new Set();
+    const botones = items
+      .filter((it) => it.telefono && !vistos.has(it.telefono) && vistos.add(it.telefono))
+      .map((it) => construirWhatsappVendedor(it.telefono, it.empresa))
+      .join("");
+    cont.innerHTML = botones || '<span style="color:#8a6d00;">No hay WhatsApp registrado para el/los vendedor(es) de este pedido.</span>';
+  }
 
   function actualizarCantidad(productoId, cantidad) {
     fetch("/api/carrito", {
@@ -271,6 +303,7 @@
       }
       elVacio.style.display = "none";
       elContenido.style.display = "block";
+      itemsActuales = items;
       listaEl.innerHTML = "";
       items.forEach((item) => listaEl.appendChild(construirFila(item)));
       const subtotal = items.reduce((acc, it) => acc + it.precio_unitario * it.cantidad, 0);
@@ -283,6 +316,7 @@
   // ---- Confirmar pedido: elegir método de pago -> POST /api/pedido ----
   const pagoOverlay = document.getElementById("pagoOverlay");
   document.getElementById("btnConfirmarPedido").addEventListener("click", () => {
+    renderizarAvisoSinpe(itemsActuales);
     pagoOverlay.classList.add("visible");
   });
   document.getElementById("btnPagoCancelar").addEventListener("click", () => pagoOverlay.classList.remove("visible"));
@@ -293,6 +327,7 @@
       op.classList.add("seleccionada");
       op.querySelector("input").checked = true;
       document.getElementById("campoReferenciaSinpe").style.display = op.dataset.valor === "sinpe" ? "block" : "none";
+      document.getElementById("avisoSinpe").style.display = op.dataset.valor === "sinpe" ? "block" : "none";
     });
   });
 

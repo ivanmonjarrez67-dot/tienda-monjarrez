@@ -5,9 +5,15 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import entidades.DatabaseConnection;
+import entidades.EmailService;
+import entidades.FacturaPdfGenerator;
+import entidades.FacturaPdfGenerator.ItemFactura;
 import entidades.JsonUtils;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -19,7 +25,9 @@ import jakarta.servlet.http.HttpSession;
 //                              quien lo hizo (se compara contra la sesión).
 // POST /api/pedido accion=confirmar  (metodo_pago, referencia_pago opcional)
 //      -> copia el carrito actual del usuario a Pedidos/DetallePedido,
-//         vacía el carrito y devuelve el id del pedido creado.
+//         vacía el carrito, envía los correos de confirmación (comprador,
+//         cada vendedor involucrado y el admin, todos con el PDF de la
+//         factura adjunto) y devuelve el id del pedido creado.
 @WebServlet("/api/pedido")
 public class PedidoServlet extends HttpServlet {
 
@@ -209,6 +217,19 @@ public class PedidoServlet extends HttpServlet {
                 }
 
                 conn.commit();
+
+                // 4) 🆕 Generar el PDF de la factura y avisar por correo a
+                //    comprador, cada vendedor involucrado y al admin.
+                //    Se hace DESPUÉS del commit y en su propio try/catch: si
+                //    algo falla acá (Brevo caído, PDF, etc.) el pedido ya
+                //    quedó guardado y la respuesta al front no se ve afectada.
+                try {
+                    enviarCorreosDePedido(conn, pedidoId, usuarioId, metodoPago, referenciaPago, total);
+                } catch (Exception correoErr) {
+                    System.out.println("[PedidoServlet] No se pudieron enviar los correos del pedido #"
+                            + pedidoId + ": " + correoErr.getMessage());
+                }
+
                 response.getWriter().print("{\"ok\":true,\"pedido_id\":" + pedidoId + "}");
             } catch (Exception e) {
                 conn.rollback();
@@ -219,5 +240,78 @@ public class PedidoServlet extends HttpServlet {
         } catch (Exception e) {
             e.printStackTrace(response.getWriter());
         }
+    }
+
+    // ---------------------------------------------------------
+    // 🆕 Arma el PDF de la factura y dispara los tres correos:
+    // comprador, cada vendedor distinto con productos en el pedido, y admin.
+    //
+    // ⚠️ AJUSTA ESTO A TU ESQUEMA REAL: se asume una tabla "Usuarios" con
+    // columnas "nombre" y "correo" tanto para compradores como vendedores,
+    // y opcionalmente "empresa" para el nombre comercial del vendedor. Si
+    // tus nombres de tabla/columna son distintos, cambia solo las dos
+    // consultas SQL de acá abajo — el resto no necesita tocarse.
+    // ---------------------------------------------------------
+    private void enviarCorreosDePedido(Connection conn, int pedidoId, int compradorId,
+                                        String metodoPago, String referenciaPago, double total) throws Exception {
+        // Datos del comprador
+        String nombreComprador = "Cliente";
+        String correoComprador = null;
+        try (PreparedStatement stmt = conn.prepareStatement(
+                "SELECT nombre, correo FROM Usuarios WHERE id = ?")) {
+            stmt.setInt(1, compradorId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    nombreComprador = rs.getString("nombre");
+                    correoComprador = rs.getString("correo");
+                }
+            }
+        }
+
+        // Items del pedido + datos del vendedor de cada uno
+        List<ItemFactura> itemsFactura = new ArrayList<>();
+        // vendedorId -> {nombre, correo}
+        Map<Integer, String[]> vendedoresMap = new LinkedHashMap<>();
+
+        try (PreparedStatement stmt = conn.prepareStatement(
+                "SELECT dp.nombre_producto, dp.cantidad, dp.precio_unitario, dp.usuario_id_vendedor, "
+              + "       v.nombre AS nombre_vendedor, v.correo AS correo_vendedor "
+              + "FROM DetallePedido dp "
+              + "JOIN Usuarios v ON v.id = dp.usuario_id_vendedor "
+              + "WHERE dp.pedido_id = ?")) {
+            stmt.setInt(1, pedidoId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    itemsFactura.add(new ItemFactura(
+                            rs.getString("nombre_producto"),
+                            rs.getInt("cantidad"),
+                            rs.getDouble("precio_unitario")
+                    ));
+                    int vendedorId = rs.getInt("usuario_id_vendedor");
+                    vendedoresMap.putIfAbsent(vendedorId, new String[]{
+                            rs.getString("nombre_vendedor"), rs.getString("correo_vendedor")
+                    });
+                }
+            }
+        }
+
+        byte[] pdfBytes = FacturaPdfGenerator.generar(
+                pedidoId, new java.util.Date(), metodoPago, referenciaPago, total, itemsFactura);
+
+        String numeroPedido = String.valueOf(pedidoId);
+
+        if (correoComprador != null && !correoComprador.isEmpty()) {
+            EmailService.enviarFacturaComprador(correoComprador, nombreComprador, numeroPedido, pdfBytes);
+        }
+
+        for (String[] vendedor : vendedoresMap.values()) {
+            String nombreVendedor = vendedor[0];
+            String correoVendedor = vendedor[1];
+            if (correoVendedor != null && !correoVendedor.isEmpty()) {
+                EmailService.enviarNotificacionPedidoVendedor(correoVendedor, nombreVendedor, numeroPedido, pdfBytes);
+            }
+        }
+
+        EmailService.enviarAlertaNuevoPedidoAdmin(numeroPedido, nombreComprador, pdfBytes);
     }
 }

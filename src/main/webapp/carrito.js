@@ -199,7 +199,7 @@
       .carrito-cantidad-selector {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 14px;
         margin: 10px 0 18px;
       }
       .carrito-cantidad-selector button {
@@ -214,10 +214,16 @@
         align-items: center;
         justify-content: center;
       }
-      .carrito-cantidad-selector span {
-        min-width: 24px;
+      .carrito-cantidad-valor {
+        display: inline-block;
+        min-width: 30px;
         text-align: center;
-        font-weight: 600;
+        font-weight: 700;
+        font-size: 1.05rem;
+        color: #1a1a1a !important;
+        background: #f6f6f6;
+        border-radius: 6px;
+        padding: 4px 0;
       }
       .carrito-modal-confirmar-botones {
         display: flex;

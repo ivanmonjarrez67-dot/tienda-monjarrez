@@ -5,6 +5,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import config.Config;
 
 /**
@@ -52,6 +53,16 @@ import config.Config;
  * marca) que le llega al correo personal del admin apenas se registra una
  * nueva solicitud de vendedor, para no tener que revisar panelAdmin
  * manualmente para saber si hay solicitudes pendientes.
+ *
+ * 🆕 Se agregó soporte de ADJUNTOS (enviarConAdjuntoAsync) y tres correos
+ * nuevos relacionados con la confirmación de un pedido:
+ *   - enviarFacturaComprador(): al comprador, con la factura en PDF.
+ *   - enviarNotificacionPedidoVendedor(): a cada vendedor con productos
+ *     en el pedido, con la factura en PDF.
+ *   - enviarAlertaNuevoPedidoAdmin(): al admin (EMAIL_ADMIN_PERSONAL),
+ *     con la factura en PDF.
+ * Los tres se llaman desde PedidoServlet justo después de confirmar el
+ * pedido, una vez generado el PDF (ver entidades.FacturaPdfGenerator).
  */
 public class EmailService {
 
@@ -81,8 +92,8 @@ public class EmailService {
     private static final String EMAIL_PRINCIPAL       = "tiendamonjarrez@gmail.com";
 
     // 🆕 Correo personal del admin, solo para avisos internos (ej. nueva
-    // solicitud de vendedor). Nunca se usa como remitente ni se muestra
-    // al cliente/vendedor en ningún correo saliente.
+    // solicitud de vendedor, nuevo pedido). Nunca se usa como remitente ni
+    // se muestra al cliente/vendedor en ningún correo saliente.
     private static final String EMAIL_ADMIN_PERSONAL  = "ivanmonjarrez67@gmail.com";
 
     // ---------------------------------------------------------
@@ -116,7 +127,7 @@ public class EmailService {
     // IMPORTANTE: se referencian por NOMBRE DE ARCHIVO, no en base64.
     // Gmail bloquea/rompe las imágenes embebidas en base64 cuando llegan
     // por un correo real (API/SMTP) — por eso antes se quitó el logo de
-    // la plantilla. Sube estos 7 archivos PNG (vienen aparte) a la ruta
+    // la plantilla. Sube estos archivos PNG (vienen aparte) a la ruta
     // que apunta ICONOS_BASE_URL, con estos nombres exactos.
     // ---------------------------------------------------------
     private static final String ICON_BIENVENIDA   = "icono-bienvenida.png";
@@ -177,6 +188,64 @@ public class EmailService {
             }
         } catch (Exception e) {
             System.out.println("[EmailService] Error enviando correo: " + e.getMessage());
+        }
+    }
+
+    // ---------------------------------------------------------
+    // 🆕 Envío con ADJUNTO (Brevo admite "attachment": [{content, name}],
+    // donde "content" va en Base64). Se usa para mandar la factura en PDF
+    // junto con el correo de confirmación de pedido.
+    // ---------------------------------------------------------
+    public static void enviarConAdjuntoAsync(String remitenteEmail, String remitenteNombre,
+                                              String destinatarioEmail, String destinatarioNombre,
+                                              String asunto, String htmlContenido,
+                                              byte[] adjuntoBytes, String nombreArchivo) {
+        Thread hilo = new Thread(() ->
+            enviarConAdjunto(remitenteEmail, remitenteNombre, destinatarioEmail, destinatarioNombre,
+                    asunto, htmlContenido, adjuntoBytes, nombreArchivo)
+        );
+        hilo.setDaemon(true);
+        hilo.start();
+    }
+
+    private static void enviarConAdjunto(String remitenteEmail, String remitenteNombre,
+                                          String destinatarioEmail, String destinatarioNombre,
+                                          String asunto, String htmlContenido,
+                                          byte[] adjuntoBytes, String nombreArchivo) {
+        try {
+            String adjuntoBase64 = Base64.getEncoder().encodeToString(adjuntoBytes);
+            String json = String.format("""
+                {
+                  "sender": {"name": "%s", "email": "%s"},
+                  "to": [{"email": "%s", "name": "%s"}],
+                  "subject": "%s",
+                  "htmlContent": "%s",
+                  "attachment": [{"content": "%s", "name": "%s"}]
+                }
+                """,
+                escapeJson(remitenteNombre), escapeJson(remitenteEmail),
+                escapeJson(destinatarioEmail), escapeJson(destinatarioNombre),
+                escapeJson(asunto), escapeJson(htmlContenido),
+                adjuntoBase64, escapeJson(nombreArchivo)
+            );
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(BREVO_URL))
+                    .header("accept", "application/json")
+                    .header("api-key", BREVO_API_KEY)
+                    .header("content-type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                System.out.println("[EmailService] Correo con adjunto enviado a " + destinatarioEmail + " (desde " + remitenteEmail + ")");
+            } else {
+                System.out.println("[EmailService] Brevo respondió " + response.statusCode() + ": " + response.body());
+            }
+        } catch (Exception e) {
+            System.out.println("[EmailService] Error enviando correo con adjunto: " + e.getMessage());
         }
     }
 
@@ -431,5 +500,55 @@ public class EmailService {
                 "Ir al panel", "https://tiendamonjarrez.com/panelAdmin.html");
         enviarAsync(EMAIL_NOTIFICACIONES, NOMBRE_NOTIFICACIONES, EMAIL_ADMIN_PERSONAL, "Admin",
                 "🔔 Nueva solicitud de vendedor: " + nombreVendedor, html);
+    }
+
+    // ---------------------------------------------------------
+    // 🆕 Confirmación de pedido: COMPRADOR.
+    // Se llama desde PedidoServlet justo después de confirmar el pedido,
+    // con el PDF de la factura ya generado (ver FacturaPdfGenerator).
+    // Sale desde EMAIL_NOTIFICACIONES porque es un aviso automático del
+    // sistema, igual que "nuevo producto disponible".
+    // ---------------------------------------------------------
+    public static void enviarFacturaComprador(String email, String nombre, String numeroPedido, byte[] pdfBytes) {
+        String cuerpo =
+              "<p>¡Gracias por tu compra! Confirmamos tu pedido <strong>#" + numeroPedido + "</strong>.</p>"
+            + "<p>Adjuntamos tu factura en PDF como comprobante. Consérvala por si la necesitas.</p>";
+
+        String html = plantillaBase(ICON_PRODUCTO, "¡Pedido confirmado!", cuerpo, "Ir a la tienda", URL_TIENDA);
+        enviarConAdjuntoAsync(EMAIL_NOTIFICACIONES, NOMBRE_NOTIFICACIONES, email, nombre,
+                "Confirmación de tu pedido #" + numeroPedido, html, pdfBytes, "factura-" + numeroPedido + ".pdf");
+    }
+
+    // ---------------------------------------------------------
+    // 🆕 Aviso de nuevo pedido: VENDEDOR.
+    // Se llama una vez POR CADA vendedor distinto cuyos productos estén en
+    // el pedido (un pedido puede incluir productos de varios vendedores).
+    // ---------------------------------------------------------
+    public static void enviarNotificacionPedidoVendedor(String email, String nombreVendedor, String numeroPedido, byte[] pdfBytes) {
+        String cuerpo =
+              "<p>Tienes un nuevo pedido <strong>#" + numeroPedido + "</strong> con productos de tu tienda.</p>"
+            + "<p>Adjuntamos la factura en PDF con el detalle completo del pedido.</p>";
+
+        String html = plantillaBase(ICON_VENDEDOR, "¡Nuevo pedido recibido!", cuerpo,
+                "Ir a mi tienda", URL_TIENDA + "/?accion=login-vendedor");
+        enviarConAdjuntoAsync(EMAIL_NOTIFICACIONES, NOMBRE_NOTIFICACIONES, email, nombreVendedor,
+                "Nuevo pedido #" + numeroPedido + " en Tienda Monjarrez", html, pdfBytes, "factura-" + numeroPedido + ".pdf");
+    }
+
+    // ---------------------------------------------------------
+    // 🆕 Alerta interna: NUEVO PEDIDO registrado (admin).
+    // Va directo al correo personal del admin, igual que la alerta de
+    // nueva solicitud de vendedor.
+    // ---------------------------------------------------------
+    public static void enviarAlertaNuevoPedidoAdmin(String numeroPedido, String nombreComprador, byte[] pdfBytes) {
+        String cuerpo =
+              "<p>Se registró un nuevo pedido <strong>#" + numeroPedido + "</strong>, realizado por "
+            + "<strong>" + nombreComprador + "</strong>.</p>"
+            + "<p>Adjuntamos la factura en PDF con el detalle completo.</p>";
+
+        String html = plantillaBase(ICON_ALERTA, "Nuevo pedido registrado", cuerpo,
+                "Ir al panel", "https://tiendamonjarrez.com/panelAdmin.html");
+        enviarConAdjuntoAsync(EMAIL_NOTIFICACIONES, NOMBRE_NOTIFICACIONES, EMAIL_ADMIN_PERSONAL, "Admin",
+                "🔔 Nuevo pedido #" + numeroPedido, html, pdfBytes, "factura-" + numeroPedido + ".pdf");
     }
 }
