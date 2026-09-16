@@ -70,8 +70,16 @@ public class CarritoServlet extends HttpServlet {
         // Se trae el precio y el stock/estado ACTUALES del producto (no el
         // guardado al agregarlo) para poder avisar en el carrito si el
         // precio cambió o si el producto ya no existe / fue desactivado.
+        //
+        // 🆕 Se agregan p.telefono, p.correo y p.Nombre_Empresa (alias
+        // "empresa") al SELECT: son los mismos campos que ya trae
+        // ListaProductosServlet y que usa detalle-nacional.html para el
+        // contacto del vendedor. Sin esto, carrito.html no tenía con qué
+        // armar el botón de WhatsApp del vendedor en el aviso de SINPE
+        // (renderizarAvisoSinpe esperaba item.telefono / item.empresa).
         String sql = "SELECT dc.producto_id, dc.cantidad, dc.precio_unitario AS precio_guardado, "
                    + "p.nombre, p.imagen, p.precio AS precio_actual, p.categoria, p.usuario_id AS vendedor_id, "
+                   + "p.telefono, p.correo, p.Nombre_Empresa AS empresa, "
                    + "d.precio_anterior "
                    + "FROM Carrito c "
                    + "JOIN DetalleCarrito dc ON dc.carrito_id = c.id "
@@ -101,7 +109,18 @@ public class CarritoServlet extends HttpServlet {
                     out.print("\"precio_unitario\":" + precioActual + ",");
                     out.print("\"precio_cambio\":" + (precioActual != precioGuardado) + ",");
                     double precioAnterior = rs.getDouble("precio_anterior");
-                    out.print("\"precio_anterior\":" + (rs.wasNull() ? "null" : precioAnterior));
+                    out.print("\"precio_anterior\":" + (rs.wasNull() ? "null" : precioAnterior) + ",");
+
+                    // 🆕 telefono/correo/empresa del vendedor dueño del
+                    // producto, para el aviso de WhatsApp de SINPE en
+                    // carrito.html (y por si se necesita más adelante).
+                    String telefono = rs.getString("telefono");
+                    out.print("\"telefono\":" + (telefono == null ? "null" : "\"" + JsonUtils.escapar(telefono) + "\"") + ",");
+                    String correo = rs.getString("correo");
+                    out.print("\"correo\":" + (correo == null ? "null" : "\"" + JsonUtils.escapar(correo) + "\"") + ",");
+                    String empresa = rs.getString("empresa");
+                    out.print("\"empresa\":" + (empresa == null ? "null" : "\"" + JsonUtils.escapar(empresa) + "\""));
+
                     out.print("}");
                 }
                 out.print("]");
