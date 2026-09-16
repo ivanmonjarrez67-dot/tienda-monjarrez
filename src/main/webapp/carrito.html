@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tienda Monjarrez — Carrito</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+  integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer"
+/>
+<style>
+  :root {
+    --bg: #fffdf9;
+    --border: #ececec;
+    --rojo: #a13341;
+    --text: #1a1a1a;
+    --text-dim: #777;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: "Poppins", sans-serif; }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: #fff; z-index: 10;
+  }
+  .logo { font-size: 1.3rem; font-weight: 700; }
+  .logo .rojo { color: var(--rojo); }
+  .volver { color: var(--text-dim); text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; }
+  .volver:hover { color: var(--text); }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
+  h1.titulo-carrito { font-size: 1.4rem; margin: 0 0 20px; }
+
+  .carrito-layout { display: grid; grid-template-columns: 1fr; gap: 24px; }
+  @media (min-width: 860px) {
+    .carrito-layout { grid-template-columns: 1fr 320px; align-items: start; }
+  }
+
+  .carrito-lista { display: flex; flex-direction: column; gap: 12px; }
+  .carrito-fila {
+    display: flex; gap: 14px; align-items: center; background: #fff;
+    border: 1px solid var(--border); border-radius: 12px; padding: 12px;
+  }
+  .carrito-fila img { width: 84px; height: 84px; object-fit: cover; border-radius: 10px; border: 1px solid #eee; flex-shrink: 0; }
+  .carrito-fila-info { flex: 1; min-width: 0; }
+  .carrito-fila-info .nombre { margin: 0 0 6px; font-weight: 600; font-size: 0.92rem; }
+  .carrito-fila-info .precio { margin: 0; font-weight: 700; color: var(--rojo); }
+  .carrito-fila-info .precio-anterior { text-decoration: line-through; color: #999; font-size: 0.8rem; margin-left: 6px; font-weight: 500; }
+  .aviso-precio-cambio { font-size: 0.72rem; color: #b06a00; margin-top: 4px; }
+
+  .carrito-fila-cantidad { display: flex; align-items: center; gap: 8px; }
+  .carrito-fila-cantidad button {
+    width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid #ddd; background: #fff; cursor: pointer; font-size: 15px;
+  }
+  .carrito-fila-cantidad span { min-width: 20px; text-align: center; font-weight: 600; }
+  .carrito-fila-eliminar { background: none; border: none; color: #999; cursor: pointer; font-size: 16px; padding: 6px; }
+  .carrito-fila-eliminar:hover { color: var(--rojo); }
+  .carrito-fila-subtotal { font-weight: 700; min-width: 90px; text-align: right; }
+
+  .carrito-resumen {
+    background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px; position: sticky; top: 90px;
+  }
+  .carrito-resumen h3 { margin: 0 0 14px; font-size: 1rem; }
+  .carrito-resumen-linea { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; color: #444; }
+  .carrito-resumen-total { display: flex; justify-content: space-between; font-weight: 700; font-size: 1.05rem; margin: 14px 0; border-top: 1px solid #eee; padding-top: 14px; }
+  #btnConfirmarPedido {
+    width: 100%; padding: 13px; border-radius: 8px; border: none; background: var(--rojo); color: #fff;
+    font-weight: 700; font-size: 0.95rem; cursor: pointer; font-family: inherit;
+  }
+  #btnConfirmarPedido:hover { background: #8a2b37; }
+  #btnConfirmarPedido:disabled { background: #ccc; cursor: not-allowed; }
+  .envio-gratis-aviso { display:flex; align-items:center; gap:8px; background:#eafaf0; color:#1c7c3f; font-size:0.8rem; padding:8px 10px; border-radius:8px; margin-bottom:14px; }
+
+  .carrito-vacio, .carrito-invitado { text-align: center; padding: 60px 20px; color: var(--text-dim); }
+  .carrito-vacio a, .carrito-invitado button {
+    display: inline-block; margin-top: 14px; background: var(--rojo); color: #fff; border: none;
+    padding: 10px 22px; border-radius: 20px; text-decoration: none; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+
+  .relacionados { margin-top: 46px; }
+  .relacionados h2 { font-size: 1.1rem; margin-bottom: 14px; }
+  .relacionados-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+  .rel-card { display: block; text-decoration: none; color: inherit; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #fff; position: relative; }
+  .rel-card-img { aspect-ratio: 1/1; background: #fafafa; }
+  .rel-card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .rel-card-body { padding: 8px 10px 10px; }
+  .rel-card-nombre { font-size: 0.78rem; margin: 0 0 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .rel-card-precio { font-size: 0.85rem; font-weight: 700; color: var(--rojo); margin: 0; }
+
+  /* Modal de método de pago */
+  .pago-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 999; }
+  .pago-overlay.visible { display: flex; }
+  .pago-modal { background: #fff; border-radius: 14px; width: min(400px, 92vw); padding: 22px; }
+  .pago-modal h3 { margin: 0 0 16px; }
+  .pago-opcion { display: flex; align-items: center; gap: 10px; border: 1.5px solid #ddd; border-radius: 10px; padding: 12px; margin-bottom: 10px; cursor: pointer; }
+  .pago-opcion input { accent-color: var(--rojo); }
+  .pago-opcion.seleccionada { border-color: var(--rojo); background: rgba(161,51,65,0.05); }
+  #campoReferenciaSinpe { display: none; margin-top: 6px; margin-bottom: 14px; }
+  #campoReferenciaSinpe input { width: 100%; padding: 9px; border-radius: 8px; border: 1.5px solid #ddd; font-family: inherit; }
+  .pago-modal-botones { display: flex; gap: 10px; margin-top: 6px; }
+  .pago-modal-botones button { flex: 1; padding: 11px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn-pago-cancelar { background: #f0f0f0; color: #333; }
+  .btn-pago-confirmar { background: var(--rojo); color: #fff; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span>Tienda</span> <span class="rojo">Monjarrez</span></div>
+  <a class="volver" href="index.html"><i class="fa-solid fa-arrow-left"></i> Seguir comprando</a>
+</header>
+
+<main>
+  <h1 class="titulo-carrito">Tu carrito</h1>
+  <div id="estadoInvitado" class="carrito-invitado" style="display:none;">
+    <p>Debes iniciar sesión para ver y guardar tu carrito.</p>
+    <button type="button" onclick="window.location.href='index.html'">Iniciar sesión</button>
+  </div>
+  <div id="estadoVacio" class="carrito-vacio" style="display:none;">
+    <p>Tu carrito está vacío.</p>
+    <a href="index.html">Ver catálogo</a>
+  </div>
+  <div id="carritoContenido" style="display:none;">
+    <div class="carrito-layout">
+      <div class="carrito-lista" id="carritoLista"></div>
+      <div class="carrito-resumen">
+        <h3>Resumen del pedido</h3>
+        <div class="envio-gratis-aviso"><i class="fa-solid fa-truck"></i> Envío gratis en cada pedido</div>
+        <div class="carrito-resumen-linea"><span>Subtotal</span><span id="resumenSubtotal">₡0</span></div>
+        <div class="carrito-resumen-total"><span>Total</span><span id="resumenTotal">₡0</span></div>
+        <button type="button" id="btnConfirmarPedido">Confirmar pedido</button>
+      </div>
+    </div>
+    <div class="relacionados" id="relacionadosSeccion" style="display:none;">
+      <h2>También te puede interesar</h2>
+      <div class="relacionados-grid" id="relacionadosGrid"></div>
+    </div>
+  </div>
+</main>
+
+<div class="pago-overlay" id="pagoOverlay">
+  <div class="pago-modal">
+    <h3>Elige tu método de pago</h3>
+    <label class="pago-opcion" data-valor="sinpe">
+      <input type="radio" name="metodoPagoPedido" value="sinpe">
+      <span><i class="fa-solid fa-mobile-screen"></i> SINPE Móvil</span>
+    </label>
+    <div id="campoReferenciaSinpe">
+      <input type="text" id="inputReferenciaSinpe" placeholder="Número de comprobante (opcional)">
+    </div>
+    <label class="pago-opcion" data-valor="efectivo">
+      <input type="radio" name="metodoPagoPedido" value="efectivo">
+      <span><i class="fa-solid fa-money-bill-wave"></i> Efectivo contra entrega</span>
+    </label>
+    <div class="pago-modal-botones">
+      <button type="button" class="btn-pago-cancelar" id="btnPagoCancelar">Cancelar</button>
+      <button type="button" class="btn-pago-confirmar" id="btnPagoConfirmar">Confirmar pedido</button>
+    </div>
+  </div>
+</div>
+
+<script src="carrito.js"></script>
+<script>
+(function () {
+  function fmtCrc(n) { return window.Carrito.fmtCrc(n); }
+  function esc(s) { return window.Carrito.esc(s); }
+
+  const elInvitado = document.getElementById("estadoInvitado");
+  const elVacio = document.getElementById("estadoVacio");
+  const elContenido = document.getElementById("carritoContenido");
+  const listaEl = document.getElementById("carritoLista");
+
+  function actualizarCantidad(productoId, cantidad) {
+    fetch("/api/carrito", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ accion: "actualizar", producto_id: productoId, cantidad: cantidad }).toString(),
+    }).then(render);
+  }
+
+  function eliminarItem(productoId) {
+    fetch("/api/carrito", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ accion: "eliminar", producto_id: productoId }).toString(),
+    }).then(render);
+  }
+
+  function construirFila(item) {
+    const div = document.createElement("div");
+    div.className = "carrito-fila";
+    const tienePrecioAnterior = item.precio_anterior && Number(item.precio_anterior) > item.precio_unitario;
+    div.innerHTML = `
+      <img src="${esc(item.imagen)}" alt="${esc(item.nombre)}">
+      <div class="carrito-fila-info">
+        <p class="nombre">${esc(item.nombre)}</p>
+        <p class="precio">${fmtCrc(item.precio_unitario)}${tienePrecioAnterior ? `<span class="precio-anterior">${fmtCrc(item.precio_anterior)}</span>` : ""}</p>
+        ${item.precio_cambio ? `<p class="aviso-precio-cambio"><i class="fa-solid fa-circle-info"></i> El precio de este producto cambió desde que lo agregaste.</p>` : ""}
+      </div>
+      <div class="carrito-fila-cantidad">
+        <button type="button" class="restar">−</button>
+        <span>${item.cantidad}</span>
+        <button type="button" class="sumar">+</button>
+      </div>
+      <div class="carrito-fila-subtotal">${fmtCrc(item.precio_unitario * item.cantidad)}</div>
+      <button type="button" class="carrito-fila-eliminar" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+    `;
+    div.querySelector(".restar").addEventListener("click", () => actualizarCantidad(item.producto_id, item.cantidad - 1));
+    div.querySelector(".sumar").addEventListener("click", () => actualizarCantidad(item.producto_id, item.cantidad + 1));
+    div.querySelector(".carrito-fila-eliminar").addEventListener("click", () => eliminarItem(item.producto_id));
+    return div;
+  }
+
+  function construirTarjetaRelacionada(p) {
+    const a = document.createElement("a");
+    a.className = "rel-card";
+    a.href = `detalle-nacional.html?id=${encodeURIComponent(p.id)}`;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.innerHTML = `
+      <div class="rel-card-img"><img src="${esc(p.imagen)}" alt="${esc(p.nombre)}" loading="lazy"></div>
+      <div class="rel-card-body">
+        <p class="rel-card-nombre">${esc(p.nombre)}</p>
+        <p class="rel-card-precio">${fmtCrc(p.precio)}</p>
+      </div>
+      ${window.Carrito.botonHTML(p)}
+    `;
+    a.querySelector(".btn-agregar-carrito").addEventListener("click", (e) => { e.preventDefault(); });
+    return a;
+  }
+
+  function cargarRelacionados(items) {
+    const categoria = items.find((it) => it.categoria)?.categoria;
+    const seccion = document.getElementById("relacionadosSeccion");
+    const grid = document.getElementById("relacionadosGrid");
+    if (!categoria) return;
+    fetch(`/api/productos-filtrados?categoria=${encodeURIComponent(categoria)}`)
+      .then((res) => res.json())
+      .then((productos) => {
+        const idsEnCarrito = new Set(items.map((it) => String(it.producto_id)));
+        const otros = (productos || []).filter((p) => !idsEnCarrito.has(String(p.id))).slice(0, 10);
+        if (!otros.length) return;
+        grid.innerHTML = "";
+        otros.forEach((p) => grid.appendChild(construirTarjetaRelacionada(p)));
+        seccion.style.display = "block";
+      })
+      .catch(() => {});
+  }
+
+  function render() {
+    if (!window.Carrito.haySesion()) {
+      elInvitado.style.display = "block";
+      elVacio.style.display = "none";
+      elContenido.style.display = "none";
+      return;
+    }
+    window.Carrito.cargar().then((items) => {
+      elInvitado.style.display = "none";
+      if (!items.length) {
+        elVacio.style.display = "block";
+        elContenido.style.display = "none";
+        return;
+      }
+      elVacio.style.display = "none";
+      elContenido.style.display = "block";
+      listaEl.innerHTML = "";
+      items.forEach((item) => listaEl.appendChild(construirFila(item)));
+      const subtotal = items.reduce((acc, it) => acc + it.precio_unitario * it.cantidad, 0);
+      document.getElementById("resumenSubtotal").textContent = fmtCrc(subtotal);
+      document.getElementById("resumenTotal").textContent = fmtCrc(subtotal);
+      cargarRelacionados(items);
+    });
+  }
+
+  // ---- Confirmar pedido: elegir método de pago -> POST /api/pedido ----
+  const pagoOverlay = document.getElementById("pagoOverlay");
+  document.getElementById("btnConfirmarPedido").addEventListener("click", () => {
+    pagoOverlay.classList.add("visible");
+  });
+  document.getElementById("btnPagoCancelar").addEventListener("click", () => pagoOverlay.classList.remove("visible"));
+
+  document.querySelectorAll(".pago-opcion").forEach((op) => {
+    op.addEventListener("click", () => {
+      document.querySelectorAll(".pago-opcion").forEach((o) => o.classList.remove("seleccionada"));
+      op.classList.add("seleccionada");
+      op.querySelector("input").checked = true;
+      document.getElementById("campoReferenciaSinpe").style.display = op.dataset.valor === "sinpe" ? "block" : "none";
+    });
+  });
+
+  document.getElementById("btnPagoConfirmar").addEventListener("click", () => {
+    const metodo = document.querySelector('input[name="metodoPagoPedido"]:checked')?.value;
+    if (!metodo) { alert("Elige un método de pago."); return; }
+    const referencia = document.getElementById("inputReferenciaSinpe").value.trim();
+
+    fetch("/api/pedido", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ accion: "confirmar", metodo_pago: metodo, referencia_pago: referencia }).toString(),
+    })
+      .then((res) => res.json().then((data) => { if (!res.ok) throw new Error(data.error || "No se pudo confirmar el pedido."); return data; }))
+      .then((data) => {
+        pagoOverlay.classList.remove("visible");
+        window.open(`factura.html?id=${data.pedido_id}`, "_blank", "noopener");
+        render(); // el carrito ya quedó vacío en el servidor
+      })
+      .catch((err) => alert(err.message));
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

@@ -736,10 +736,21 @@ function construirTarjetaProductoHTML(producto) {
   // dentro de "Ver detalles" (detalle-nacional.html), que es donde debe
   // vivir esa información.
 
+  // 🆕 Botón 🛒+ (estilo Temu) sobre la foto de cada tarjeta, provisto
+  // por carrito.js (window.Carrito). Se genera acá con los datos que ya
+  // trae "producto" del catálogo (id, nombre, imagen, precio, etc.) y
+  // el click ya queda enganchado por delegación de eventos en
+  // carrito.js — no requiere ningún listener extra en este archivo. Se
+  // valida que exista window.Carrito por si carrito.js todavía no
+  // cargó (orden de <script> en index.html) o no se incluyó esta
+  // página, para no romper el catálogo por un error de undefined.
+  const botonCarritoHtml = window.Carrito ? window.Carrito.botonHTML(producto) : "";
+
   return `
         <div class="producto-media-wrap">
           ${ribbonUrgenciaHtml}
           ${galeriaHtml}
+          ${botonCarritoHtml}
         </div>
         <h3>${producto.nombre || ''}</h3>
         ${quedanBadgeHtml}
@@ -785,6 +796,7 @@ document.addEventListener("click", function (e) {
   if (!card) return;
   if (e.target.closest(".galeria-dot")) return; // no interferir con el carrusel de fotos
   if (e.target.closest(".more-info-btn")) return; // ese clic ya lo maneja su propio listener
+  if (e.target.closest(".btn-agregar-carrito")) return; // ese clic lo maneja carrito.js
   const btn = card.querySelector(".more-info-btn");
   if (btn) btn.click();
 });

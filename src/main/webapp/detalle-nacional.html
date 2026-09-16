@@ -15,6 +15,7 @@
   crossorigin="anonymous"
   referrerpolicy="no-referrer"
 />
+<script src="carrito.js" defer></script>
 <style>
   :root {
     --bg: #fffdf9;
@@ -508,6 +509,7 @@
   }
   .rel-card:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
   .rel-card-img {
+    position: relative;
     aspect-ratio: 1 / 1;
     background: #fff;
     display: flex;
@@ -541,7 +543,20 @@
 
 <header>
   <div class="logo">Tienda <span class="rojo">Monjarrez</span></div>
-  <a class="volver" href="/"><i class="fa-solid fa-arrow-left"></i> Volver a la tienda</a>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <a class="volver" href="/"><i class="fa-solid fa-arrow-left"></i> Volver a la tienda</a>
+    <!-- 🆕 Mismo ícono de carrito que index.html (provisto por
+         carrito.js): esta página no carga script.js ni el login de
+         index.html, así que si la persona es Invitada, carrito.js la
+         manda a index.html para iniciar sesión (ver pedirLogin() en
+         carrito.js). -->
+    <button id="cartHeaderBtn" type="button" title="Ver carrito" aria-label="Ver carrito"
+      style="color:#1a1a1a;"
+      onclick="if (window.Carrito.haySesion()) { window.open('carrito.html','_blank','noopener'); } else { window.Carrito.pedirLogin(); }">
+      <i class="fa-solid fa-cart-shopping"></i>
+      <span class="cart-badge">0</span>
+    </button>
+  </div>
 </header>
 
 <main>
@@ -553,6 +568,7 @@
       <div class="imagen-principal">
         <img id="imagenPrincipal" src="" alt="" />
         <div id="franjaUrgenciaProducto"></div>
+        <div id="botonCarritoProducto"></div>
       </div>
       <div class="panel-info">
         <span class="badge-nacional"><i class="fa-solid fa-store"></i> Producto de Vendedor Nacional</span>
@@ -817,6 +833,14 @@
       : "";
     document.getElementById("badgesUrgenciaProducto").innerHTML = quedanBadgeHtml + ahorraExtraHtml;
 
+    // 🆕 Botón 🛒+ sobre la foto principal, mismo que usa el catálogo
+    // (provisto por carrito.js). "producto" ya trae id/nombre/imagen/
+    // precio/precio_anterior/categoria tal cual vienen de /api/productos.
+    const contenedorBotonCarrito = document.getElementById("botonCarritoProducto");
+    if (contenedorBotonCarrito && window.Carrito) {
+      contenedorBotonCarrito.innerHTML = window.Carrito.botonHTML(producto);
+    }
+
     if (producto.es_extranjero) {
       document.getElementById("notaExtranjero").innerHTML = `
         <p class="nota-precio-extranjero">
@@ -972,12 +996,20 @@
     a.className = "rel-card";
     a.href = `detalle-nacional.html?id=${encodeURIComponent(p.id)}`;
     a.innerHTML = `
-      <div class="rel-card-img"><img src="${esc(p.imagen)}" alt="${esc(p.nombre)}" loading="lazy"></div>
+      <div class="rel-card-img">
+        <img src="${esc(p.imagen)}" alt="${esc(p.nombre)}" loading="lazy">
+        ${window.Carrito ? window.Carrito.botonHTML(p) : ""}
+      </div>
       <div class="rel-card-body">
         <p class="rel-card-nombre">${esc(p.nombre)}</p>
         <p class="rel-card-precio">${precioHtml}</p>
       </div>
     `;
+    // 🆕 El botón vive DENTRO de un <a> (la tarjeta entera es un enlace a
+    // detalle-nacional.html): sin este freno, tocar el ícono también
+    // navegaría a la página del producto. carrito.js ya hace su propio
+    // stopPropagation, pero acá se frena además la navegación del <a>.
+    a.querySelector(".btn-agregar-carrito")?.addEventListener("click", (e) => e.preventDefault());
     return a;
   }
 

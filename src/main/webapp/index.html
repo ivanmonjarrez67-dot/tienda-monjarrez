@@ -2029,6 +2029,16 @@
         </svg>
       </button>
     </div>
+
+    <!-- 🆕 Ícono del carrito (provisto por carrito.js): el badge con la
+         cantidad de artículos se actualiza solo desde ese archivo. "Ir
+         al carrito" siempre abre carrito.html en pestaña nueva, tal
+         como se pidió. Si la persona es Invitada, carrito.js le pide
+         iniciar sesión antes de dejarla entrar. -->
+    <button id="cartHeaderBtn" type="button" title="Ver carrito" aria-label="Ver carrito" onclick="if (window.Carrito.haySesion()) { window.open('carrito.html','_blank','noopener'); } else { window.Carrito.pedirLogin(); }">
+      <i class="fa-solid fa-cart-shopping"></i>
+      <span class="cart-badge">0</span>
+    </button>
   </div>
 </header>
 
@@ -3896,6 +3906,7 @@ async function cargarMisProductos(usuarioId) {
     </script>
 
 <script src="script.js"></script>
+<script src="carrito.js"></script>
 
 <script>
 /* ================================================================
@@ -6067,6 +6078,15 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
         // modalVendedor (cédula + contraseña).
         document.getElementById("loginModal").style.display = "flex";
         document.querySelector("#loginModal .role-btn.vendedor")?.click();
+      }
+
+      // 🆕 Mismo mecanismo, disparado ahora desde carrito.js (pedirLogin)
+      // cuando alguien Invitado intenta agregar un producto al carrito
+      // desde detalle-nacional.html, carrito.html o factura.html
+      // (páginas que no tienen su propio login) y lo mandamos para acá.
+      if (accion === "login-comprador") {
+        document.getElementById("loginModal").style.display = "flex";
+        document.querySelector("#loginModal .role-btn.comprador")?.click();
       }
 
       if (accion === "registro-vendedor") {
