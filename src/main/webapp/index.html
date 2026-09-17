@@ -5823,20 +5823,14 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
 
 
 
-  <!-- 🆕 Iconos flotantes de redes sociales: TikTok va primero y ya
-       está activo con el enlace real de la tienda. Instagram se
-       deshabilitó (está fallando) y se muestra bloqueado con
-       candadito hasta que se resuelva; cuando vuelva a funcionar, solo
-       hay que quitarle la clase "red-bloqueada", restaurar el href
-       real y borrar el <span class="red-candado">. Facebook se
-       eliminó. -->
+  <!-- 🆕 Iconos flotantes de redes sociales: TikTok e Instagram activos,
+       ambos con su enlace real. Facebook se eliminó. -->
   <div class="redes-flotantes" id="redesFlotantes">
     <a href="https://www.tiktok.com/@tiendamonjarrez?_r=1&_t=ZS-99bfXbsjowf" target="_blank" rel="noopener noreferrer" class="red-icono red-tiktok" aria-label="TikTok">
       <i class="fa-brands fa-tiktok"></i>
     </a>
-    <a href="#" class="red-icono red-bloqueada" aria-label="Instagram (próximamente)" title="Muy pronto" onclick="return false;">
+    <a href="https://www.instagram.com/tiendamonjarrez?utm_source=qr&igsi=dmFxc2pmcjRhdHVq" target="_blank" rel="noopener noreferrer" class="red-icono red-instagram" aria-label="Instagram">
       <i class="fa-brands fa-instagram"></i>
-      <span class="red-candado"><i class="fa-solid fa-lock"></i></span>
     </a>
   </div>
 
