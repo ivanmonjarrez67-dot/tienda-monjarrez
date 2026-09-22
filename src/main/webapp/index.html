@@ -3939,17 +3939,48 @@ async function cargarMisProductos(usuarioId) {
     return div.innerHTML;
   }
 
+  // 🆕 Reutiliza el mismo motor de urgencia/descuento falso que ya
+  // usan los productos nacionales (calcularUrgenciaProducto,
+  // formatearCuentaRegresiva). Esas funciones viven en script.js, que
+  // se carga ANTES que este <script> (ver orden de <script> más abajo
+  // en index.html), así que ya están disponibles acá sin necesidad de
+  // duplicarlas. Solo les pasamos un objeto con id/precio en el mismo
+  // formato que espera esa función.
   function construirTarjetaImportacion(p) {
     const nombre = esc(p.nombre);
     const imagen = esc(p.imagen);
     const envioTexto = p.envioDias ? `Llega en ${esc(p.envioDias)} días` : "Envío internacional";
 
+    const urgencia = calcularUrgenciaProducto({ id: p.id, precio: p.precioCrc });
+
+    let precioAnteriorHtml = "";
+    let contadorHtml = "";
+    if (urgencia.precioFalsoTachado) {
+      precioAnteriorHtml = `<span class="imp-monjarrez-precio-anterior">${fmtCrc(urgencia.precioFalsoTachado)}</span>
+        <span class="imp-monjarrez-descuento-badge">-${urgencia.porcentajeFalso}%</span>`;
+      contadorHtml = `<div class="imp-monjarrez-contador" data-fin-ms="${Date.now() + urgencia.msRestantes}">
+          <i class="fa-solid fa-bolt"></i> Termina en <span class="imp-monjarrez-contador-reloj">${formatearCuentaRegresiva(urgencia.msRestantes)}</span>
+        </div>`;
+    }
+
+    const ribbonUrgenciaHtml = urgencia.mostrarFranja
+      ? `<div class="imp-monjarrez-franja-urgencia">${urgencia.fraseSecundaria}</div>`
+      : "";
+    const quedanBadgeHtml = urgencia.mostrarFranja
+      ? `<div class="imp-monjarrez-quedan-badge">${urgencia.frase}</div>`
+      : "";
+
     return `
       <div class="imp-monjarrez-card">
-        <img src="${imagen}" alt="${nombre}" loading="lazy">
+        <div class="imp-monjarrez-media-wrap">
+          ${ribbonUrgenciaHtml}
+          <img src="${imagen}" alt="${nombre}" loading="lazy">
+        </div>
         <h3>${nombre}</h3>
+        ${quedanBadgeHtml}
         <span class="imp-monjarrez-envio">${envioTexto}</span>
-        <p class="imp-monjarrez-precio-crc">${fmtCrc(p.precioCrc)}</p>
+        <p class="imp-monjarrez-precio-crc">${fmtCrc(p.precioCrc)}${precioAnteriorHtml}</p>
+        ${contadorHtml}
         <p class="imp-monjarrez-precio-usd">${fmtUsd(p.precioUsd)} USD ref.</p>
         <button class="imp-monjarrez-btn" data-id="${p.id ?? ''}" data-nombre="${nombre}">
           Ver más detalles
@@ -3957,6 +3988,43 @@ async function cargarMisProductos(usuarioId) {
       </div>
     `;
   }
+
+  // 🆕 Arma el mosaico con columnas reales de JS (mismo criterio que
+  // pintarMosaico() de script.js para los productos nacionales), en
+  // vez de CSS column-count: así una imagen alta nunca queda partida
+  // entre dos columnas, que era la causa de que se vieran "cortadas".
+  // Tope de 4 columnas en pantallas grandes, como pidió el usuario.
+  function pintarMosaicoImportaciones(grid, productos) {
+    grid.innerHTML = "";
+    if (!productos || productos.length === 0) return;
+    let numColumnas;
+    if (window.innerWidth <= 640) numColumnas = 2;
+    else if (window.innerWidth <= 900) numColumnas = 3;
+    else numColumnas = 4;
+    numColumnas = Math.min(numColumnas, productos.length);
+
+    const columnas = [];
+    for (let i = 0; i < numColumnas; i++) {
+      const col = document.createElement("div");
+      col.className = "imp-monjarrez-col";
+      grid.appendChild(col);
+      columnas.push(col);
+    }
+    productos.forEach((producto) => {
+      const envoltura = document.createElement("div");
+      envoltura.innerHTML = construirTarjetaImportacion(producto);
+      const card = envoltura.firstElementChild;
+      let colMasCorta = columnas[0];
+      columnas.forEach((col) => {
+        if (col.children.length < colMasCorta.children.length) colMasCorta = col;
+      });
+      colMasCorta.appendChild(card);
+    });
+  }
+
+  // 🆕 Se guarda la última lista recibida del servidor para poder
+  // repintar el mosaico (por resize) sin volver a pedirla.
+  let ultimosProductosImportados = null;
 
   function cargarImportacionesMonjarrez() {
     const seccion = document.getElementById("importacionesMonjarrezSection");
@@ -3976,7 +4044,8 @@ async function cargarMisProductos(usuarioId) {
           seccion.style.display = "none";
           return;
         }
-        grid.innerHTML = productos.map(construirTarjetaImportacion).join("");
+        ultimosProductosImportados = productos;
+        pintarMosaicoImportaciones(grid, productos);
       })
       .catch((err) => {
         console.error("Error al cargar Importaciones Monjarrez:", err);
@@ -3998,6 +4067,31 @@ async function cargarMisProductos(usuarioId) {
   });
 
   window.addEventListener("load", cargarImportacionesMonjarrez);
+
+  // 🆕 Reloj de las ofertas (mismo criterio que el de los productos
+  // nacionales en script.js): actualiza el texto una vez por segundo,
+  // sin reconstruir las tarjetas.
+  setInterval(() => {
+    document.querySelectorAll(".imp-monjarrez-contador[data-fin-ms]").forEach((el) => {
+      const finMs = parseInt(el.dataset.finMs, 10);
+      if (isNaN(finMs)) return;
+      const reloj = el.querySelector(".imp-monjarrez-contador-reloj");
+      if (reloj) reloj.textContent = formatearCuentaRegresiva(finMs - Date.now());
+    });
+  }, 1000);
+
+  // 🆕 Si la pantalla cambia de ancho (rotar el teléfono, redimensionar
+  // ventana), se vuelve a pintar el mosaico para que el número de
+  // columnas se ajuste (2/3/4). Con "debounce" simple para no
+  // recalcular en cada pixel del resize.
+  let resizeTimeoutImp = null;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimeoutImp);
+    resizeTimeoutImp = setTimeout(() => {
+      const grid = document.getElementById("impMonjarrezGrid");
+      if (grid && ultimosProductosImportados) pintarMosaicoImportaciones(grid, ultimosProductosImportados);
+    }, 300);
+  });
 })();
 </script>
 

@@ -109,6 +109,7 @@
 
   .imagen-principal {
     order: 1;
+    position: relative;
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -124,6 +125,56 @@
     object-fit: contain;
     background: #fff;
   }
+
+  /* 🆕 Urgencia (mismo motor determinístico que usan las tarjetas del
+     catálogo, nacionales e importadas): franja sobre la foto, badge
+     "Solo quedan X" debajo del título, precio tachado falso junto al
+     precio real y contador regresivo. */
+  .franja-urgencia-detalle {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: linear-gradient(135deg, #b33a3a, #7a1414);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    z-index: 1;
+  }
+  .badge-quedan-detalle {
+    display: none;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #f6c445;
+    margin: -4px 0 10px;
+  }
+  .precio-anterior-detalle {
+    font-size: 0.95rem;
+    color: var(--text-dim);
+    text-decoration: line-through;
+    margin-left: 8px;
+  }
+  .descuento-badge-detalle {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    background: #b33a3a;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .contador-urgencia-detalle {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: #f6c445;
+    margin-bottom: 14px;
+  }
+  .contador-urgencia-detalle i { color: #b33a3a; }
 
   /* ---------- Panel de info ---------- */
   .panel-info { order: 3; }
@@ -335,14 +386,19 @@
     <div class="producto-layout">
       <div class="miniaturas" id="miniaturas"></div>
       <div class="imagen-principal">
+        <div class="franja-urgencia-detalle" id="franjaUrgenciaDetalle" style="display:none;"></div>
         <img id="imagenPrincipal" src="" alt="" />
       </div>
       <div class="panel-info">
         <span class="badge-internacional"><i class="fa-solid fa-earth-americas"></i> Producto internacional</span>
         <h1 class="titulo-producto" id="tituloProducto"></h1>
         <div class="categoria-producto" id="categoriaProducto"></div>
+        <div class="badge-quedan-detalle" id="badgeQuedanDetalle"></div>
 
         <div class="precio-crc" id="precioProductoCrc"></div>
+        <div class="contador-urgencia-detalle" id="contadorUrgenciaDetalle">
+          <i class="fa-solid fa-bolt"></i> Termina en <span id="contadorUrgenciaReloj"></span>
+        </div>
         <div class="precio-nota"><span id="precioProductoUsd"></span> USD ref. — precio final sujeto a confirmación por correo</div>
 
         <div class="envio-info">
@@ -413,15 +469,135 @@
     return div.innerHTML;
   }
 
+  // 🆕 ===================== Motor de urgencia =====================
+  // Mismo criterio determinístico que ya usan las tarjetas del
+  // catálogo (nacionales e importadas): esta página no carga
+  // script.js (es standalone), así que estas funciones se duplican
+  // acá a propósito, autocontenidas, sin tocar ningún otro archivo.
+  function pseudoAleatorio(semilla) {
+    const x = Math.sin(semilla) * 10000;
+    return x - Math.floor(x);
+  }
+
+  const MS_DIA_URGENCIA = 24 * 60 * 60 * 1000;
+
+  function cicloUrgenciaProducto(idProducto) {
+    const id = parseInt(idProducto, 10) || 0;
+    const desfaseMs = Math.floor(pseudoAleatorio(id * 12.9898) * MS_DIA_URGENCIA);
+    const ahora = Date.now();
+    const numeroCiclo = Math.floor((ahora - desfaseMs) / MS_DIA_URGENCIA);
+    const finCiclo = numeroCiclo * MS_DIA_URGENCIA + desfaseMs + MS_DIA_URGENCIA;
+    return {
+      semillaCiclo: id * 100000 + numeroCiclo,
+      msRestantes: finCiclo - ahora,
+    };
+  }
+
+  const FRASES_URGENCIA = [
+    "🔥 Oferta de temporada",
+    "⚡ Oferta relámpago",
+    "🔥 Alta demanda",
+    "📈 Tendencia ahora",
+  ];
+
+  function calcularUrgenciaProducto(idProducto, precioBase) {
+    const ciclo = cicloUrgenciaProducto(idProducto);
+    const r1 = pseudoAleatorio(ciclo.semillaCiclo + 1);
+    const r2 = pseudoAleatorio(ciclo.semillaCiclo + 2);
+    const r3 = pseudoAleatorio(ciclo.semillaCiclo + 3);
+    const r4 = pseudoAleatorio(ciclo.semillaCiclo + 4);
+    const r5 = pseudoAleatorio(ciclo.semillaCiclo + 5);
+
+    let precioFalsoTachado = null;
+    let porcentajeFalso = null;
+    const base = parseFloat(precioBase);
+    if (!isNaN(base) && base > 0) {
+      porcentajeFalso = Math.round(30 + r1 * 35);
+      precioFalsoTachado = Math.round(base / (1 - porcentajeFalso / 100));
+    }
+
+    const mostrarFranja = r2 < 0.28;
+    const cantidadRestante = 2 + Math.floor(r3 * 13);
+    let frase;
+    if (r5 < 0.3) {
+      frase = "Último día";
+    } else if (cantidadRestante <= 3) {
+      frase = "Casi agotados";
+    } else {
+      frase = `Solo quedan ${cantidadRestante}`;
+    }
+    const fraseSecundaria = FRASES_URGENCIA[Math.floor(r4 * FRASES_URGENCIA.length)];
+
+    return { precioFalsoTachado, porcentajeFalso, msRestantes: ciclo.msRestantes, mostrarFranja, frase, fraseSecundaria };
+  }
+
+  function formatearCuentaRegresiva(ms) {
+    if (ms < 0) ms = 0;
+    const totalSeg = Math.floor(ms / 1000);
+    const h = Math.floor(totalSeg / 3600);
+    const m = Math.floor((totalSeg % 3600) / 60);
+    const s = totalSeg % 60;
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  }
+
+  let finUrgenciaMs = null; // se lee cada segundo desde el setInterval de abajo
+
+  // Recalcula y pinta la urgencia para el precio actualmente visible
+  // (cambia según la variante elegida, igual que el precio y la foto).
+  function renderizarUrgencia(precioBase) {
+    const urgencia = calcularUrgenciaProducto(producto.id, precioBase);
+
+    const elFranja = document.getElementById("franjaUrgenciaDetalle");
+    const elBadge = document.getElementById("badgeQuedanDetalle");
+    const elContador = document.getElementById("contadorUrgenciaDetalle");
+    const elPrecio = document.getElementById("precioProductoCrc");
+
+    // Precio tachado + % de descuento, pegado junto al precio real.
+    const precioNumFmt = fmtCrc(precioBase);
+    if (urgencia.precioFalsoTachado) {
+      elPrecio.innerHTML =
+        `${precioNumFmt}` +
+        `<span class="precio-anterior-detalle">${fmtCrc(urgencia.precioFalsoTachado)}</span>` +
+        `<span class="descuento-badge-detalle">-${urgencia.porcentajeFalso}%</span>`;
+      finUrgenciaMs = Date.now() + urgencia.msRestantes;
+      elContador.style.display = "flex";
+      document.getElementById("contadorUrgenciaReloj").textContent = formatearCuentaRegresiva(urgencia.msRestantes);
+    } else {
+      elPrecio.textContent = precioNumFmt;
+      finUrgenciaMs = null;
+      elContador.style.display = "none";
+    }
+
+    if (urgencia.mostrarFranja) {
+      elFranja.textContent = urgencia.fraseSecundaria;
+      elFranja.style.display = "block";
+      elBadge.textContent = urgencia.frase;
+      elBadge.style.display = "block";
+    } else {
+      elFranja.style.display = "none";
+      elBadge.style.display = "none";
+    }
+  }
+
+  // Reloj de la oferta: se actualiza una vez por segundo, igual que en
+  // el catálogo.
+  setInterval(() => {
+    if (finUrgenciaMs === null) return;
+    const reloj = document.getElementById("contadorUrgenciaReloj");
+    if (reloj) reloj.textContent = formatearCuentaRegresiva(finUrgenciaMs - Date.now());
+  }, 1000);
+  // 🆕 =================== Fin del motor de urgencia ===================
+
   function seleccionarVariante(v) {
     varianteActual = v;
     document.getElementById("imagenPrincipal").src = v.imagen || producto.imagen;
-    document.getElementById("precioProductoCrc").textContent = fmtCrc(v.precioVentaCrc);
     document.getElementById("precioProductoUsd").textContent = fmtUsd(v.precioVenta);
     document.getElementById("envioInfo").textContent =
       (v.envioDias ? `Llega en ${v.envioDias} días` : "Envío internacional") +
       (v.envioTransportadora ? ` · ${v.envioTransportadora}` : "");
     document.getElementById("varianteSeleccionadaNombre").textContent = v.opciones || "";
+    renderizarUrgencia(v.precioVentaCrc);
 
     document.querySelectorAll(".variante-opcion").forEach((el) => {
       el.classList.toggle("activa-variante", el.dataset.id === String(v.id));
@@ -566,8 +742,8 @@
       document.getElementById("imagenPrincipal").src = imagenesUnicas[0] || producto.imagen;
     } else {
       document.getElementById("imagenPrincipal").src = producto.imagen;
-      document.getElementById("precioProductoCrc").textContent = fmtCrc(producto.precioVentaDesdeCrc);
       document.getElementById("precioProductoUsd").textContent = fmtUsd(producto.precioVentaDesde);
+      renderizarUrgencia(producto.precioVentaDesdeCrc);
     }
 
     configurarBotonCompartir();

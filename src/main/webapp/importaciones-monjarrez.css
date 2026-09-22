@@ -38,24 +38,27 @@
 }
 
 .imp-monjarrez-grid {
-  /* 🔧 Antes era CSS grid con celdas de igual tamaño, lo que obligaba
-     a recortar la imagen (object-fit: cover + height fija) para que
-     encajara en un cuadro parejo. Ahora es un layout tipo "columnas"
-     (como Pinterest/Temu): cada tarjeta ocupa el ancho de su columna
-     y la imagen crece a su alto NATURAL, sin recortarse ni perder
-     calidad. */
-  column-count: 2;
-  column-gap: 14px;
+  /* 🔧 Antes usaba CSS column-count (layout tipo Pinterest hecho por
+     el navegador). Ese enfoque tiene un bug conocido: en varios
+     navegadores el navegador puede partir una imagen alta justo en el
+     borde entre columnas, aunque haya "break-inside: avoid" en la
+     tarjeta — es justo lo que se veía como "imagen cortada". Los
+     productos nacionales evitan ese bug armando las columnas ellos
+     mismos con JavaScript (pintarMosaico) en vez de dejárselo al CSS.
+     Ahora las importaciones usan el mismo truco: este contenedor solo
+     es un <div style="display:flex"> con las columnas reales
+     (.imp-monjarrez-col) ya armadas por JS adentro. */
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
 }
 
-@media (min-width: 640px) {
-  .imp-monjarrez-grid { column-count: 3; }
-}
-@media (min-width: 900px) {
-  .imp-monjarrez-grid { column-count: 4; }
-}
-@media (min-width: 1200px) {
-  .imp-monjarrez-grid { column-count: 5; }
+.imp-monjarrez-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .imp-monjarrez-card {
@@ -64,13 +67,6 @@
   border-radius: 10px;
   padding: 10px;
   display: block;
-  /* En layout de columnas (no grid), el espaciado vertical entre
-     tarjetas se hace con margin, no con "gap". */
-  margin-bottom: 14px;
-  /* Evita que una tarjeta se corte a la mitad entre una columna y
-     la siguiente. */
-  break-inside: avoid;
-  -webkit-column-break-inside: avoid;
   transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
@@ -79,16 +75,72 @@
   border-color: rgba(255, 255, 255, 0.3);
 }
 
+.imp-monjarrez-media-wrap {
+  position: relative;
+}
+
 .imp-monjarrez-card img {
   width: 100%;
-  /* 🔧 Antes: height:150px + object-fit:cover -> recortaba la imagen
-     para forzarla a un cuadrado. Ahora la imagen conserva su
-     proporción real (alto automático), igual que en tu ejemplo de
-     Temu: nunca se recorta ni se ve "achatada". */
+  /* Imagen completa, sin recortar: conserva su proporción real (alto
+     automático), igual que en los productos nacionales. */
   height: auto;
   display: block;
   border-radius: 8px;
   background: #111;
+}
+
+/* 🆕 Franja de urgencia sobre la imagen (misma idea que
+   .producto-franja-urgencia en los productos nacionales, con el rojo
+   de la marca Monjarrez). Aparece solo en una selección rotativa de
+   productos, igual que en el catálogo normal. */
+.imp-monjarrez-franja-urgencia {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: linear-gradient(135deg, #b33a3a, #7a1414);
+  color: #fff;
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  z-index: 1;
+}
+
+/* 🆕 "Solo quedan X" / "Casi agotados" / "Último día", debajo del
+   nombre — mismo lugar y espíritu que .producto-quedan-badge. */
+.imp-monjarrez-quedan-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #f6c445;
+  margin: 0 0 4px;
+}
+
+.imp-monjarrez-precio-anterior {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.45);
+  text-decoration: line-through;
+  margin-left: 6px;
+}
+
+.imp-monjarrez-descuento-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #fff;
+  background: #b33a3a;
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-left: 6px;
+}
+
+.imp-monjarrez-contador {
+  font-size: 0.7rem;
+  color: #f6c445;
+  margin: 2px 0 6px;
+}
+.imp-monjarrez-contador i {
+  margin-right: 4px;
 }
 
 .imp-monjarrez-card h3 {
@@ -164,5 +216,6 @@
 
 @media (max-width: 640px) {
   .imp-monjarrez-title { font-size: 1.35rem; }
-  .imp-monjarrez-grid { column-count: 2; column-gap: 10px; }
+  .imp-monjarrez-grid { gap: 10px; }
+  .imp-monjarrez-col { gap: 10px; }
 }
