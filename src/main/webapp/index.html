@@ -3951,36 +3951,14 @@ async function cargarMisProductos(usuarioId) {
     const imagen = esc(p.imagen);
     const envioTexto = p.envioDias ? `Llega en ${esc(p.envioDias)} días` : "Envío internacional";
 
-    const urgencia = calcularUrgenciaProducto({ id: p.id, precio: p.precioCrc });
-
-    let precioAnteriorHtml = "";
-    let contadorHtml = "";
-    if (urgencia.precioFalsoTachado) {
-      precioAnteriorHtml = `<span class="imp-monjarrez-precio-anterior">${fmtCrc(urgencia.precioFalsoTachado)}</span>
-        <span class="imp-monjarrez-descuento-badge">-${urgencia.porcentajeFalso}%</span>`;
-      contadorHtml = `<div class="imp-monjarrez-contador" data-fin-ms="${Date.now() + urgencia.msRestantes}">
-          <i class="fa-solid fa-bolt"></i> Termina en <span class="imp-monjarrez-contador-reloj">${formatearCuentaRegresiva(urgencia.msRestantes)}</span>
-        </div>`;
-    }
-
-    const ribbonUrgenciaHtml = urgencia.mostrarFranja
-      ? `<div class="imp-monjarrez-franja-urgencia">${urgencia.fraseSecundaria}</div>`
-      : "";
-    const quedanBadgeHtml = urgencia.mostrarFranja
-      ? `<div class="imp-monjarrez-quedan-badge">${urgencia.frase}</div>`
-      : "";
-
     return `
       <div class="imp-monjarrez-card">
         <div class="imp-monjarrez-media-wrap">
-          ${ribbonUrgenciaHtml}
           <img src="${imagen}" alt="${nombre}" loading="lazy">
         </div>
         <h3>${nombre}</h3>
-        ${quedanBadgeHtml}
         <span class="imp-monjarrez-envio">${envioTexto}</span>
-        <p class="imp-monjarrez-precio-crc">${fmtCrc(p.precioCrc)}${precioAnteriorHtml}</p>
-        ${contadorHtml}
+        <p class="imp-monjarrez-precio-crc">${fmtCrc(p.precioCrc)}</p>
         <p class="imp-monjarrez-precio-usd">${fmtUsd(p.precioUsd)} USD ref.</p>
         <button class="imp-monjarrez-btn" data-id="${p.id ?? ''}" data-nombre="${nombre}">
           Ver más detalles
@@ -4067,18 +4045,6 @@ async function cargarMisProductos(usuarioId) {
   });
 
   window.addEventListener("load", cargarImportacionesMonjarrez);
-
-  // 🆕 Reloj de las ofertas (mismo criterio que el de los productos
-  // nacionales en script.js): actualiza el texto una vez por segundo,
-  // sin reconstruir las tarjetas.
-  setInterval(() => {
-    document.querySelectorAll(".imp-monjarrez-contador[data-fin-ms]").forEach((el) => {
-      const finMs = parseInt(el.dataset.finMs, 10);
-      if (isNaN(finMs)) return;
-      const reloj = el.querySelector(".imp-monjarrez-contador-reloj");
-      if (reloj) reloj.textContent = formatearCuentaRegresiva(finMs - Date.now());
-    });
-  }, 1000);
 
   // 🆕 Si la pantalla cambia de ancho (rotar el teléfono, redimensionar
   // ventana), se vuelve a pintar el mosaico para que el número de
