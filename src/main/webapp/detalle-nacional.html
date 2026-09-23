@@ -537,6 +537,135 @@
     margin-left: 5px;
     font-weight: 500;
   }
+
+  /* ---------- 🆕 Reseñas y calificaciones (estilo Temu) ---------- */
+  .resenas {
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .resenas h2 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 0 0 16px;
+    border-left: 3px solid var(--rojo);
+    padding-left: 10px;
+  }
+  .resenas-resumen {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    padding: 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 16px;
+  }
+  .resenas-promedio-num { font-size: 2rem; font-weight: 800; line-height: 1; }
+  .resenas-promedio-wrap { text-align: center; min-width: 90px; }
+  .resenas-estrellas { color: #ff9017; font-size: 0.95rem; letter-spacing: 1px; }
+  .resenas-total { font-size: 0.78rem; color: var(--text-dim); margin-top: 4px; }
+  .resenas-barras { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 4px; }
+  .resenas-barra-fila { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-dim); }
+  .resenas-barra-fila span:first-child { width: 34px; flex-shrink: 0; }
+  .resenas-barra-fila span:last-child { width: 26px; flex-shrink: 0; text-align: right; }
+  .resenas-barra-pista { flex: 1; height: 6px; border-radius: 4px; background: #ececec; overflow: hidden; }
+  .resenas-barra-relleno { height: 100%; background: #ff9017; }
+
+  .resenas-filtros { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .resenas-filtro-chip {
+    border: 1.5px solid #ddd;
+    background: #fff;
+    color: var(--text);
+    border-radius: 999px;
+    padding: 5px 13px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .resenas-filtro-chip:hover { border-color: var(--rojo); }
+  .resenas-filtro-chip.activo { background: var(--rojo); border-color: var(--rojo); color: #fff; }
+
+  .resenas-lista { display: flex; flex-direction: column; gap: 18px; }
+  .resena-item { display: flex; gap: 12px; }
+  /* 🆕 Avatar genérico morado con la inicial del nombre — para
+     compradores que no tienen foto de perfil, igual que hace Temu. */
+  .avatar-iniciales {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+  }
+  .resena-cuerpo { flex: 1; min-width: 0; }
+  .resena-nombre { font-weight: 600; font-size: 0.85rem; margin: 0; }
+  .resena-meta { display: flex; align-items: center; gap: 8px; margin: 2px 0 6px; }
+  .resena-meta .resenas-estrellas { font-size: 0.8rem; }
+  .resena-fecha { font-size: 0.72rem; color: var(--text-dim); }
+  .resena-comentario { font-size: 0.85rem; line-height: 1.5; color: #333; margin: 0; white-space: pre-wrap; }
+  .resenas-sin-datos { color: var(--text-dim); font-size: 0.85rem; padding: 10px 0; }
+  .resenas-ver-mas { background: none; border: none; color: var(--rojo); font-weight: 600; font-size: 0.82rem; cursor: pointer; padding: 10px 0 0; font-family: inherit; }
+
+  /* Escribir una reseña */
+  .resenas-escribir-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    border: 1.5px solid var(--rojo);
+    color: var(--rojo);
+    border-radius: 999px;
+    padding: 7px 16px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    margin-bottom: 16px;
+  }
+  .resenas-escribir-btn:hover { background: rgba(161, 51, 65, 0.06); }
+  .resenas-form {
+    display: none;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  .resenas-form.abierto { display: block; }
+  .resenas-form-estrellas { font-size: 1.6rem; color: #ddd; cursor: pointer; margin-bottom: 10px; letter-spacing: 4px; }
+  .resenas-form-estrellas .fa-star.activa { color: #ff9017; }
+  .resenas-form textarea {
+    width: 100%;
+    min-height: 80px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    resize: vertical;
+  }
+  .resenas-form-enviar {
+    margin-top: 10px;
+    background: var(--rojo);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .resenas-form-enviar:disabled { opacity: 0.6; cursor: default; }
+  .resenas-form-mensaje { font-size: 0.78rem; margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -617,6 +746,31 @@
         <p class="envio-alejado-texto">¿Este producto está en una zona alejada? Con gusto validamos si es posible coordinar el envío.</p>
         <p id="envioProducto"></p>
       </div>
+    </div>
+
+    <!-- 🆕 Reseñas y calificaciones, estilo Temu -->
+    <div class="resenas" id="resenasSeccion">
+      <h2>Reseñas y calificaciones</h2>
+
+      <div class="resenas-resumen" id="resenasResumen" style="display:none;"></div>
+
+      <button type="button" class="resenas-escribir-btn" id="btnEscribirResena">
+        <i class="fa-solid fa-pen"></i> Escribir una reseña
+      </button>
+
+      <div class="resenas-form" id="resenasForm">
+        <div class="resenas-form-estrellas" id="resenasFormEstrellas">
+          <i class="fa-solid fa-star" data-valor="1"></i><i class="fa-solid fa-star" data-valor="2"></i><i class="fa-solid fa-star" data-valor="3"></i><i class="fa-solid fa-star" data-valor="4"></i><i class="fa-solid fa-star" data-valor="5"></i>
+        </div>
+        <textarea id="resenasFormTexto" placeholder="Contanos qué te pareció el producto (opcional)"></textarea>
+        <br>
+        <button type="button" class="resenas-form-enviar" id="resenasFormEnviar">Publicar reseña</button>
+        <div class="resenas-form-mensaje" id="resenasFormMensaje"></div>
+      </div>
+
+      <div class="resenas-filtros" id="resenasFiltros" style="display:none;"></div>
+      <div class="resenas-lista" id="resenasLista"></div>
+      <p class="resenas-sin-datos" id="resenasSinDatos" style="display:none;">Este producto todavía no tiene reseñas. ¡Sé el primero en dejar la tuya!</p>
     </div>
 
     <div class="relacionados" id="relacionadosSeccion" style="display:none;">
@@ -1069,6 +1223,228 @@
     btnVendedor.rel = "noopener";
   }
 
+  // 🆕 ================= Reseñas y calificaciones =================
+  // Paleta de colores estilo Zoom: a cada persona le toca siempre el
+  // mismo color, calculado a partir de su nombre (no es al azar en
+  // cada carga de página, es "al azar pero fijo por persona").
+  const PALETA_AVATARES = [
+    "#7B68EE", "#FF6B6B", "#4ECDC4", "#FFA502", "#1E90FF",
+    "#FF7F50", "#2ED573", "#A55EEA", "#FD79A8", "#00B894",
+    "#E17055", "#0984E3",
+  ];
+  function colorAvatar(nombre) {
+    const texto = String(nombre || "?");
+    let hash = 0;
+    for (let i = 0; i < texto.length; i++) {
+      hash = (hash * 31 + texto.charCodeAt(i)) >>> 0;
+    }
+    return PALETA_AVATARES[hash % PALETA_AVATARES.length];
+  }
+
+  function estrellasHtml(valorDecimal, tamanoClase) {
+    // valorDecimal puede venir con decimales (ej. 4.3, para el
+    // promedio) o ser un entero (calificación de una reseña puntual).
+    let html = "";
+    for (let i = 1; i <= 5; i++) {
+      if (valorDecimal >= i - 0.25) {
+        html += '<i class="fa-solid fa-star"></i>';
+      } else if (valorDecimal >= i - 0.75) {
+        html += '<i class="fa-solid fa-star-half-stroke"></i>';
+      } else {
+        html += '<i class="fa-regular fa-star"></i>';
+      }
+    }
+    return `<span class="resenas-estrellas ${tamanoClase || ""}">${html}</span>`;
+  }
+
+  function formatearFechaResena(fechaStr) {
+    const d = new Date(fechaStr);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("es-CR", { year: "numeric", month: "short", day: "numeric" });
+  }
+
+  let resenasDatosActuales = [];
+  let filtroEstrellasActivo = null;
+
+  function pintarListaResenas() {
+    const lista = document.getElementById("resenasLista");
+    const sinDatos = document.getElementById("resenasSinDatos");
+    const visibles = filtroEstrellasActivo
+      ? resenasDatosActuales.filter((r) => r.calificacion === filtroEstrellasActivo)
+      : resenasDatosActuales;
+
+    if (!visibles.length) {
+      lista.innerHTML = "";
+      sinDatos.style.display = "block";
+      sinDatos.textContent = filtroEstrellasActivo
+        ? "No hay reseñas con esa calificación."
+        : "Este producto todavía no tiene reseñas. ¡Sé el primero en dejar la tuya!";
+      return;
+    }
+    sinDatos.style.display = "none";
+
+    lista.innerHTML = visibles.map((r) => `
+      <div class="resena-item">
+        <div class="avatar-iniciales" style="background:${colorAvatar(r.nombre)};">${esc(r.inicial)}</div>
+        <div class="resena-cuerpo">
+          <p class="resena-nombre">${esc(r.nombre)}</p>
+          <div class="resena-meta">
+            ${estrellasHtml(r.calificacion)}
+            <span class="resena-fecha">${esc(formatearFechaResena(r.fecha))}</span>
+          </div>
+          ${r.comentario ? `<p class="resena-comentario">${esc(r.comentario)}</p>` : ""}
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function pintarResumenYFiltros(datos) {
+    const resumenEl = document.getElementById("resenasResumen");
+    const filtrosEl = document.getElementById("resenasFiltros");
+
+    if (!datos.total) {
+      resumenEl.style.display = "none";
+      filtrosEl.style.display = "none";
+      return;
+    }
+
+    resumenEl.style.display = "flex";
+    resumenEl.innerHTML = `
+      <div class="resenas-promedio-wrap">
+        <div class="resenas-promedio-num">${esc(datos.promedio)}</div>
+        ${estrellasHtml(parseFloat(datos.promedio))}
+        <div class="resenas-total">${datos.total} reseña${datos.total === 1 ? "" : "s"}</div>
+      </div>
+      <div class="resenas-barras">
+        ${[5, 4, 3, 2, 1].map((n) => {
+          const cantidad = datos.distribucion[n] || 0;
+          const pct = datos.total ? Math.round((cantidad / datos.total) * 100) : 0;
+          return `<div class="resenas-barra-fila">
+            <span>${n} ★</span>
+            <div class="resenas-barra-pista"><div class="resenas-barra-relleno" style="width:${pct}%"></div></div>
+            <span>${cantidad}</span>
+          </div>`;
+        }).join("")}
+      </div>
+    `;
+
+    filtrosEl.style.display = "flex";
+    const chipTodas = `<button type="button" class="resenas-filtro-chip${filtroEstrellasActivo === null ? " activo" : ""}" data-filtro="todas">Todas (${datos.total})</button>`;
+    const chipsEstrellas = [5, 4, 3, 2, 1]
+      .filter((n) => (datos.distribucion[n] || 0) > 0)
+      .map((n) => `<button type="button" class="resenas-filtro-chip${filtroEstrellasActivo === n ? " activo" : ""}" data-filtro="${n}">${n} ★ (${datos.distribucion[n]})</button>`)
+      .join("");
+    filtrosEl.innerHTML = chipTodas + chipsEstrellas;
+
+    filtrosEl.querySelectorAll(".resenas-filtro-chip").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const val = btn.dataset.filtro;
+        filtroEstrellasActivo = val === "todas" ? null : parseInt(val, 10);
+        pintarResumenYFiltros(datos);
+        pintarListaResenas();
+      });
+    });
+  }
+
+  function cargarResenas(productoId) {
+    fetch(`/api/resenas?producto_id=${encodeURIComponent(productoId)}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("respuesta " + res.status);
+        return res.json();
+      })
+      .then((datos) => {
+        resenasDatosActuales = datos.resenas || [];
+        pintarResumenYFiltros(datos);
+        pintarListaResenas();
+      })
+      .catch((err) => {
+        console.error("Error al cargar reseñas:", err);
+        document.getElementById("resenasSinDatos").style.display = "block";
+      });
+  }
+
+  function configurarFormularioResena(productoId) {
+    const btnAbrir = document.getElementById("btnEscribirResena");
+    const form = document.getElementById("resenasForm");
+    const estrellasWrap = document.getElementById("resenasFormEstrellas");
+    const estrellas = Array.from(estrellasWrap.querySelectorAll(".fa-star"));
+    const textarea = document.getElementById("resenasFormTexto");
+    const btnEnviar = document.getElementById("resenasFormEnviar");
+    const mensajeEl = document.getElementById("resenasFormMensaje");
+    let calificacionElegida = 0;
+
+    function pintarEstrellasForm(hover) {
+      const valor = hover || calificacionElegida;
+      estrellas.forEach((el) => {
+        el.classList.toggle("activa", parseInt(el.dataset.valor, 10) <= valor);
+      });
+    }
+
+    estrellas.forEach((el) => {
+      el.addEventListener("mouseenter", () => pintarEstrellasForm(parseInt(el.dataset.valor, 10)));
+      el.addEventListener("mouseleave", () => pintarEstrellasForm());
+      el.addEventListener("click", () => {
+        calificacionElegida = parseInt(el.dataset.valor, 10);
+        pintarEstrellasForm();
+      });
+    });
+
+    btnAbrir.addEventListener("click", () => {
+      if (!window.Carrito || !window.Carrito.haySesion()) {
+        window.Carrito.pedirLogin();
+        return;
+      }
+      form.classList.toggle("abierto");
+    });
+
+    btnEnviar.addEventListener("click", () => {
+      mensajeEl.textContent = "";
+      if (!calificacionElegida) {
+        mensajeEl.textContent = "Elegí al menos una estrella antes de publicar.";
+        mensajeEl.style.color = "var(--rojo)";
+        return;
+      }
+      btnEnviar.disabled = true;
+      const body = new URLSearchParams();
+      body.set("producto_id", productoId);
+      body.set("calificacion", calificacionElegida);
+      body.set("comentario", textarea.value.trim());
+
+      fetch("/api/resenas", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString(),
+      })
+        .then((res) => {
+          if (res.status === 401) {
+            window.Carrito.pedirLogin();
+            throw new Error("sin sesión");
+          }
+          if (!res.ok) throw new Error("respuesta " + res.status);
+          return res.json();
+        })
+        .then(() => {
+          mensajeEl.style.color = "var(--verde)";
+          mensajeEl.textContent = "¡Gracias por tu reseña!";
+          textarea.value = "";
+          calificacionElegida = 0;
+          pintarEstrellasForm();
+          form.classList.remove("abierto");
+          cargarResenas(productoId);
+        })
+        .catch((err) => {
+          if (err.message !== "sin sesión") {
+            mensajeEl.style.color = "var(--rojo)";
+            mensajeEl.textContent = "No se pudo publicar la reseña. Intentá de nuevo.";
+          }
+        })
+        .finally(() => {
+          btnEnviar.disabled = false;
+        });
+    });
+  }
+  // 🆕 ================= Fin de reseñas =================
+
   function renderizar(producto, puestoBestseller) {
     document.getElementById("tituloProducto").textContent = producto.nombre || "";
     construirVendedor(producto);
@@ -1084,6 +1460,8 @@
     construirContactoVendedor(producto);
     configurarCompartir(producto);
     cargarRelacionados(producto);
+    cargarResenas(producto.id);
+    configurarFormularioResena(producto.id);
 
     elCarga.style.display = "none";
     elContenido.style.display = "block";

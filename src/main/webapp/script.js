@@ -1996,6 +1996,23 @@ if (welcomeContainer) {
 });
 
 (function () {
+  // 🆕 Misma paleta y misma fórmula de hash que detalle-nacional.html,
+  // para que la persona vea siempre el mismo color en su avatar tanto
+  // en su panel de Perfil como en las reseñas que deja en productos.
+  const PALETA_AVATARES = [
+    "#7B68EE", "#FF6B6B", "#4ECDC4", "#FFA502", "#1E90FF",
+    "#FF7F50", "#2ED573", "#A55EEA", "#FD79A8", "#00B894",
+    "#E17055", "#0984E3",
+  ];
+  function colorAvatar(nombre) {
+    const texto = String(nombre || "?");
+    let hash = 0;
+    for (let i = 0; i < texto.length; i++) {
+      hash = (hash * 31 + texto.charCodeAt(i)) >>> 0;
+    }
+    return PALETA_AVATARES[hash % PALETA_AVATARES.length];
+  }
+
   const btnAbrir = document.getElementById("btnAbrirPerfil");
   const panel = document.getElementById("perfilPanel");
   const overlay = document.getElementById("perfilOverlay");
@@ -2012,6 +2029,11 @@ if (welcomeContainer) {
   const iconoWrap = document.getElementById("perfilIconoWrap");
   const iconoPreview = document.getElementById("perfilIconoPreview");
   const iconoPlaceholder = document.getElementById("perfilIconoPlaceholder");
+  // 🆕 Avatar morado con inicial (solo cuentas Comprador, que no
+  // tienen foto de perfil como sí la tiene el Vendedor con su icono
+  // de tienda de arriba).
+  const avatarCompradorWrap = document.getElementById("perfilAvatarCompradorWrap");
+  const avatarCompradorInicial = document.getElementById("perfilAvatarCompradorInicial");
   const mensaje = document.getElementById("perfilMensaje");
   const btnGuardar = document.getElementById("perfilGuardarBtn");
   const btnBorrar = document.getElementById("perfilBorrarCuentaBtn");
@@ -2094,6 +2116,13 @@ if (welcomeContainer) {
       } else {
         iconoPreview.style.display = "none";
         iconoPlaceholder.style.display = "block";
+      }
+      // 🆕 Avatar morado con inicial: solo para cuentas Comprador
+      // (lo contrario del icono de tienda de arriba).
+      if (avatarCompradorWrap) avatarCompradorWrap.style.display = esVendedor ? "none" : "flex";
+      if (avatarCompradorInicial && !esVendedor) {
+        avatarCompradorInicial.textContent = (perfil.nombre || "?").trim().charAt(0).toUpperCase();
+        avatarCompradorInicial.style.background = colorAvatar(perfil.nombre);
       }
       const interesesGuardados = Array.isArray(perfil.intereses) ? perfil.intereses : [];
       Object.entries(checksInteres).forEach(([categoria, checkbox]) => {
