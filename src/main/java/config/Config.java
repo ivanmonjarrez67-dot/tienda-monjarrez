@@ -32,16 +32,21 @@ public class Config {
     public static final String CLOUDINARY_UPLOAD_PRESET =
             System.getenv("CLOUDINARY_UPLOAD_PRESET");
 
-            // Config.java — agregar esta línea junto a las demás
-public static final String CJ_API_KEY =
-        System.getenv("CJ_API_KEY");
+    // CJ
+    public static final String CJ_API_KEY =
+            System.getenv("CJ_API_KEY");
 
+    // CJ - reglas de precio (ajustables sin tocar el servlet)
+    public static final double CJ_MARGEN_MULTIPLICADOR = 2.0;
+    public static final int CJ_MAX_DIAS_ENVIO = 15;
 
-        // CJ - reglas de precio (ajustables sin tocar el servlet)
-public static final double CJ_MARGEN_MULTIPLICADOR = 2.0;
-public static final int CJ_MAX_DIAS_ENVIO = 15;
+    public static final double TIPO_CAMBIO_USD_CRC =
+            Double.parseDouble(System.getenv().getOrDefault("TIPO_CAMBIO_USD_CRC", "484"));
 
-public static final double TIPO_CAMBIO_USD_CRC =
-        Double.parseDouble(System.getenv().getOrDefault("TIPO_CAMBIO_USD_CRC", "484"));
+    // 🆕 Google (Continuar con Google): Client ID de Google Cloud Console.
+    // Se define en Render como variable de entorno GOOGLE_CLIENT_ID.
+    // Lo usan RegistroCompradorGoogleServlet y LoginCompradorGoogleServlet.
+    public static final String GOOGLE_CLIENT_ID =
+            System.getenv("GOOGLE_CLIENT_ID");
 
 }

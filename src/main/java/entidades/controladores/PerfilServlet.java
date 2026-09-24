@@ -31,6 +31,11 @@ import jakarta.servlet.http.HttpSession;
  * Requiere que exista session.setAttribute("usuarioId", ...) — esto ya lo
  * hacen LoginCompradorServlet y LoginVendedorServlet en el login general
  * del sitio.
+ *
+ * 🆕 También devuelve "cuentaGoogle": true cuando la sesión actual del
+ * COMPRADOR se inició con "Continuar con Google" (lo marcan
+ * LoginCompradorGoogleServlet y RegistroCompradorGoogleServlet). El frontend
+ * lo usa para esconder "Cambiar contraseña" y dejar el correo de solo lectura.
  */
 @WebServlet("/api/perfil")
 public class PerfilServlet extends HttpServlet {
@@ -75,6 +80,11 @@ public class PerfilServlet extends HttpServlet {
                     tipo = rs.getString("tipo");
                 }
             }
+
+            // 🆕 ¿La sesión actual se inició con Google? Solo aplica a compradores
+            // (los vendedores siempre entran con cédula y contraseña).
+            boolean cuentaGoogle = Boolean.TRUE.equals(session.getAttribute("cuentaGoogle"))
+                                   && "Comprador".equalsIgnoreCase(tipo);
 
             boolean esDestacado = false;
             String tipoSuscripcion = null;
@@ -125,6 +135,7 @@ public class PerfilServlet extends HttpServlet {
 
             try (PrintWriter out = response.getWriter()) {
                 out.print("{");
+                out.print("\"cuentaGoogle\":" + cuentaGoogle + ","); // 🆕
                 out.print("\"nombre\":\"" + escapeJson(nombre) + "\",");
                 out.print("\"correo\":\"" + escapeJson(correo) + "\",");
                 out.print("\"tipo\":\"" + escapeJson(tipo) + "\",");

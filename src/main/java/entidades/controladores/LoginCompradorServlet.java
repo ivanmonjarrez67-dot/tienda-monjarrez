@@ -89,6 +89,9 @@ public class LoginCompradorServlet extends HttpServlet {
                         session.setAttribute("usuarioId", rs.getInt("id_usuario"));
                         session.setAttribute("nombreUsuario", rs.getString("nombre"));
                         session.setAttribute("correoUsuario", rs.getString("correo"));
+                        // 🆕 Esta sesión se inició con contraseña, no con Google: se limpia la
+                        // marca por si antes en la misma sesión había entrado con Google.
+                        session.removeAttribute("cuentaGoogle");
 
                         response.setStatus(HttpServletResponse.SC_OK);
                         response.getWriter().write("OK");

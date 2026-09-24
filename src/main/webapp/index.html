@@ -1539,6 +1539,10 @@
           <span class="highlight-red">Monjarrez</span> - Comprador/a
         </h2>
         <div class="modal-separator"></div>
+        <div class="google-registro">
+          <div id="googleBtnLoginComprador" class="google-btn-wrap"></div>
+          <div class="google-separador"><span>o entra con tu correo</span></div>
+        </div>
         <div class="input-icon-wrap">
           <i class="fa-solid fa-envelope"></i>
           <input
@@ -1743,6 +1747,10 @@
     ============================ -->
     <div id="formularioComprador" style="display:none; margin-top:20px; width:100%;">
       <h3 class="modal-subtitle">Comprador/a</h3>
+      <div class="google-registro">
+          <div id="googleBtnComprador" class="google-btn-wrap"></div>
+          <div class="google-separador"><span>o completa tus datos</span></div>
+        </div>
       <form id="registroFormComprador">
         <div class="input-icon-wrap">
           <i class="fa-solid fa-user"></i>
@@ -3944,6 +3952,15 @@ async function cargarMisProductos(usuarioId) {
       })();
     </script>
 
+<style>
+  /* 🆕 Continuar con Google (registro de comprador) */
+  .google-registro { width: 100%; margin: 8px 0 4px; }
+  .google-btn-wrap { display: flex; justify-content: center; min-height: 44px; }
+  .google-separador { display: flex; align-items: center; gap: 8px; margin: 10px 0 6px; font-size: 13px; opacity: .85; }
+  .google-separador::before, .google-separador::after { content: ""; flex: 1; height: 1px; background: currentColor; opacity: .35; }
+  .google-aviso { font-size: 12px; text-align: center; margin: 6px 0 0; opacity: .85; }
+</style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="script.js"></script>
 <script src="carrito.js"></script>
 

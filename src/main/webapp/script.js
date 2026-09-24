@@ -1531,51 +1531,199 @@ registroFormComprador?.addEventListener("submit", async (e) => {
     // JSON, igual que ya se hace en el registro de Vendedor.
     const data = await res.json();
 
-    if (!res.ok || !data.usuarioId || data.usuarioId <= 0) {
-      // 🆕 Mismo correo + contraseña que una cuenta ya existente, pero
-      // con OTRO rol (ej. Vendedor): no se puede registrar como
-      // Comprador sobre esa cuenta sin antes borrarla.
-      if (data.rolDistinto) {
-        alert(data.mensaje || "Ya tienes una cuenta registrada con este correo pero con otro rol. Inicia sesión y elimina tu cuenta actual desde tu perfil para poder registrarte con un rol diferente.");
-        return;
-      }
-      // 🆕 Mismo correo + contraseña de una cuenta de Comprador que ya
-      // existía (a diferencia de Vendedor, el registro de Comprador es
-      // un solo paso, así que no hay nada que "reanudar"): se le avisa
-      // y se le manda al login de comprador en vez de repetir el alta.
-      if (data.yaRegistrado) {
-        alert(data.mensaje || "Ya tienes una cuenta de comprador registrada con este correo. Inicia sesión para continuar.");
-        ["registroModal", "formularioComprador", "rolesContainer"].forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.style.display = "none";
-        });
-        hideModal(registroModal);
-        showModal(modalComprador);
-        return;
-      }
-      alert(data.mensaje || "No se pudo registrar el usuario.");
-      return;
-    }
-
-    usuarioIdVisible.textContent = "ID de usuario: " + data.usuarioId;
-    // 🔧 Antes el alert mostraba el ID de usuario ("...ID: " + usuarioId),
-    // exponiendo un dato interno innecesario para el comprador. El ID
-    // ya se guarda en el DOM/sessionStorage para las peticiones; el
-    // usuario solo necesita saber que el registro fue exitoso.
-    alert("¡Registro exitoso! Ya puedes empezar a comprar.");
-    ["registroModal", "loginModal", "formularioComprador", "rolesContainer", "pasoUsuario", "pasoSolicitud", "pasoSuscripcion"].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.style.display = "none";
-    });
-    const contenidoPrincipal =
-      document.getElementById("contenidoCompradorRegistrado") ||
-      document.getElementById("contenidoPrincipal") ||
-      document.getElementById("contenidoVendedorRegistrado");
-    if (contenidoPrincipal) contenidoPrincipal.style.display = "block";
+    procesarRespuestaRegistroComprador(res, data);
   } catch (err) {
     alert("Error al conectar con el servidor: " + err.message);
   }
 });
+
+// 🆕 Lógica posterior a /registroComprador, extraída a una función para
+// compartirla con el registro con Google (mismo formato JSON).
+function procesarRespuestaRegistroComprador(res, data) {
+  // 🔧 yaRegistrado llega con HTTP 200 y usuarioId > 0, así que antes este
+  // aviso quedaba dentro de un bloque que nunca se ejecutaba para ese caso.
+  if (!res.ok || !data.usuarioId || data.usuarioId <= 0 || data.yaRegistrado) {
+    // 🆕 Mismo correo + contraseña que una cuenta ya existente, pero
+    // con OTRO rol (ej. Vendedor): no se puede registrar como
+    // Comprador sobre esa cuenta sin antes borrarla.
+    if (data.rolDistinto) {
+      alert(data.mensaje || "Ya tienes una cuenta registrada con este correo pero con otro rol. Inicia sesión y elimina tu cuenta actual desde tu perfil para poder registrarte con un rol diferente.");
+      return;
+    }
+    // 🆕 Mismo correo + contraseña de una cuenta de Comprador que ya
+    // existía (a diferencia de Vendedor, el registro de Comprador es
+    // un solo paso, así que no hay nada que "reanudar"): se le avisa
+    // y se le manda al login de comprador en vez de repetir el alta.
+    if (data.yaRegistrado) {
+      alert(data.mensaje || "Ya tienes una cuenta de comprador registrada con este correo. Inicia sesión para continuar.");
+      ["registroModal", "formularioComprador", "rolesContainer"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = "none";
+      });
+      hideModal(registroModal);
+      showModal(modalComprador);
+      return;
+    }
+    alert(data.mensaje || "No se pudo registrar el usuario.");
+    return;
+  }
+
+  usuarioIdVisible.textContent = "ID de usuario: " + data.usuarioId;
+  // 🔧 Antes el alert mostraba el ID de usuario ("...ID: " + usuarioId),
+  // exponiendo un dato interno innecesario para el comprador. El ID
+  // ya se guarda en el DOM/sessionStorage para las peticiones; el
+  // usuario solo necesita saber que el registro fue exitoso.
+  alert("¡Registro exitoso! Ya puedes empezar a comprar.");
+  ["registroModal", "loginModal", "formularioComprador", "rolesContainer", "pasoUsuario", "pasoSolicitud", "pasoSuscripcion"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
+  const contenidoPrincipal =
+    document.getElementById("contenidoCompradorRegistrado") ||
+    document.getElementById("contenidoPrincipal") ||
+    document.getElementById("contenidoVendedorRegistrado");
+  if (contenidoPrincipal) contenidoPrincipal.style.display = "block";
+}
+
+/* ============================================================
+   🆕 CONTINUAR CON GOOGLE (solo COMPRADOR: registro y login)
+   ============================================================
+   Pega aquí el Client ID de Google Cloud Console (tipo "Web").
+   Mientras siga el valor de ejemplo, los botones quedan ocultos y todo
+   funciona igual que siempre. */
+const GOOGLE_CLIENT_ID = "1084676337902-nub3qelb3qv7be1dq108iff6m5gbagfn.apps.googleusercontent.com";
+
+let credencialGooglePendiente = null; // tocó Google en el registro sin aceptar términos
+
+// Deja al comprador dentro de la tienda, igual que el login con contraseña.
+function completarLoginComprador() {
+  ocultarTodo();
+  ["registroModal", "loginModal", "modalComprador"].forEach(id => hideModal(document.getElementById(id)));
+  ["formularioComprador", "rolesContainer"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
+  const activo = document.getElementById("contenidoCompradorActivo");
+  if (activo) activo.style.display = "block";
+  actualizarMiTienda("comprador");
+  iniciarSesion("comprador");
+}
+
+async function enviarRegistroCompradorGoogle(credential) {
+  try {
+    const res = await fetch("/registroCompradorGoogle", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ credential }).toString()
+    });
+    const data = await res.json();
+
+    // El servidor ya dejó la sesión iniciada (Google confirmó su identidad),
+    // tanto si la cuenta es nueva como si ya existía.
+    if (res.ok && data.usuarioId > 0 && data.sesionIniciada) {
+      usuarioIdVisible.textContent = "ID de usuario: " + data.usuarioId;
+      alert(data.yaRegistrado
+        ? "Ya tenías una cuenta con este correo. ¡Bienvenido de nuevo!"
+        : "¡Registro exitoso! Ya puedes empezar a comprar.");
+      completarLoginComprador();
+      return;
+    }
+    // Errores y casos especiales (p. ej. correo de vendedor): mismo manejo de siempre.
+    procesarRespuestaRegistroComprador(res, data);
+  } catch (err) {
+    alert("No se pudo completar el registro con Google: " + err.message);
+  }
+}
+
+async function enviarLoginCompradorGoogle(credential) {
+  try {
+    const res = await fetch("LoginCompradorGoogleServlet", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ credential }).toString()
+    });
+    if (res.ok) {
+      completarLoginComprador();
+      return;
+    }
+    alert((await res.text()) || "No se pudo iniciar sesión con Google.");
+  } catch (err) {
+    alert("No se pudo iniciar sesión con Google: " + err.message);
+  }
+}
+
+// Google usa un solo callback para todos los botones: se sabe si el clic fue
+// en el registro o en el login según qué formulario está a la vista.
+function onGoogleCredential(resp) {
+  const enRegistro = formularioComprador.offsetParent !== null;
+  if (!enRegistro) {
+    enviarLoginCompradorGoogle(resp.credential);
+    return;
+  }
+
+  // Registro: debe aceptar los términos primero. Si aún no lo hizo, guardamos
+  // su credencial y seguimos solos apenas marque la casilla, para que no
+  // tenga que pasar otra vez por Google.
+  const chk = document.getElementById("aceptaTerminosComprador");
+  if (chk && !chk.checked) {
+    credencialGooglePendiente = resp.credential;
+    alert("Solo falta un paso: marca la casilla de Términos y Condiciones y terminamos tu registro con Google.");
+    chk.scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
+  enviarRegistroCompradorGoogle(resp.credential);
+}
+
+document.getElementById("aceptaTerminosComprador")?.addEventListener("change", (e) => {
+  if (e.target.checked && credencialGooglePendiente && formularioComprador.offsetParent !== null) {
+    const cred = credencialGooglePendiente;
+    credencialGooglePendiente = null;
+    enviarRegistroCompradorGoogle(cred);
+  }
+});
+
+function iniciarGoogleRegistro() {
+  const bloques = document.querySelectorAll(".google-registro");
+  if (!bloques.length) return;
+
+  if (GOOGLE_CLIENT_ID.startsWith("TU_CLIENT_ID")) {
+    bloques.forEach(b => (b.style.display = "none"));
+    return;
+  }
+
+  // El script de Google carga async: reintenta hasta que esté listo.
+  let intentos = 0;
+  const espera = setInterval(() => {
+    if (window.google?.accounts?.id) {
+      clearInterval(espera);
+      google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: onGoogleCredential });
+      ["googleBtnComprador", "googleBtnLoginComprador"].forEach(id => {
+        const cont = document.getElementById(id);
+        if (cont) {
+          google.accounts.id.renderButton(cont, {
+            theme: "outline", size: "large", text: "continue_with",
+            shape: "pill", width: 240, locale: "es"
+          });
+        }
+      });
+    } else if (++intentos > 40) {
+      clearInterval(espera);
+      bloques.forEach(b => (b.style.display = "none")); // sin conexión con Google: se oculta
+    }
+  }, 250);
+
+  // Google bloquea el inicio de sesión dentro de los navegadores internos de
+  // Facebook/Instagram y de algunas WebViews.
+  if (/FBAN|FBAV|Instagram|; wv\)/i.test(navigator.userAgent)) {
+    bloques.forEach(b => {
+      const p = document.createElement("p");
+      p.className = "google-aviso";
+      p.textContent = "Si Google no abre, abre esta página en Chrome o Safari.";
+      b.appendChild(p);
+    });
+  }
+}
+iniciarGoogleRegistro();
 
 const loginModal = document.getElementById("loginModal");
 const modalVendedor = document.getElementById("modalVendedor");
@@ -2097,6 +2245,14 @@ if (welcomeContainer) {
       const perfil = await res.json();
       inputNombre.value = perfil.nombre || "";
       inputCorreo.value = perfil.correo || "";
+      // 🆕 Cuenta que entró con Google: no tiene contraseña propia, así que se
+      // esconde "Cambiar contraseña", y el correo queda fijo porque es lo que
+      // identifica su cuenta de Google (si lo cambiara, ya no podría entrar).
+      const esCuentaGoogle = perfil.cuentaGoogle === true;
+      inputCorreo.readOnly = esCuentaGoogle;
+      inputCorreo.title = esCuentaGoogle ? "Tu correo está vinculado a tu cuenta de Google" : "";
+      const acordeonPassword = document.getElementById("perfilPasswordActual")?.closest("details");
+      if (acordeonPassword) acordeonPassword.style.display = esCuentaGoogle ? "none" : "";
       divTipo.textContent = perfil.tipo || "—";
       badge.style.display = perfil.esDestacado ? "inline-block" : "none";
       if (perfil.tipo && perfil.tipo.toLowerCase() === "vendedor" && perfil.tipoSuscripcion) {

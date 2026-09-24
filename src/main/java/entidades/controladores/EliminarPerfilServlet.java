@@ -22,27 +22,50 @@ import jakarta.servlet.http.HttpSession;
  * la SESIÓN del servidor, nunca de un parámetro del cliente — así nadie
  * puede borrar la cuenta de otra persona.
  *
- * Orden de borrado (importante por las llaves foráneas):
- *   1. Intereses                       (usuario_id)
- *   2. ImagenesAdicionalesProducto     (producto_id, de los productos del usuario)
- *   3. Descuentos                      (producto_id, de los productos del usuario)
- *   4. ProductosExtranjeros            (producto_id, de los productos del usuario)
- *   5. Productos                       (usuario_id) — ya sin hijos pendientes
- *   6. SuscripcionVendedor             (usuario_id)
- *   7. SolicitudesDeVendedor           (usuario_id)
- *   8. IconosVendedor                  (vendedor_id, de la fila del usuario en Vendedores)
- *   9. Vendedores                      (usuario_id) — ya sin hijos pendientes
- *  10. Usuarios                        (al final, porque las demás tablas dependen de este id)
+ * Orden de borrado (importante por las llaves foráneas). Los pasos se
+ * agrupan en: datos que el usuario generó como cliente, datos ligados a
+ * SUS productos (si es vendedor), y por último las tablas "padre".
  *
- * 🆕 Productos tiene sus propias tablas hijas (imágenes adicionales,
- * descuentos, productos extranjeros) que apuntan a Productos.id. Hay que
- * vaciarlas ANTES de borrar Productos, o SQL Server rechaza el DELETE por
- * la llave foránea (ese era el error "FK_ProductosExtranjeros_Productos").
+ *   -- Como usuario/cliente (compradores Y vendedores) --
+ *   1.  Intereses                    (usuario_id)
+ *   2.  Compradores                  (usuario_id)
+ *   3.  Resenas                      (usuario_id — reseñas que ESCRIBIÓ)
+ *   4.  ToquesContacto               (usuario_id — sus clics de contacto)
+ *   5.  DetalleCarrito               (carrito_id, de SU carrito)
+ *   6.  Carrito                      (usuario_id)
+ *   7.  DetallePedido                (pedido_id, de SUS pedidos como comprador)
+ *   8.  Pedidos                      (usuario_id)
  *
- * 🆕 Mismo caso con IconosVendedor: su FK (FK_IconosVendedor_Vendedores)
- * apunta a Vendedores.id, no a usuario_id directo. Por eso el DELETE usa
- * una subconsulta a Vendedores en vez de un usuario_id = ? plano, y tiene
- * que ejecutarse ANTES de borrar Vendedores.
+ *   -- Ligado a SUS productos (vendedores) --
+ *   9.  Resenas                      (producto_id de sus productos)
+ *  10.  ToquesContacto               (producto_id de sus productos)
+ *  11.  DetalleCarrito               (producto_id de sus productos, en carritos ajenos)
+ *  12.  DetallePedido                (usuario_id_vendedor / producto_id de sus productos)
+ *  13.  ImagenesAdicionalesProducto  (producto_id)
+ *  14.  Descuentos                   (producto_id)
+ *  15.  ProductosExtranjeros         (producto_id)
+ *  16.  Productos                    (usuario_id) — ya sin hijos pendientes
+ *
+ *   -- Datos del registro de vendedor y tabla padre --
+ *  17.  SuscripcionVendedor          (usuario_id)
+ *  18.  Notas                        (solicitud_id, de sus solicitudes)
+ *  19.  SolicitudesDeVendedor        (usuario_id) — ya sin Notas pendientes
+ *  20.  IconosVendedor               (vendedor_id, de la fila del usuario en Vendedores)
+ *  21.  Vendedores                   (usuario_id) — ya sin hijos pendientes
+ *  22.  Usuarios                     (al final, porque las demás tablas dependen de este id)
+ *
+ * Por qué este orden: cada tabla hija tiene que vaciarse ANTES que la
+ * tabla a la que apunta, o SQL Server rechaza el DELETE por la llave
+ * foránea (errores tipo "FK_Resenas_Usuario", "FK_ProductosExtranjeros_Productos",
+ * "FK_IconosVendedor_Vendedores"). Cuando la tabla hija no guarda el
+ * usuario_id directo, se usa una subconsulta (IN (SELECT id FROM ...)).
+ *
+ * ⚠️ Los pedidos: DetallePedido/Pedidos son historial de compras. Al
+ * borrar una cuenta se eliminan los pedidos de ese comprador y las líneas
+ * de pedido que involucran productos del vendedor que se va. Si prefieres
+ * conservar ese historial (p. ej. por contabilidad), en vez de borrar
+ * habría que anonimizar (poner usuario_id/producto_id en NULL, lo que
+ * exige que esas columnas permitan NULL).
  *
  * Todo se hace dentro de una sola transacción: si algo falla, se revierte
  * todo (rollback) y la cuenta no queda a medio borrar.
@@ -57,6 +80,13 @@ import jakarta.servlet.http.HttpSession;
 @WebServlet("/api/perfil/eliminar")
 public class EliminarPerfilServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
+
+    // Subconsultas que se repiten en varios DELETE
+    private static final String PRODUCTOS_DEL_USUARIO = "(SELECT id FROM Productos WHERE usuario_id = ?)";
+    private static final String CARRITOS_DEL_USUARIO = "(SELECT id FROM Carrito WHERE usuario_id = ?)";
+    private static final String PEDIDOS_DEL_USUARIO = "(SELECT id FROM Pedidos WHERE usuario_id = ?)";
+    private static final String SOLICITUDES_DEL_USUARIO = "(SELECT id FROM SolicitudesDeVendedor WHERE usuario_id = ?)";
+    private static final String VENDEDORES_DEL_USUARIO = "(SELECT id FROM Vendedores WHERE usuario_id = ?)";
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -99,35 +129,43 @@ public class EliminarPerfilServlet extends HttpServlet {
             try {
                 conn.setAutoCommit(false);
 
+                // ---------- Como usuario/cliente ----------
                 ejecutarDelete(conn, "DELETE FROM Intereses WHERE usuario_id = ?", usuarioId);
+                // 🆕 Compradores.usuario_id → Usuarios (FK__Comprador__usuar__7C4F7684)
+                ejecutarDelete(conn, "DELETE FROM Compradores WHERE usuario_id = ?", usuarioId);
+                ejecutarDelete(conn, "DELETE FROM Resenas WHERE usuario_id = ?", usuarioId);
+                ejecutarDelete(conn, "DELETE FROM ToquesContacto WHERE usuario_id = ?", usuarioId);
 
-                // 🆕 Las tablas hijas de Productos (imágenes, descuentos,
-                // productos extranjeros) hay que vaciarlas ANTES de borrar
-                // Productos, usando una subconsulta por producto_id — así
-                // no hace falta traer los ids a Java ni armar un IN (...)
-                // a mano.
-                ejecutarDelete(conn,
-                    "DELETE FROM ImagenesAdicionalesProducto WHERE producto_id IN " +
-                    "(SELECT id FROM Productos WHERE usuario_id = ?)", usuarioId);
-                ejecutarDelete(conn,
-                    "DELETE FROM Descuentos WHERE producto_id IN " +
-                    "(SELECT id FROM Productos WHERE usuario_id = ?)", usuarioId);
-                ejecutarDelete(conn,
-                    "DELETE FROM ProductosExtranjeros WHERE producto_id IN " +
-                    "(SELECT id FROM Productos WHERE usuario_id = ?)", usuarioId);
+                ejecutarDelete(conn, "DELETE FROM DetalleCarrito WHERE carrito_id IN " + CARRITOS_DEL_USUARIO, usuarioId);
+                ejecutarDelete(conn, "DELETE FROM Carrito WHERE usuario_id = ?", usuarioId);
+
+                ejecutarDelete(conn, "DELETE FROM DetallePedido WHERE pedido_id IN " + PEDIDOS_DEL_USUARIO, usuarioId);
+                ejecutarDelete(conn, "DELETE FROM Pedidos WHERE usuario_id = ?", usuarioId);
+
+                // ---------- Ligado a SUS productos (si es vendedor) ----------
+                ejecutarDelete(conn, "DELETE FROM Resenas WHERE producto_id IN " + PRODUCTOS_DEL_USUARIO, usuarioId);
+                ejecutarDelete(conn, "DELETE FROM ToquesContacto WHERE producto_id IN " + PRODUCTOS_DEL_USUARIO, usuarioId);
+                ejecutarDelete(conn, "DELETE FROM DetalleCarrito WHERE producto_id IN " + PRODUCTOS_DEL_USUARIO, usuarioId);
+
+                ejecutarDelete(conn, "DELETE FROM DetallePedido WHERE usuario_id_vendedor = ?", usuarioId);
+                ejecutarDelete(conn, "DELETE FROM DetallePedido WHERE producto_id IN " + PRODUCTOS_DEL_USUARIO, usuarioId);
+
+                // Tablas hijas de Productos: antes de borrar Productos
+                ejecutarDelete(conn, "DELETE FROM ImagenesAdicionalesProducto WHERE producto_id IN " + PRODUCTOS_DEL_USUARIO, usuarioId);
+                ejecutarDelete(conn, "DELETE FROM Descuentos WHERE producto_id IN " + PRODUCTOS_DEL_USUARIO, usuarioId);
+                ejecutarDelete(conn, "DELETE FROM ProductosExtranjeros WHERE producto_id IN " + PRODUCTOS_DEL_USUARIO, usuarioId);
 
                 ejecutarDelete(conn, "DELETE FROM Productos WHERE usuario_id = ?", usuarioId);
+
+                // ---------- Registro de vendedor y tabla padre ----------
                 ejecutarDelete(conn, "DELETE FROM SuscripcionVendedor WHERE usuario_id = ?", usuarioId);
+
+                // Notas.solicitud_id apunta a SolicitudesDeVendedor.id: va antes.
+                ejecutarDelete(conn, "DELETE FROM Notas WHERE solicitud_id IN " + SOLICITUDES_DEL_USUARIO, usuarioId);
                 ejecutarDelete(conn, "DELETE FROM SolicitudesDeVendedor WHERE usuario_id = ?", usuarioId);
 
-                // 🆕 IconosVendedor.vendedor_id apunta a Vendedores.id (no a
-                // usuario_id), así que hay que resolverlo con una
-                // subconsulta y borrarlo ANTES de Vendedores, o SQL Server
-                // rechaza el DELETE de Vendedores por FK_IconosVendedor_Vendedores.
-                ejecutarDelete(conn,
-                    "DELETE FROM IconosVendedor WHERE vendedor_id IN " +
-                    "(SELECT id FROM Vendedores WHERE usuario_id = ?)", usuarioId);
-
+                // IconosVendedor.vendedor_id apunta a Vendedores.id (no a usuario_id).
+                ejecutarDelete(conn, "DELETE FROM IconosVendedor WHERE vendedor_id IN " + VENDEDORES_DEL_USUARIO, usuarioId);
                 ejecutarDelete(conn, "DELETE FROM Vendedores WHERE usuario_id = ?", usuarioId);
 
                 int filasBorradas = ejecutarDelete(conn, "DELETE FROM Usuarios WHERE id = ?", usuarioId);
