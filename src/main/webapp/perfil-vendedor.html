@@ -133,12 +133,7 @@
   .vendedor-stats {
     display: flex;
     gap: 28px;
-    padding-left: 22px;
-    border-left: 1px solid var(--border);
-    flex-wrap: wrap;
-  }
-  @media (max-width: 640px) {
-    .vendedor-stats { border-left: none; padding-left: 0; padding-top: 16px; border-top: 1px solid var(--border); width: 100%; }
+    justify-content: space-around;
   }
   .vendedor-stat { text-align: center; min-width: 70px; }
   .vendedor-stat-num { font-size: 1.15rem; font-weight: 800; color: var(--text); }
@@ -206,6 +201,120 @@
     padding: 80px 20px;
     color: var(--text-dim);
   }
+
+  /* ---------- Seguir / Compartir ---------- */
+  .vendedor-lado {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-left: 22px;
+    border-left: 1px solid var(--border);
+    min-width: 260px;
+  }
+  .vendedor-acciones { display: flex; gap: 10px; }
+  .btn-accion {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .btn-seguir { background: var(--rojo); color: #fff; border: 1.5px solid var(--rojo); }
+  .btn-seguir:hover { background: #8b2b37; border-color: #8b2b37; }
+  .btn-seguir.siguiendo { background: #fff; color: var(--rojo); }
+  .btn-seguir.siguiendo:hover { background: rgba(161, 51, 65, 0.06); }
+  .btn-seguir:disabled { opacity: 0.6; cursor: default; }
+  .btn-compartir { background: #fff; color: var(--text); border: 1.5px solid #d6d6d6; }
+  .btn-compartir:hover { border-color: var(--text); }
+
+  /* Muestra de seguidores: avatares por defecto superpuestos + "y N más" */
+  .seguidores-muestra {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+  .seguidores-avatares { display: flex; }
+  .seguidor-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #e9e9e9;
+    color: #a5a5a5;
+    border: 2px solid #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    margin-left: -9px;
+    overflow: hidden;
+  }
+  .seguidor-avatar:first-child { margin-left: 0; }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 28px;
+    transform: translateX(-50%) translateY(20px);
+    background: #1a1a1a;
+    color: #fff;
+    padding: 11px 18px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 60;
+  }
+  .toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Aviso para iniciar sesión / registrarse (misma idea que el carrito) */
+  .login-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 16px;
+  }
+  .login-overlay.visible { display: flex; }
+  .login-modal {
+    background: #fff;
+    border-radius: 14px;
+    width: min(380px, 100%);
+    padding: 24px 22px 20px;
+    text-align: center;
+  }
+  .login-modal h3 { margin: 0 0 8px; font-size: 1.05rem; }
+  .login-modal p { margin: 0 0 18px; font-size: 0.86rem; color: var(--gris); line-height: 1.5; }
+  .login-modal-botones { display: flex; gap: 10px; }
+  .login-modal-botones button {
+    flex: 1;
+    padding: 11px;
+    border-radius: 8px;
+    border: none;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-login-ir { background: var(--rojo); color: #fff; }
+  .btn-login-cerrar { background: #f0f0f0; color: #333; }
+
+  @media (max-width: 640px) {
+    .vendedor-lado { border-left: none; padding-left: 0; padding-top: 16px; border-top: 1px solid var(--border); width: 100%; min-width: 0; }
+  }
 </style>
 </head>
 <body>
@@ -227,11 +336,29 @@
         <p class="vendedor-ubicacion" id="vendedorUbicacion" style="display:none;">
           <i class="fa-solid fa-location-dot"></i> <span id="vendedorUbicacionTexto"></span>
         </p>
+        <div class="seguidores-muestra" id="seguidoresMuestra">
+          <div class="seguidores-avatares" id="seguidoresAvatares"></div>
+          <span id="seguidoresTexto"></span>
+        </div>
       </div>
-      <div class="vendedor-stats">
-        <div class="vendedor-stat">
-          <div class="vendedor-stat-num" id="statArticulos">0</div>
-          <div class="vendedor-stat-label">Artículos</div>
+      <div class="vendedor-lado">
+        <div class="vendedor-stats">
+          <div class="vendedor-stat">
+            <div class="vendedor-stat-num" id="statSeguidores">0</div>
+            <div class="vendedor-stat-label">Seguidores</div>
+          </div>
+          <div class="vendedor-stat">
+            <div class="vendedor-stat-num" id="statArticulos">0</div>
+            <div class="vendedor-stat-label">Artículos</div>
+          </div>
+        </div>
+        <div class="vendedor-acciones">
+          <button type="button" class="btn-accion btn-seguir" id="btnSeguir">
+            <i class="fa-solid fa-user-plus"></i> <span id="btnSeguirTexto">Seguir</span>
+          </button>
+          <button type="button" class="btn-accion btn-compartir" id="btnCompartir">
+            <i class="fa-solid fa-share-nodes"></i> Compartir
+          </button>
         </div>
       </div>
     </div>
@@ -247,6 +374,20 @@
   </div>
 </main>
 
+<div id="toast" class="toast" role="status"></div>
+
+<div id="loginOverlay" class="login-overlay">
+  <div class="login-modal">
+    <h3>Inicia sesión para continuar</h3>
+    <p>Para seguir a un emprendimiento necesitas iniciar sesión o registrarte como comprador.</p>
+    <div class="login-modal-botones">
+      <button type="button" class="btn-login-cerrar" id="btnLoginCerrar">Ahora no</button>
+      <button type="button" class="btn-login-ir" id="btnLoginIr">Iniciar sesión / Registrarme</button>
+    </div>
+  </div>
+</div>
+
+<script src="carrito.js?v=2"></script>
 <script>
 (function () {
   const params = new URLSearchParams(window.location.search);
@@ -296,6 +437,148 @@
     });
     return mejor;
   }
+
+  // ---------- Seguir / Compartir ----------
+  let vendedorIdActual = usuarioId || "";
+  let empresaActual = empresaParam;
+  let siguiendo = false;
+  let seguidores = 0;
+
+  const btnSeguir = document.getElementById("btnSeguir");
+  const btnSeguirTexto = document.getElementById("btnSeguirTexto");
+  const btnCompartir = document.getElementById("btnCompartir");
+  const elToast = document.getElementById("toast");
+  const elLoginOverlay = document.getElementById("loginOverlay");
+  let toastTimer = null;
+
+  function mostrarToast(msg) {
+    elToast.textContent = msg;
+    elToast.classList.add("visible");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => elToast.classList.remove("visible"), 2400);
+  }
+
+  // Misma comprobación de sesión que usa carrito.html
+  function haySesion() {
+    return !!(window.Carrito && window.Carrito.haySesion && window.Carrito.haySesion());
+  }
+
+  function pedirLogin() {
+    elLoginOverlay.classList.add("visible");
+  }
+  document.getElementById("btnLoginCerrar").addEventListener("click", () => elLoginOverlay.classList.remove("visible"));
+  document.getElementById("btnLoginIr").addEventListener("click", () => { window.location.href = "index.html"; });
+  elLoginOverlay.addEventListener("click", (e) => { if (e.target === elLoginOverlay) elLoginOverlay.classList.remove("visible"); });
+
+  // Solo se muestra una parte (máx. 5 avatares) para dar a entender que hay más.
+  // Es la imagen de perfil por defecto (no se exponen nombres ni fotos de los compradores).
+  const MAX_AVATARES = 5;
+  function pintarMuestraSeguidores() {
+    const cont = document.getElementById("seguidoresMuestra");
+    if (seguidores <= 0) { cont.style.display = "none"; return; }
+    const visibles = Math.min(seguidores, MAX_AVATARES);
+    const av = document.getElementById("seguidoresAvatares");
+    av.innerHTML = "";
+    for (let i = 0; i < visibles; i++) {
+      const d = document.createElement("div");
+      d.className = "seguidor-avatar";
+      d.innerHTML = '<i class="fa-solid fa-user"></i>';
+      av.appendChild(d);
+    }
+    const resto = seguidores - visibles;
+    document.getElementById("seguidoresTexto").textContent =
+      resto > 0
+        ? `y ${resto.toLocaleString("es-CR")} más siguen este emprendimiento`
+        : (seguidores === 1 ? "1 persona sigue este emprendimiento" : `${seguidores} personas siguen este emprendimiento`);
+    cont.style.display = "flex";
+  }
+
+  function pintarSeguimiento() {
+    pintarMuestraSeguidores();
+    document.getElementById("statSeguidores").textContent = seguidores.toLocaleString("es-CR");
+    btnSeguir.classList.toggle("siguiendo", siguiendo);
+    btnSeguirTexto.textContent = siguiendo ? "Siguiendo" : "Seguir";
+    btnSeguir.querySelector("i").className = siguiendo ? "fa-solid fa-check" : "fa-solid fa-user-plus";
+  }
+
+  function cargarSeguimiento() {
+    if (!vendedorIdActual) {
+      // Sin id de vendedor no se puede seguir; se deja solo "Compartir".
+      btnSeguir.style.display = "none";
+      document.getElementById("statSeguidores").parentElement.style.display = "none";
+      return;
+    }
+    fetch(`/api/seguir?vendedor_id=${encodeURIComponent(vendedorIdActual)}`)
+      .then((res) => { if (!res.ok) throw new Error("respuesta " + res.status); return res.json(); })
+      .then((data) => {
+        seguidores = Number(data.seguidores) || 0;
+        siguiendo = !!data.siguiendo && haySesion();
+        pintarSeguimiento();
+      })
+      .catch((err) => console.error("No se pudo cargar el seguimiento:", err));
+  }
+
+  btnSeguir.addEventListener("click", () => {
+    if (!haySesion()) { pedirLogin(); return; }
+    const accion = siguiendo ? "dejar" : "seguir";
+    btnSeguir.disabled = true;
+    fetch("/api/seguir", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ accion, vendedor_id: vendedorIdActual }).toString(),
+    })
+      .then((res) => {
+        if (res.status === 401) { pedirLogin(); throw new Error("sin sesión"); }
+        return res.json().then((data) => {
+          if (!res.ok) throw new Error(data.error || "No se pudo completar la acción.");
+          return data;
+        });
+      })
+      .then((data) => {
+        siguiendo = !!data.siguiendo;
+        seguidores = Number(data.seguidores) || 0;
+        pintarSeguimiento();
+        mostrarToast(siguiendo ? "Ahora sigues a " + empresaActual : "Dejaste de seguir a " + empresaActual);
+      })
+      .catch((err) => { if (err.message !== "sin sesión") mostrarToast(err.message); })
+      .finally(() => { btnSeguir.disabled = false; });
+  });
+
+  // El enlace que se comparte apunta a /vendedor?id=X (lo sirve VendedorShareServlet
+  // con la vista previa: logo + frase) y ese redirige a este perfil.
+  function enlaceParaCompartir() {
+    if (vendedorIdActual) return `${window.location.origin}/vendedor?id=${encodeURIComponent(vendedorIdActual)}`;
+    return window.location.href;
+  }
+
+  function copiarEnlace(url) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(url);
+    }
+    return new Promise((resolve, reject) => {
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy") ? resolve() : reject(); } catch (e) { reject(e); }
+      document.body.removeChild(ta);
+    });
+  }
+
+  btnCompartir.addEventListener("click", () => {
+    const url = enlaceParaCompartir();
+    const titulo = empresaActual || "Emprendimiento";
+    const texto = `Mira el catálogo de ${titulo} en Tienda Monjarrez`;
+    if (navigator.share) {
+      navigator.share({ title: titulo, text: texto, url }).catch(() => { /* el usuario canceló */ });
+      return;
+    }
+    copiarEnlace(url)
+      .then(() => mostrarToast("Enlace del perfil copiado"))
+      .catch(() => window.prompt("Copia el enlace del perfil:", url));
+  });
 
   function construirTarjetaProducto(p) {
     const precioNum = parseFloat(p.precio);
@@ -385,7 +668,12 @@
       if (!delVendedor.length) throw new Error("vendedor sin productos");
 
       const empresaMostrar = empresaParam || delVendedor[0].empresa || "Emprendimiento";
+      empresaActual = empresaMostrar;
+      if (!vendedorIdActual && delVendedor[0].usuario_id !== undefined && delVendedor[0].usuario_id !== null) {
+        vendedorIdActual = String(delVendedor[0].usuario_id);
+      }
       renderizar(delVendedor, empresaMostrar);
+      cargarSeguimiento();
     })
     .catch((err) => {
       console.error("Error al cargar el perfil del vendedor:", err);
