@@ -5,6 +5,10 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import entidades.DatabaseConnection;
@@ -171,6 +175,52 @@ public class GuardarProductoServlet extends HttpServlet {
             response.setStatus(HttpServletResponse.SC_OK);
             response.getWriter().write("✅ Producto guardado correctamente");
 
+            // 👥 Avisar a los SEGUIDORES del emprendimiento. Como máximo 1 aviso cada
+            // 24 h por vendedor (tabla NotificacionesSeguidores): si sube varios
+            // productos seguidos, solo el primero del día dispara el correo, para no
+            // saturar bandejas ni el límite de envíos de Brevo. Se hace ANTES del aviso
+            // por intereses para que quien sea seguidor Y además tenga la categoría
+            // marcada reciba un solo correo (el de seguidor), no dos.
+            Set<Integer> yaAvisados = new HashSet<>();
+            try {
+                List<String[]> seguidores = new ArrayList<>();
+                Set<Integer> idsSeguidores = new HashSet<>();
+                try (PreparedStatement stmtSeg = conn.prepareStatement(
+                        "SELECT u.id, u.correo, u.nombre FROM SeguidoresVendedor sv "
+                      + "JOIN Usuarios u ON u.id = sv.seguidor_id WHERE sv.vendedor_id = ?")) {
+                    stmtSeg.setInt(1, usuarioId);
+                    try (ResultSet rsSeg = stmtSeg.executeQuery()) {
+                        while (rsSeg.next()) {
+                            idsSeguidores.add(rsSeg.getInt("id"));
+                            seguidores.add(new String[] { rsSeg.getString("correo"), rsSeg.getString("nombre") });
+                        }
+                    }
+                }
+
+                if (!seguidores.isEmpty()) {
+                    // "Reclamar" el turno de aviso: devuelve 1 fila afectada si es el primer
+                    // producto del día (inserta o actualiza), 0 si ya se avisó en las últimas 24 h.
+                    String sqlTurno =
+                            "MERGE NotificacionesSeguidores AS t "
+                          + "USING (SELECT CAST(? AS INT) AS vendedor_id) AS s ON t.vendedor_id = s.vendedor_id "
+                          + "WHEN MATCHED AND t.ultima_notificacion < DATEADD(HOUR, -24, SYSDATETIME()) "
+                          + "  THEN UPDATE SET ultima_notificacion = SYSDATETIME() "
+                          + "WHEN NOT MATCHED THEN INSERT (vendedor_id, ultima_notificacion) "
+                          + "  VALUES (s.vendedor_id, SYSDATETIME());";
+                    boolean tocaAvisar;
+                    try (PreparedStatement stmtTurno = conn.prepareStatement(sqlTurno)) {
+                        stmtTurno.setInt(1, usuarioId);
+                        tocaAvisar = stmtTurno.executeUpdate() > 0;
+                    }
+                    if (tocaAvisar) {
+                        yaAvisados.addAll(idsSeguidores);
+                        EmailService.enviarAvisoNuevoProductoSeguidores(seguidores, nombre, empresa, usuarioId);
+                    }
+                }
+            } catch (SQLException e) {
+                System.out.println("[GuardarProductoServlet] ⚠️ No se pudieron enviar avisos a seguidores: " + e.getMessage());
+            }
+
             // 📩 Avisar solo a los usuarios (Compradores O Vendedores — un
             // vendedor también puede comprar) que marcaron esta categoría
             // como de su interés en su perfil. La provincia es un filtro
@@ -179,10 +229,11 @@ public class GuardarProductoServlet extends HttpServlet {
             // marcó ninguna, se le notifica igual por categoría sin
             // importar la zona (así alguien puede querer solo la categoría,
             // sin acotar por provincia). También se excluye al propio
-            // vendedor que publicó el producto.
+            // vendedor que publicó el producto y a quienes ya recibieron
+            // el aviso como seguidores.
             try {
                 String sqlInteresados =
-                        "SELECT u.correo, u.nombre " +
+                        "SELECT u.id, u.correo, u.nombre " +
                         "FROM Usuarios u " +
                         "WHERE u.id <> ? " +
                         "AND EXISTS (SELECT 1 FROM Intereses ic WHERE ic.usuario_id = u.id AND ic.interes = ?) " +
@@ -197,6 +248,7 @@ public class GuardarProductoServlet extends HttpServlet {
 
                     try (ResultSet rsInteresados = stmtInteresados.executeQuery()) {
                         while (rsInteresados.next()) {
+                            if (yaAvisados.contains(rsInteresados.getInt("id"))) continue; // ya recibió el aviso de seguidor
                             EmailService.enviarAvisoNuevoProducto(
                                 rsInteresados.getString("correo"),
                                 rsInteresados.getString("nombre"),

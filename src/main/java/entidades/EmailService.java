@@ -1,11 +1,13 @@
 package entidades;
 
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.List;
 import config.Config;
 
 /**
@@ -63,6 +65,11 @@ import config.Config;
  *     con la factura en PDF.
  * Los tres se llaman desde PedidoServlet justo después de confirmar el
  * pedido, una vez generado el PDF (ver entidades.FacturaPdfGenerator).
+ *
+ * 🆕 Se agregó enviarAvisoNuevoProductoSeguidores(): aviso a quienes
+ * SIGUEN a un emprendimiento cuando publica un producto nuevo. Envía uno
+ * por uno (un solo hilo, con pausa corta) para no saturar a Brevo. Se
+ * llama desde GuardarProductoServlet.
  */
 public class EmailService {
 
@@ -257,6 +264,13 @@ public class EmailService {
                      .replace("\r", "");
     }
 
+    // 🆕 Escapa texto de usuario (nombres, empresa, producto) antes de
+    // meterlo dentro del HTML de un correo.
+    private static String escapeHtml(String s) {
+        if (s == null) return "";
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
+    }
+
     // ---------------------------------------------------------
     // Plantilla visual — sin logo, tarjeta blanca + ícono + botón +
     // pie de página. Se ve igual en Gmail, Outlook, Apple Mail, etc.
@@ -396,6 +410,54 @@ public class EmailService {
         String html = plantillaBase(ICON_PRODUCTO, "¡Nuevo producto disponible!", cuerpo, "Ver producto", URL_TIENDA);
         enviarAsync(EMAIL_NOTIFICACIONES, NOMBRE_NOTIFICACIONES, email, nombre,
                 "Nuevo producto disponible: " + nombreProducto, html);
+    }
+
+    // ---------------------------------------------------------
+    // 🆕 Aviso a SEGUIDORES de un emprendimiento por un producto nuevo.
+    //
+    // Recibe la lista completa de seguidores (cada elemento: [0]=correo,
+    // [1]=nombre) y los envía UNO POR UNO en un solo hilo, con una pausa
+    // corta entre correos. Así no se lanzan cientos de hilos a la vez ni
+    // se satura el límite de envíos de Brevo. Igual que el resto de
+    // envíos: asíncrono y a prueba de fallos (nunca lanza hacia afuera).
+    //
+    // El botón lleva al perfil público del vendedor, desde donde el
+    // seguidor también puede dejar de seguirlo si ya no quiere avisos.
+    // ---------------------------------------------------------
+    public static void enviarAvisoNuevoProductoSeguidores(List<String[]> destinatarios,
+                                                          String nombreProducto, String empresa, int vendedorId) {
+        if (destinatarios == null || destinatarios.isEmpty()) return;
+
+        final String empresaSegura = empresa == null ? "" : empresa;
+        final String urlPerfil = URL_TIENDA + "/perfil-vendedor.html?usuario_id=" + vendedorId
+                + "&empresa=" + URLEncoder.encode(empresaSegura, StandardCharsets.UTF_8);
+
+        Thread hilo = new Thread(() -> {
+            for (String[] d : destinatarios) {
+                try {
+                    String cuerpo =
+                          "<p>Hola " + escapeHtml(d[1]) + ",</p>"
+                        + "<p><strong>" + escapeHtml(empresaSegura) + "</strong>, un emprendimiento que sigues, "
+                        + "acaba de publicar:</p>"
+                        + "<p style=\"font-size:16px;font-weight:bold;color:#1a1a1a;\">" + escapeHtml(nombreProducto) + "</p>"
+                        + "<p>Entra a su perfil para ver el producto y el resto de su catálogo. "
+                        + "Si ya no quieres recibir estos avisos, puedes dejar de seguirlo desde su perfil.</p>";
+
+                    String html = plantillaBase(ICON_PRODUCTO, "¡Novedad de un emprendimiento que sigues!",
+                            cuerpo, "Ver el catálogo", urlPerfil);
+                    enviar(EMAIL_NOTIFICACIONES, NOMBRE_NOTIFICACIONES, d[0], d[1],
+                            empresaSegura + " publicó un producto nuevo", html);
+                    Thread.sleep(300); // pausa corta entre correos
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    return;
+                } catch (Exception e) {
+                    System.out.println("[EmailService] Error en aviso a seguidores: " + e.getMessage());
+                }
+            }
+        });
+        hilo.setDaemon(true);
+        hilo.start();
     }
 
     public static void enviarSuscripcionEnRevision(String email, String nombre, String tipoSuscripcion) {
