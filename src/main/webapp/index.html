@@ -6196,5 +6196,156 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
     });
   </script>
 
+  <!-- 🆕 Seguidores dentro de "Mi tienda".
+       Script autónomo: no toca script.js ni el resto del panel. Cuando
+       #miTiendaContainer pasa a verse (después de un login correcto) pide
+       a /api/seguir?accion=mis_seguidores el total y una muestra pequeña
+       (primer nombre de los 5 más recientes) y pinta una tarjeta arriba del
+       panel. La identidad la toma el servidor de la sesión, así que solo
+       el propio vendedor ve a sus seguidores. Si el servidor no responde
+       (ej. sin sesión) la tarjeta simplemente no se muestra. -->
+  <style>
+    #seguidoresMiTienda {
+      display: none;
+      margin: 0 auto 16px auto;
+      max-width: 560px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(128, 128, 128, 0.3);
+      background: rgba(128, 128, 128, 0.1);
+      color: inherit;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    #seguidoresMiTienda .seg-titulo { font-weight: 700; margin: 0 0 8px 0; }
+    #seguidoresMiTienda .seg-fila { display: flex; align-items: center; gap: 10px; }
+    #seguidoresMiTienda .seg-avatares { display: flex; flex-shrink: 0; }
+    #seguidoresMiTienda .seg-avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: #e9e9e9; color: #a5a5a5; border: 2px solid #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; margin-left: -9px;
+    }
+    #seguidoresMiTienda .seg-avatar:first-child { margin-left: 0; }
+    #seguidoresMiTienda .seg-texto { opacity: 0.9; }
+    #seguidoresMiTienda .seg-compartir {
+      margin-top: 10px; padding: 7px 14px; border-radius: 999px;
+      border: 1.5px solid rgba(128, 128, 128, 0.5); background: transparent;
+      color: inherit; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    #seguidoresMiTienda .seg-compartir:hover { border-color: currentColor; }
+  </style>
+  <script>
+  (function () {
+    const cont = document.getElementById("miTiendaContainer");
+    if (!cont) return;
+
+    const ID_BLOQUE = "seguidoresMiTienda";
+    let estabaVisible = false;
+    let ultimo = null; // último dato recibido, por si otro script limpia el contenedor
+
+    function esVisible() { return getComputedStyle(cont).display !== "none"; }
+
+    function idVendedor() {
+      const m = (document.getElementById("usuarioIdVisibleMitienda")?.textContent || "").match(/\d+/);
+      return m ? m[0] : "";
+    }
+
+    function esc(s) {
+      const d = document.createElement("div");
+      d.textContent = s == null ? "" : s;
+      return d.innerHTML;
+    }
+
+    function crearBloque() {
+      const b = document.createElement("div");
+      b.id = ID_BLOQUE;
+      return b;
+    }
+
+    function listaDeNombres(nombres) {
+      if (nombres.length <= 1) return nombres.join("");
+      return nombres.slice(0, -1).join(", ") + " y " + nombres[nombres.length - 1];
+    }
+
+    function pintar(b, data) {
+      const total = Number(data.total) || 0;
+      const muestra = Array.isArray(data.muestra) ? data.muestra.filter(Boolean) : [];
+      const resto = total - muestra.length;
+      let html = '<p class="seg-titulo"><i class="fa-solid fa-users"></i> Tus seguidores: ' +
+                 total.toLocaleString("es-CR") + '</p>';
+
+      if (total <= 0) {
+        html += '<div class="seg-texto">Aún nadie sigue tu emprendimiento. Comparte tu perfil para que te encuentren.</div>';
+      } else {
+        let avatares = "";
+        for (let i = 0; i < Math.min(total, 5); i++) {
+          avatares += '<div class="seg-avatar"><i class="fa-solid fa-user"></i></div>';
+        }
+        let texto = listaDeNombres(muestra.map(esc));
+        if (resto > 0) texto += (texto ? " y " : "") + resto.toLocaleString("es-CR") + " más";
+        else if (texto) texto += ".";
+        html += '<div class="seg-fila"><div class="seg-avatares">' + avatares +
+                '</div><div class="seg-texto">' + texto + '</div></div>';
+      }
+
+      if (idVendedor()) {
+        html += '<button type="button" class="seg-compartir"><i class="fa-solid fa-share-nodes"></i> Compartir mi perfil</button>';
+      }
+      b.innerHTML = html;
+      b.style.display = "block";
+
+      const btn = b.querySelector(".seg-compartir");
+      if (btn) btn.addEventListener("click", compartirPerfil);
+    }
+
+    function compartirPerfil() {
+      const id = idVendedor();
+      if (!id) return;
+      const url = location.origin + "/vendedor?id=" + encodeURIComponent(id);
+      if (navigator.share) {
+        navigator.share({ title: "Mi catálogo en Tienda Monjarrez", text: "Mira mi catálogo en Tienda Monjarrez", url })
+          .catch(() => {});
+        return;
+      }
+      const listo = () => alert("Enlace de tu perfil copiado:\n" + url);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(listo).catch(() => window.prompt("Copia el enlace de tu perfil:", url));
+      } else {
+        window.prompt("Copia el enlace de tu perfil:", url);
+      }
+    }
+
+    function cargar() {
+      fetch("/api/seguir?accion=mis_seguidores", { cache: "no-store" })
+        .then((res) => { if (!res.ok) throw new Error("respuesta " + res.status); return res.json(); })
+        .then((data) => {
+          ultimo = data;
+          const b = document.getElementById(ID_BLOQUE);
+          if (b) pintar(b, data);
+        })
+        .catch((err) => {
+          console.warn("[Seguidores] No se pudo cargar:", err.message);
+          const b = document.getElementById(ID_BLOQUE);
+          if (b) b.style.display = "none";
+        });
+    }
+
+    function revisar() {
+      if (!esVisible()) { estabaVisible = false; return; }
+      let b = document.getElementById(ID_BLOQUE);
+      if (!b) {
+        b = crearBloque();
+        cont.insertBefore(b, cont.firstChild);
+        if (ultimo) pintar(b, ultimo);
+      }
+      if (!estabaVisible) { estabaVisible = true; cargar(); }
+    }
+
+    new MutationObserver(revisar).observe(cont, { attributes: true, attributeFilter: ["style", "class"], childList: true });
+    revisar();
+  })();
+  </script>
+
   </body>
 </html>
