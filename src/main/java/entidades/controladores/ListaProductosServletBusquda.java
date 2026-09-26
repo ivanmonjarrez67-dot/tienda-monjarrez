@@ -44,10 +44,15 @@ public class ListaProductosServletBusquda extends HttpServlet {
         // Vendedores -> IconosVendedor que en ListaProductosServlet, para
         // que los resultados de búsqueda también traigan el icono del
         // vendedor.
+        // 🆕 Se agregan iv.descripcion, iv.instagram, iv.tiktok e
+        // iv.facebook, mismo criterio que en ListaProductosServlet, para
+        // que perfil-vendedor.html también los reciba cuando se llega a
+        // esa página desde un resultado de búsqueda.
         String sql = "SELECT p.id, p.nombre, p.descripcion, p.imagen, p.precio, p.Nombre_Empresa, "
                    + "p.telefono, p.correo, p.provincia, p.ciudad, p.categoria, p.usuario_id, "
                    + "pe.producto_id AS extranjero_id, "
-                   + "d.precio_anterior, ia.imagen2, ia.imagen3, iv.icono AS icono_vendedor "
+                   + "d.precio_anterior, ia.imagen2, ia.imagen3, iv.icono AS icono_vendedor, "
+                   + "iv.descripcion AS descripcion_vendedor, iv.instagram, iv.tiktok, iv.facebook "
                    + "FROM Productos p "
                    + "LEFT JOIN Descuentos d ON d.producto_id = p.id "
                    + "LEFT JOIN ImagenesAdicionalesProducto ia ON ia.producto_id = p.id "
@@ -89,6 +94,13 @@ public class ListaProductosServletBusquda extends HttpServlet {
                 out.print("\"provincia\":\"" + JsonUtils.escapar(rs.getString("provincia")) + "\",");
                 out.print("\"ciudad\":\"" + JsonUtils.escapar(rs.getString("ciudad")) + "\",");
                 out.print("\"categoria\":\"" + JsonUtils.escapar(rs.getString("categoria")) + "\",");
+
+                // 🔧 FIX (mismo que ya tenía ListaProductosServlet): p.usuario_id
+                // ya venía en el SELECT pero nunca se imprimía acá, así que un
+                // resultado de búsqueda no podía enlazar al perfil del vendedor
+                // por usuario_id (solo por nombre de empresa).
+                out.print("\"usuario_id\":" + rs.getInt("usuario_id") + ",");
+
                 out.print("\"es_extranjero\":" + (rs.getObject("extranjero_id") != null) + ",");
 
                 double precioAnterior = rs.getDouble("precio_anterior");
@@ -98,7 +110,17 @@ public class ListaProductosServletBusquda extends HttpServlet {
                 String imagen3 = rs.getString("imagen3");
                 out.print("\"imagen3\":" + (imagen3 == null ? "null" : "\"" + JsonUtils.escapar(imagen3) + "\"") + ",");
                 String iconoVendedor = rs.getString("icono_vendedor");
-                out.print("\"iconoVendedor\":" + (iconoVendedor == null ? "null" : "\"" + JsonUtils.escapar(iconoVendedor) + "\""));
+                out.print("\"iconoVendedor\":" + (iconoVendedor == null ? "null" : "\"" + JsonUtils.escapar(iconoVendedor) + "\"") + ",");
+
+                // 🆕 Descripción/redes del vendedor dueño del producto.
+                String descripcionVendedor = rs.getString("descripcion_vendedor");
+                out.print("\"descripcionVendedor\":" + (descripcionVendedor == null ? "null" : "\"" + JsonUtils.escapar(descripcionVendedor) + "\"") + ",");
+                String instagramVendedor = rs.getString("instagram");
+                out.print("\"instagram\":" + (instagramVendedor == null ? "null" : "\"" + JsonUtils.escapar(instagramVendedor) + "\"") + ",");
+                String tiktokVendedor = rs.getString("tiktok");
+                out.print("\"tiktok\":" + (tiktokVendedor == null ? "null" : "\"" + JsonUtils.escapar(tiktokVendedor) + "\"") + ",");
+                String facebookVendedor = rs.getString("facebook");
+                out.print("\"facebook\":" + (facebookVendedor == null ? "null" : "\"" + JsonUtils.escapar(facebookVendedor) + "\""));
 
                 out.print("}");
             }

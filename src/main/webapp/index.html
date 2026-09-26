@@ -3384,6 +3384,24 @@ async function cargarMisProductos(usuarioId) {
               <label>Plan de suscripción</label>
               <div id="perfilPlan">—</div>
             </div>
+
+            <!-- 🆕 Descripción de la tienda y redes sociales: solo cuentas
+                 Vendedor (mismo criterio que perfilIconoWrap). Se guarda
+                 aparte con /api/perfil/redes. -->
+            <div id="perfilRedesWrap" style="display:none;">
+              <label for="perfilDescripcion">Descripción de tu tienda</label>
+              <textarea id="perfilDescripcion" maxlength="160" rows="3"
+                placeholder="Contale a tus clientes de qué se trata tu emprendimiento (máx. 160 caracteres)"></textarea>
+
+              <label for="perfilInstagram"><i class="fa-brands fa-instagram"></i> Instagram</label>
+              <input type="text" id="perfilInstagram" placeholder="Usuario o link de Instagram (opcional)" />
+
+              <label for="perfilTiktok"><i class="fa-brands fa-tiktok"></i> TikTok</label>
+              <input type="text" id="perfilTiktok" placeholder="Usuario o link de TikTok (opcional)" />
+
+              <label for="perfilFacebook"><i class="fa-brands fa-facebook"></i> Facebook</label>
+              <input type="text" id="perfilFacebook" placeholder="Usuario o link de Facebook (opcional)" />
+            </div>
           </div>
 
           <!-- 🆕 Acordeón "Administrar notificaciones": agrupa las

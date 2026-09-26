@@ -30,10 +30,15 @@ public class ListaProductosServlet extends HttpServlet {
         // IconosVendedor para traer el icono del vendedor dueño del
         // producto. Si el vendedor no tiene icono subido, "iv.icono"
         // llega NULL y se traduce a "null" en el JSON.
+        // 🆕 Se agregan iv.descripcion, iv.instagram, iv.tiktok e
+        // iv.facebook (mismas columnas nuevas de IconosVendedor que ya usa
+        // el panel "Mi Perfil"), para que perfil-vendedor.html pueda
+        // mostrar la bio y los iconos de redes del emprendedor.
         String sql = "SELECT p.id, p.nombre, p.descripcion, p.imagen, p.precio, p.Nombre_Empresa, "
                    + "p.telefono, p.correo, p.provincia, p.ciudad, p.categoria, p.usuario_id, "
                    + "pe.producto_id AS extranjero_id, "
-                   + "d.precio_anterior, ia.imagen2, ia.imagen3, iv.icono AS icono_vendedor "
+                   + "d.precio_anterior, ia.imagen2, ia.imagen3, iv.icono AS icono_vendedor, "
+                   + "iv.descripcion AS descripcion_vendedor, iv.instagram, iv.tiktok, iv.facebook "
                    + "FROM Productos p "
                    + "LEFT JOIN Descuentos d ON d.producto_id = p.id "
                    + "LEFT JOIN ImagenesAdicionalesProducto ia ON ia.producto_id = p.id "
@@ -85,7 +90,17 @@ public class ListaProductosServlet extends HttpServlet {
                 String imagen3 = rs.getString("imagen3");
                 out.print("\"imagen3\":" + (imagen3 == null ? "null" : "\"" + JsonUtils.escapar(imagen3) + "\"") + ",");
                 String iconoVendedor = rs.getString("icono_vendedor");
-                out.print("\"iconoVendedor\":" + (iconoVendedor == null ? "null" : "\"" + JsonUtils.escapar(iconoVendedor) + "\""));
+                out.print("\"iconoVendedor\":" + (iconoVendedor == null ? "null" : "\"" + JsonUtils.escapar(iconoVendedor) + "\"") + ",");
+
+                // 🆕 Descripción/redes del vendedor dueño del producto.
+                String descripcionVendedor = rs.getString("descripcion_vendedor");
+                out.print("\"descripcionVendedor\":" + (descripcionVendedor == null ? "null" : "\"" + JsonUtils.escapar(descripcionVendedor) + "\"") + ",");
+                String instagramVendedor = rs.getString("instagram");
+                out.print("\"instagram\":" + (instagramVendedor == null ? "null" : "\"" + JsonUtils.escapar(instagramVendedor) + "\"") + ",");
+                String tiktokVendedor = rs.getString("tiktok");
+                out.print("\"tiktok\":" + (tiktokVendedor == null ? "null" : "\"" + JsonUtils.escapar(tiktokVendedor) + "\"") + ",");
+                String facebookVendedor = rs.getString("facebook");
+                out.print("\"facebook\":" + (facebookVendedor == null ? "null" : "\"" + JsonUtils.escapar(facebookVendedor) + "\""));
 
                 out.print("}");
             }

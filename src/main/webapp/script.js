@@ -2182,6 +2182,13 @@ if (welcomeContainer) {
   // de tienda de arriba).
   const avatarCompradorWrap = document.getElementById("perfilAvatarCompradorWrap");
   const avatarCompradorInicial = document.getElementById("perfilAvatarCompradorInicial");
+
+  // 🆕 Descripción de la tienda y redes sociales (solo Vendedor)
+  const redesWrap = document.getElementById("perfilRedesWrap");
+  const inputDescripcion = document.getElementById("perfilDescripcion");
+  const inputInstagram = document.getElementById("perfilInstagram");
+  const inputTiktok = document.getElementById("perfilTiktok");
+  const inputFacebook = document.getElementById("perfilFacebook");
   const mensaje = document.getElementById("perfilMensaje");
   const btnGuardar = document.getElementById("perfilGuardarBtn");
   const btnBorrar = document.getElementById("perfilBorrarCuentaBtn");
@@ -2273,6 +2280,14 @@ if (welcomeContainer) {
         iconoPreview.style.display = "none";
         iconoPlaceholder.style.display = "block";
       }
+      // 🆕 Descripción y redes: mismo criterio que el icono, solo Vendedor.
+      if (redesWrap) redesWrap.style.display = esVendedor ? "block" : "none";
+      if (esVendedor) {
+        if (inputDescripcion) inputDescripcion.value = perfil.descripcionVendedor || "";
+        if (inputInstagram) inputInstagram.value = perfil.instagram || "";
+        if (inputTiktok) inputTiktok.value = perfil.tiktok || "";
+        if (inputFacebook) inputFacebook.value = perfil.facebook || "";
+      }
       // 🆕 Avatar morado con inicial: solo para cuentas Comprador
       // (lo contrario del icono de tienda de arriba).
       if (avatarCompradorWrap) avatarCompradorWrap.style.display = esVendedor ? "none" : "flex";
@@ -2335,7 +2350,23 @@ if (welcomeContainer) {
           }).toString()
         });
         const texto = await res.text();
-        if (res.ok) mostrarMensaje("✅ Cambios guardados correctamente.", "ok");
+        if (res.ok) {
+          // 🆕 Si es vendedor, guarda también descripción y redes en el
+          // mismo click, sin agregar un segundo botón "Guardar".
+          if (redesWrap && redesWrap.style.display !== "none") {
+            await fetch("/api/perfil/redes", {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: new URLSearchParams({
+                descripcion: inputDescripcion.value.trim(),
+                instagram: inputInstagram.value.trim(),
+                tiktok: inputTiktok.value.trim(),
+                facebook: inputFacebook.value.trim(),
+              }).toString(),
+            });
+          }
+          mostrarMensaje("✅ Cambios guardados correctamente.", "ok");
+        }
         else mostrarMensaje(texto || "No se pudo guardar. Intenta de nuevo.", "error");
       } catch (err) {
         mostrarMensaje("Error de conexión al guardar.", "error");

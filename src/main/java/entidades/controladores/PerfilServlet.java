@@ -36,6 +36,10 @@ import jakarta.servlet.http.HttpSession;
  * COMPRADOR se inició con "Continuar con Google" (lo marcan
  * LoginCompradorGoogleServlet y RegistroCompradorGoogleServlet). El frontend
  * lo usa para esconder "Cambiar contraseña" y dejar el correo de solo lectura.
+ *
+ * 🆕 También devuelve, solo para Vendedor: "descripcionVendedor", "instagram",
+ * "tiktok" y "facebook" (leídos de IconosVendedor, misma fila del icono de
+ * tienda), para precargar esos campos en el panel "Mi Perfil".
  */
 @WebServlet("/api/perfil")
 public class PerfilServlet extends HttpServlet {
@@ -90,10 +94,16 @@ public class PerfilServlet extends HttpServlet {
             String tipoSuscripcion = null;
             boolean suscrito = false;
             String iconoUrl = null; // 🆕
+            String descripcionVendedor = null; // 🆕
+            String instagramVendedor = null; // 🆕
+            String tiktokVendedor = null; // 🆕
+            String facebookVendedor = null; // 🆕
 
-            // Si es Vendedor, revisamos su suscripción y su icono de tienda
+            // Si es Vendedor, revisamos su suscripción, su icono de tienda,
+            // y su descripción + redes sociales.
             if ("Vendedor".equalsIgnoreCase(tipo)) {
-                String sqlVendedor = "SELECT v.suscrito, v.tipo_suscripcion, iv.icono "
+                String sqlVendedor = "SELECT v.suscrito, v.tipo_suscripcion, iv.icono, "
+                                   + "iv.descripcion, iv.instagram, iv.tiktok, iv.facebook "
                                    + "FROM Vendedores v "
                                    + "LEFT JOIN IconosVendedor iv ON iv.vendedor_id = v.id "
                                    + "WHERE v.usuario_id = ?";
@@ -106,6 +116,10 @@ public class PerfilServlet extends HttpServlet {
                             tipoSuscripcion = rsV.getString("tipo_suscripcion"); // "Básica" o "Avanzada"
                             esDestacado = suscrito && "Avanzada".equalsIgnoreCase(tipoSuscripcion);
                             iconoUrl = rsV.getString("icono"); // 🆕 null si no tiene icono
+                            descripcionVendedor = rsV.getString("descripcion"); // 🆕
+                            instagramVendedor = rsV.getString("instagram"); // 🆕
+                            tiktokVendedor = rsV.getString("tiktok"); // 🆕
+                            facebookVendedor = rsV.getString("facebook"); // 🆕
                         }
                     }
                 }
@@ -143,6 +157,10 @@ public class PerfilServlet extends HttpServlet {
                 out.print("\"suscrito\":" + suscrito + ",");
                 out.print("\"tipoSuscripcion\":" + (tipoSuscripcion != null ? "\"" + escapeJson(tipoSuscripcion) + "\"" : "null") + ",");
                 out.print("\"iconoUrl\":" + (iconoUrl != null ? "\"" + escapeJson(iconoUrl) + "\"" : "null") + ","); // 🆕
+                out.print("\"descripcionVendedor\":" + (descripcionVendedor != null ? "\"" + escapeJson(descripcionVendedor) + "\"" : "null") + ","); // 🆕
+                out.print("\"instagram\":" + (instagramVendedor != null ? "\"" + escapeJson(instagramVendedor) + "\"" : "null") + ","); // 🆕
+                out.print("\"tiktok\":" + (tiktokVendedor != null ? "\"" + escapeJson(tiktokVendedor) + "\"" : "null") + ","); // 🆕
+                out.print("\"facebook\":" + (facebookVendedor != null ? "\"" + escapeJson(facebookVendedor) + "\"" : "null") + ","); // 🆕
                 out.print("\"intereses\":" + stringArrayJson(intereses) + ",");
                 out.print("\"provincias\":" + stringArrayJson(provincias));
                 out.print("}");
