@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tienda Monjarrez — Pedido confirmado</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+  integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer"
+/>
+<style>
+  :root { --bg: #fffdf9; --rojo: #a13341; --rojo-osc: #7a1414; --verde: #1c7c3f; --border: #ececec; --text: #1a1a1a; --text-dim: #777; }
+  * { box-sizing: border-box; }
+  html, body { min-height: 100%; }
+  body {
+    margin: 0; color: var(--text); font-family: "Poppins", sans-serif;
+    background: linear-gradient(180deg, #fffdf9 0%, #f7f3ee 100%);
+    background-attachment: fixed;
+    display: flex; flex-direction: column; min-height: 100vh;
+  }
+  header {
+    display: flex; align-items: center; justify-content: center; padding: 16px 24px;
+    background: #fff; border-bottom: 1px solid var(--border);
+  }
+  .logo { font-size: 1.35rem; font-weight: 700; color: var(--text); }
+  .logo .rojo { color: var(--rojo); }
+
+  main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 28px 16px 48px; }
+  .tarjeta {
+    width: 100%; max-width: 480px; background: #fff; border: 1px solid var(--border); border-radius: 18px; text-align: center;
+    padding: 38px 30px 30px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); position: relative; overflow: hidden;
+    animation: entrar .5s ease both;
+  }
+  .tarjeta::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 6px;
+    background: linear-gradient(90deg, var(--rojo-osc), var(--rojo), var(--rojo-osc));
+  }
+  @keyframes entrar { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+  /* Check animado */
+  .check-wrap {
+    width: 96px; height: 96px; margin: 0 auto 18px; border-radius: 50%;
+    background: #eafaf0; display: flex; align-items: center; justify-content: center;
+    animation: pulso 1.6s ease-out .9s 1;
+  }
+  .check-wrap svg { width: 56px; height: 56px; }
+  .check-circulo { stroke: var(--verde); stroke-width: 3; fill: none; stroke-dasharray: 151; stroke-dashoffset: 151; animation: trazo .6s ease forwards .2s; }
+  .check-marca { stroke: var(--verde); stroke-width: 4; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 40; stroke-dashoffset: 40; animation: trazo .4s ease forwards .7s; }
+  @keyframes trazo { to { stroke-dashoffset: 0; } }
+  @keyframes pulso { 0% { box-shadow: 0 0 0 0 rgba(28,124,63,.35); } 100% { box-shadow: 0 0 0 26px rgba(28,124,63,0); } }
+
+  h1 { margin: 0 0 6px; font-size: 1.45rem; }
+  .sub { margin: 0 0 4px; color: var(--text-dim); font-size: 0.92rem; line-height: 1.55; }
+  .num-pedido {
+    display: inline-block; margin: 12px 0 4px; padding: 5px 14px; border-radius: 999px;
+    background: rgba(161,51,65,0.08); color: var(--rojo); font-weight: 700; font-size: 0.9rem;
+  }
+
+  .avisos { text-align: left; margin: 22px 0 6px; border: 1px solid var(--border); border-radius: 12px; background: #faf8f5; }
+  .aviso { display: flex; gap: 12px; align-items: flex-start; padding: 13px 16px; font-size: 0.85rem; line-height: 1.45; }
+  .aviso + .aviso { border-top: 1px solid #f2f2f2; }
+  .aviso i { color: var(--verde); margin-top: 3px; }
+  .aviso i.pend { color: var(--rojo); }
+  .aviso strong { display: block; font-size: 0.87rem; }
+  .aviso span { color: var(--text-dim); font-size: 0.8rem; }
+
+  .nota { margin: 14px 0 0; font-size: 0.82rem; color: #555; line-height: 1.6; }
+
+  .acciones { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
+  .acciones a {
+    display: block; padding: 13px; border-radius: 8px; font-weight: 600; font-size: 0.92rem;
+    text-decoration: none; font-family: inherit; transition: background .15s, transform .1s;
+  }
+  .acciones a:active { transform: scale(.98); }
+  .btn-seguir { background: var(--rojo); color: #fff; }
+  .btn-seguir:hover { background: #8a2b37; }
+  .btn-factura { background: #f0f0f0; color: #333; }
+  .btn-factura:hover { background: #e6e6e6; }
+
+  @media (max-width: 420px) { .tarjeta { padding: 32px 20px 24px; } h1 { font-size: 1.25rem; } }
+  @media (prefers-reduced-motion: reduce) {
+    .tarjeta, .check-wrap { animation: none; }
+    .check-circulo, .check-marca { animation: none; stroke-dashoffset: 0; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span>Tienda</span> <span class="rojo">Monjarrez</span></div>
+</header>
+
+<main>
+  <div class="tarjeta">
+    <div class="check-wrap" aria-hidden="true">
+      <svg viewBox="0 0 56 56">
+        <circle class="check-circulo" cx="28" cy="28" r="24" />
+        <path class="check-marca" d="M17 29 l8 8 l14 -16" />
+      </svg>
+    </div>
+
+    <h1>¡Pedido confirmado!</h1>
+    <p class="sub">Gracias por tu compra. Tu pedido se está realizando.</p>
+    <span class="num-pedido" id="numPedido" style="display:none;"></span>
+
+    <div class="avisos">
+      <div class="aviso">
+        <i class="fa-solid fa-circle-check"></i>
+        <div><strong>Vendedor notificado</strong><span>El vendedor de tu producto ya recibió tu pedido.</span></div>
+      </div>
+      <div class="aviso">
+        <i class="fa-solid fa-circle-check"></i>
+        <div><strong>Tienda Monjarrez notificada</strong><span>Nuestro equipo también fue avisado.</span></div>
+      </div>
+      <div class="aviso">
+        <i class="fa-solid fa-envelope"></i>
+        <div><strong>Factura enviada</strong><span id="textoCorreo">Te enviamos tu factura por correo.</span></div>
+      </div>
+    </div>
+
+    <p class="nota">Si se necesita algo más, nos estaremos comunicando contigo.</p>
+
+    <div class="acciones">
+      <a class="btn-seguir" href="index.html"><i class="fa-solid fa-bag-shopping"></i> Seguir comprando</a>
+      <a class="btn-factura" id="btnFactura" href="factura.html" target="_blank" rel="noopener"><i class="fa-solid fa-file-invoice"></i> Ver mi factura</a>
+    </div>
+  </div>
+</main>
+
+<script>
+(function () {
+  const id = new URLSearchParams(window.location.search).get("id");
+  if (!id) return; // sin id (p. ej. vista previa) se ve igual, solo sin número de pedido
+
+  document.getElementById("btnFactura").href = "factura.html?id=" + encodeURIComponent(id);
+
+  const num = document.getElementById("numPedido");
+  num.textContent = "Pedido #" + id;
+  num.style.display = "inline-block";
+
+  // Muestra el correo al que se envió la factura, si el pedido lo trae.
+  fetch("/api/pedido?id=" + encodeURIComponent(id))
+    .then((r) => (r.ok ? r.json() : null))
+    .then((p) => {
+      if (p && p.correo_cliente) {
+        document.getElementById("textoCorreo").textContent = "Te enviamos tu factura a " + p.correo_cliente + ".";
+      }
+    })
+    .catch(() => {});
+})();
+</script>
+</body>
+</html>

@@ -484,7 +484,7 @@
       .then((res) => res.json().then((data) => { if (!res.ok) throw new Error(data.error || "No se pudo confirmar el pedido."); return data; }))
       .then((data) => {
         pagoOverlay.classList.remove("visible");
-        window.open(`factura.html?id=${data.pedido_id}`, "_blank", "noopener");
+        window.location.href = `pedido-confirmado.html?id=${data.pedido_id}`;
         render(); // el carrito ya quedó vacío en el servidor
       })
       .catch((err) => mostrarErrorEntrega(err.message))
