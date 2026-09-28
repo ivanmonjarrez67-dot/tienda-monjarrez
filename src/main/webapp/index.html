@@ -3094,6 +3094,20 @@ async function cargarMisProductos(usuarioId) {
         font-size: 14px;
         box-sizing: border-box;
       }
+      /* 🆕 Datos de entrega (teléfono y dirección) */
+      #perfilContent input[type="tel"],
+      #perfilContent #perfilDireccionEnvio {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: inherit;
+        box-sizing: border-box;
+      }
+      #perfilContent #perfilDireccionEnvio { resize: vertical; min-height: 70px; }
+      #perfilEnvioNota { font-size: 12px; color: #999; margin: 4px 0 0; }
+      #perfilEnvioMensaje { font-size: 13px; color: #a13341; margin: 6px 0 0; min-height: 0; }
       #perfilTipo {
         font-size: 14px;
         color: #333;
@@ -3376,6 +3390,19 @@ async function cargarMisProductos(usuarioId) {
 
             <label for="perfilCorreo">Correo</label>
             <input type="email" id="perfilCorreo" />
+
+            <!-- 🆕 Datos de entrega: se precargan en el carrito al confirmar un pedido
+                 y se actualizan solos con el último pedido. Ver /api/perfil/envio. -->
+            <div id="perfilEnvioWrap">
+              <label for="perfilTelefonoEnvio"><i class="fa-solid fa-phone"></i> Teléfono de contacto</label>
+              <input type="tel" id="perfilTelefonoEnvio" inputmode="tel" maxlength="20" placeholder="Ej: 8888 8888" />
+
+              <label for="perfilDireccionEnvio"><i class="fa-solid fa-location-dot"></i> Dirección de entrega</label>
+              <textarea id="perfilDireccionEnvio" maxlength="400" rows="3"
+                placeholder="Provincia, cantón, distrito y señas exactas"></textarea>
+              <p id="perfilEnvioNota">Se usan para tus pedidos. Puedes cambiarlos cuando quieras.</p>
+              <p id="perfilEnvioMensaje"></p>
+            </div>
 
             <label>Tipo de cuenta</label>
             <div id="perfilTipo">—</div>
@@ -6382,5 +6409,60 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
   })();
   </script>
 
+    <!-- 🆕 Datos de entrega del perfil (teléfono + dirección).
+         Independiente de script.js: escucha el botón "Guardar cambios" existente. -->
+    <script>
+    (function () {
+      const tel = document.getElementById("perfilTelefonoEnvio");
+      const dir = document.getElementById("perfilDireccionEnvio");
+      const msg = document.getElementById("perfilEnvioMensaje");
+      const datos = document.getElementById("perfilDatos");
+      const btnGuardar = document.getElementById("perfilGuardarBtn");
+      if (!tel || !dir || !datos || !btnGuardar) return;
+
+      let original = { telefono: "", direccion: "" };
+
+      function cargarEnvio() {
+        fetch("/api/perfil/envio")
+          .then((res) => (res.ok ? res.json() : null))
+          .then((d) => {
+            if (!d) return;
+            original = { telefono: d.telefono || "", direccion: d.direccion || "" };
+            tel.value = original.telefono;
+            dir.value = original.direccion;
+            msg.textContent = "";
+          })
+          .catch(() => {});
+      }
+
+      // perfilDatos se muestra cuando el perfil termina de cargar: ahí traemos los datos de entrega.
+      new MutationObserver(() => {
+        if (datos.style.display !== "none") cargarEnvio();
+      }).observe(datos, { attributes: true, attributeFilter: ["style"] });
+
+      btnGuardar.addEventListener("click", () => {
+        const t = tel.value.trim();
+        const d = dir.value.trim();
+        if (t === original.telefono && d === original.direccion) return; // nada cambió
+        const digitos = t.replace(/\D/g, "");
+        if (t && (digitos.length < 8 || digitos.length > 15)) {
+          msg.textContent = "El teléfono no es válido (mínimo 8 dígitos).";
+          return;
+        }
+        msg.textContent = "";
+        fetch("/api/perfil/envio", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ telefono: t, direccion: d }).toString(),
+        })
+          .then((res) => res.json().then((data) => {
+            if (!res.ok) throw new Error(data.error || "No se pudieron guardar los datos de entrega.");
+            original = { telefono: digitos, direccion: d };
+            tel.value = digitos;
+          }))
+          .catch((err) => { msg.textContent = err.message; });
+      });
+    })();
+    </script>
   </body>
 </html>

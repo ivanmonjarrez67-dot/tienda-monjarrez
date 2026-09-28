@@ -36,6 +36,15 @@
   .factura-numero { text-align: right; }
   .factura-numero .num { font-size: 1.1rem; font-weight: 700; color: var(--rojo); }
 
+  .factura-cliente { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; background: #faf8f5; border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin-bottom: 22px; }
+  .factura-cliente h2 { grid-column: 1 / -1; margin: 0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); }
+  .factura-cliente .campo { font-size: 0.88rem; line-height: 1.45; min-width: 0; overflow-wrap: anywhere; }
+  .factura-cliente .campo span.etq { display: block; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 2px; }
+  .factura-cliente .campo.ancho { grid-column: 1 / -1; }
+  .factura-espec { display: block; margin-top: 3px; font-size: 0.78rem; color: #555; line-height: 1.4; overflow-wrap: anywhere; white-space: pre-line; }
+  .factura-espec b { color: var(--rojo); font-weight: 600; }
+  @media (max-width: 520px) { .factura-cliente { grid-template-columns: 1fr; } }
+
   .factura-estado-check { display: flex; align-items: center; gap: 10px; background: #eafaf0; color: #1c7c3f; padding: 12px 16px; border-radius: 10px; margin-bottom: 22px; font-weight: 600; font-size: 0.9rem; }
   .factura-estado-check i { font-size: 1.2rem; }
 
@@ -99,6 +108,14 @@
     <div class="factura-estado-check">
       <i class="fa-solid fa-circle-check"></i>
       <span>¡Pedido confirmado! Guarda esta factura como comprobante.</span>
+    </div>
+
+    <div class="factura-cliente" id="facturaClienteWrap" style="display:none;">
+      <h2>Datos del cliente y entrega</h2>
+      <div class="campo" id="campoNombre" style="display:none;"><span class="etq">Cliente</span><span id="facturaCliente"></span></div>
+      <div class="campo" id="campoCorreo" style="display:none;"><span class="etq">Correo</span><span id="facturaCorreo"></span></div>
+      <div class="campo" id="campoTelefono" style="display:none;"><span class="etq">Teléfono de contacto</span><span id="facturaTelefono"></span></div>
+      <div class="campo ancho" id="campoDireccion" style="display:none;"><span class="etq">Dirección de entrega</span><span id="facturaDireccion"></span></div>
     </div>
 
     <table class="factura-tabla">
@@ -168,6 +185,22 @@
           document.getElementById("facturaReferencia").textContent = pedido.referencia_pago;
         }
 
+        // Datos del cliente y entrega (cada campo se muestra solo si viene con valor)
+        let hayCliente = false;
+        [
+          ["campoNombre", "facturaCliente", pedido.nombre_cliente],
+          ["campoCorreo", "facturaCorreo", pedido.correo_cliente],
+          ["campoTelefono", "facturaTelefono", pedido.telefono_contacto],
+          ["campoDireccion", "facturaDireccion", pedido.direccion_entrega],
+        ].forEach(([campoId, valorId, valor]) => {
+          if (valor && String(valor).trim()) {
+            document.getElementById(valorId).textContent = valor;
+            document.getElementById(campoId).style.display = "block";
+            hayCliente = true;
+          }
+        });
+        if (hayCliente) document.getElementById("facturaClienteWrap").style.display = "grid";
+
         const tbody = document.getElementById("facturaItems");
         tbody.innerHTML = "";
         (pedido.items || []).forEach((item) => {
@@ -176,7 +209,12 @@
             <td>
               <div class="factura-producto-cell">
                 <img src="${esc(item.imagen)}" alt="">
-                <span>${esc(item.nombre)}</span>
+                <div>
+                  <span>${esc(item.nombre)}</span>
+                  ${item.especificaciones && String(item.especificaciones).trim()
+                    ? `<span class="factura-espec"><b>Especificaciones:</b> ${esc(item.especificaciones)}</span>`
+                    : ""}
+                </div>
               </div>
             </td>
             <td>${item.cantidad}</td>

@@ -109,6 +109,37 @@
   .pago-modal-botones button { flex: 1; padding: 11px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; font-family: inherit; }
   .btn-pago-cancelar { background: #f0f0f0; color: #333; }
   .btn-pago-confirmar { background: var(--rojo); color: #fff; }
+  .btn-pago-confirmar:disabled { background: #ccc; cursor: not-allowed; }
+
+  /* Especificaciones por producto */
+  .spec-wrap { margin-top: 8px; }
+  .spec-label { display: block; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 3px; font-weight: 500; }
+  .spec-input {
+    width: 100%; resize: vertical; min-height: 40px; padding: 7px 9px; font-family: inherit; font-size: 0.8rem;
+    border: 1.5px solid #ddd; border-radius: 8px; background: #fffefb;
+  }
+  .spec-input:focus { outline: none; border-color: var(--rojo); }
+  .spec-pie { display: flex; justify-content: space-between; font-size: 0.68rem; color: #999; margin-top: 2px; min-height: 14px; }
+  .spec-estado.ok { color: #1c7c3f; }
+  .spec-estado.error { color: var(--rojo); }
+  @media (max-width: 640px) {
+    .carrito-fila { flex-wrap: wrap; }
+    .carrito-fila-info { flex-basis: calc(100% - 100px); }
+  }
+
+  /* Datos de entrega dentro del modal */
+  .pago-modal { max-height: 92vh; overflow-y: auto; }
+  .pago-seccion { font-size: 0.85rem; font-weight: 700; color: var(--rojo); margin: 0 0 8px; }
+  .entrega-campo { display: block; font-size: 0.75rem; color: var(--text-dim); margin: 10px 0 3px; }
+  .entrega-input {
+    width: 100%; padding: 9px; border-radius: 8px; border: 1.5px solid #ddd; font-family: inherit; font-size: 0.85rem;
+  }
+  .entrega-input:focus { outline: none; border-color: var(--rojo); }
+  textarea.entrega-input { resize: vertical; min-height: 64px; }
+  .entrega-correo { font-size: 0.78rem; color: #555; margin: 8px 0 0; display: none; }
+  .entrega-nota { font-size: 0.72rem; color: #999; margin: 4px 0 0; }
+  #entregaError { display: none; color: var(--rojo); font-size: 0.8rem; margin: 10px 0 0; }
+  .pago-separador { border: none; border-top: 1px solid #eee; margin: 16px 0; }
 </style>
 </head>
 <body>
@@ -148,13 +179,26 @@
 
 <div class="pago-overlay" id="pagoOverlay">
   <div class="pago-modal">
-    <h3>Elige tu método de pago</h3>
+    <h3>Confirma tu pedido</h3>
+
+    <p class="pago-seccion"><i class="fa-solid fa-location-dot"></i> Datos de entrega</p>
+    <label class="entrega-campo" for="inputTelefonoEntrega">Teléfono de contacto</label>
+    <input type="tel" id="inputTelefonoEntrega" class="entrega-input" inputmode="tel" maxlength="20" placeholder="Ej: 8888 8888" autocomplete="tel">
+    <label class="entrega-campo" for="inputDireccionEntrega">Dirección de entrega</label>
+    <textarea id="inputDireccionEntrega" class="entrega-input" maxlength="400" rows="3" placeholder="Provincia, cantón, distrito y señas exactas" autocomplete="street-address"></textarea>
+    <p class="entrega-nota">Se guardan en tu perfil para tu próximo pedido.</p>
+    <p class="entrega-correo" id="entregaCorreo"></p>
+    <p id="entregaError"></p>
+
+    <hr class="pago-separador">
+    <p class="pago-seccion"><i class="fa-solid fa-wallet"></i> Método de pago</p>
     <label class="pago-opcion" data-valor="sinpe">
       <input type="radio" name="metodoPagoPedido" value="sinpe">
       <span><i class="fa-solid fa-mobile-screen"></i> SINPE Móvil</span>
     </label>
     <div id="campoReferenciaSinpe">
-      <input type="text" id="inputReferenciaSinpe" placeholder="Número de comprobante (opcional)">
+      <input type="text" id="inputReferenciaSinpe" placeholder="N.º de comprobante SINPE (opcional)">
+      <p class="entrega-nota" style="margin-top:4px;">Solo el número del comprobante de tu banco. El color, la talla y otros detalles del producto se escriben en el carrito.</p>
     </div>
     <div id="avisoSinpe" style="display:none; background:#fff8e6; border:1px solid #f0d98c; border-radius:8px; padding:10px 12px; margin-bottom:14px; font-size:0.82rem; color:#6b5200;">
       <p style="margin:0 0 8px;"><i class="fa-solid fa-circle-info"></i> Antes de pagar, confirma con el/los vendedor(es) que acepten SINPE y a qué número:</p>
@@ -226,6 +270,48 @@
     }).then(render);
   }
 
+  // ---- Especificaciones por producto (color, talla, etc.) ----
+  // "pendientes" guarda lo escrito que aún no se confirmó como guardado, para que
+  // un re-render (por ejemplo al cambiar la cantidad) no pise lo que la persona escribió.
+  const MAX_ESPEC = 300;
+  const especPendientes = new Map();
+
+  function guardarEspecificaciones(productoId, texto) {
+    return fetch("/api/carrito", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ accion: "especificaciones", producto_id: productoId, especificaciones: texto }).toString(),
+    }).then((res) => res.json().then((data) => {
+      if (!res.ok) throw new Error(data.error || "No se pudieron guardar las especificaciones.");
+      if (especPendientes.get(productoId) === texto) especPendientes.delete(productoId);
+    }));
+  }
+
+  function configurarEspecificaciones(fila, item) {
+    const ta = fila.querySelector(".spec-input");
+    const contador = fila.querySelector(".spec-contador");
+    const estado = fila.querySelector(".spec-estado");
+    ta.value = especPendientes.has(item.producto_id) ? especPendientes.get(item.producto_id) : (item.especificaciones || "");
+    const actualizarContador = () => { contador.textContent = ta.value.length + "/" + MAX_ESPEC; };
+    actualizarContador();
+    ta.addEventListener("input", () => {
+      especPendientes.set(item.producto_id, ta.value);
+      estado.textContent = ""; estado.className = "spec-estado";
+      actualizarContador();
+    });
+    ta.addEventListener("blur", () => {
+      if (!especPendientes.has(item.producto_id)) return;
+      guardarEspecificaciones(item.producto_id, ta.value)
+        .then(() => { estado.textContent = "✓ Guardado"; estado.className = "spec-estado ok"; })
+        .catch((err) => { estado.textContent = err.message; estado.className = "spec-estado error"; });
+    });
+  }
+
+  // Antes de confirmar: guarda lo que haya quedado sin guardar.
+  function guardarEspecificacionesPendientes() {
+    return Promise.all(Array.from(especPendientes.entries()).map(([id, texto]) => guardarEspecificaciones(id, texto)));
+  }
+
   function construirFila(item) {
     const div = document.createElement("div");
     div.className = "carrito-fila";
@@ -236,6 +322,11 @@
         <p class="nombre">${esc(item.nombre)}</p>
         <p class="precio">${fmtCrc(item.precio_unitario)}${tienePrecioAnterior ? `<span class="precio-anterior">${fmtCrc(item.precio_anterior)}</span>` : ""}</p>
         ${item.precio_cambio ? `<p class="aviso-precio-cambio"><i class="fa-solid fa-circle-info"></i> El precio de este producto cambió desde que lo agregaste.</p>` : ""}
+        <div class="spec-wrap">
+          <label class="spec-label"><i class="fa-solid fa-pen"></i> Especificaciones (color, talla, etc.)</label>
+          <textarea class="spec-input" maxlength="${MAX_ESPEC}" rows="2" placeholder="Ej: color dorado, talla 8"></textarea>
+          <div class="spec-pie"><span class="spec-estado"></span><span class="spec-contador"></span></div>
+        </div>
       </div>
       <div class="carrito-fila-cantidad">
         <button type="button" class="restar">−</button>
@@ -248,6 +339,7 @@
     div.querySelector(".restar").addEventListener("click", () => actualizarCantidad(item.producto_id, item.cantidad - 1));
     div.querySelector(".sumar").addEventListener("click", () => actualizarCantidad(item.producto_id, item.cantidad + 1));
     div.querySelector(".carrito-fila-eliminar").addEventListener("click", () => eliminarItem(item.producto_id));
+    configurarEspecificaciones(div, item);
     return div;
   }
 
@@ -315,8 +407,41 @@
 
   // ---- Confirmar pedido: elegir método de pago -> POST /api/pedido ----
   const pagoOverlay = document.getElementById("pagoOverlay");
+  const inputTel = document.getElementById("inputTelefonoEntrega");
+  const inputDir = document.getElementById("inputDireccionEntrega");
+  const entregaError = document.getElementById("entregaError");
+  const entregaCorreo = document.getElementById("entregaCorreo");
+
+  function mostrarErrorEntrega(msg) {
+    entregaError.textContent = msg || "";
+    entregaError.style.display = msg ? "block" : "none";
+  }
+
+  // Precarga teléfono/dirección guardados en el perfil (sin pisar lo que ya escribió) y el correo.
+  function precargarDatosEntrega() {
+    fetch("/api/perfil/envio")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d) => {
+        if (!d) return;
+        if (!inputTel.value && d.telefono) inputTel.value = d.telefono;
+        if (!inputDir.value && d.direccion) inputDir.value = d.direccion;
+      })
+      .catch(() => {});
+    fetch("/api/perfil")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((p) => {
+        if (p && p.correo) {
+          entregaCorreo.innerHTML = '<i class="fa-solid fa-envelope"></i> Te enviaremos la factura a <strong>' + esc(p.correo) + "</strong>";
+          entregaCorreo.style.display = "block";
+        }
+      })
+      .catch(() => {});
+  }
+
   document.getElementById("btnConfirmarPedido").addEventListener("click", () => {
     renderizarAvisoSinpe(itemsActuales);
+    mostrarErrorEntrega("");
+    precargarDatosEntrega();
     pagoOverlay.classList.add("visible");
   });
   document.getElementById("btnPagoCancelar").addEventListener("click", () => pagoOverlay.classList.remove("visible"));
@@ -336,18 +461,34 @@
     if (!metodo) { alert("Elige un método de pago."); return; }
     const referencia = document.getElementById("inputReferenciaSinpe").value.trim();
 
-    fetch("/api/pedido", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ accion: "confirmar", metodo_pago: metodo, referencia_pago: referencia }).toString(),
-    })
+    // Mismas reglas que el servidor: teléfono de 8 a 15 dígitos y dirección de al menos 10 caracteres.
+    const telefono = inputTel.value.trim();
+    const digitos = telefono.replace(/\D/g, "");
+    const direccion = inputDir.value.trim();
+    if (digitos.length < 8 || digitos.length > 15) { mostrarErrorEntrega("Ingresa un teléfono de contacto válido (mínimo 8 dígitos)."); inputTel.focus(); return; }
+    if (direccion.length < 10) { mostrarErrorEntrega("Ingresa tu dirección de entrega completa (provincia, cantón, distrito y señas)."); inputDir.focus(); return; }
+    mostrarErrorEntrega("");
+
+    const btnOk = document.getElementById("btnPagoConfirmar");
+    btnOk.disabled = true; // evita pedidos duplicados por doble clic
+
+    guardarEspecificacionesPendientes()
+      .then(() => fetch("/api/pedido", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          accion: "confirmar", metodo_pago: metodo, referencia_pago: referencia,
+          telefono_contacto: telefono, direccion_entrega: direccion,
+        }).toString(),
+      }))
       .then((res) => res.json().then((data) => { if (!res.ok) throw new Error(data.error || "No se pudo confirmar el pedido."); return data; }))
       .then((data) => {
         pagoOverlay.classList.remove("visible");
         window.open(`factura.html?id=${data.pedido_id}`, "_blank", "noopener");
         render(); // el carrito ya quedó vacío en el servidor
       })
-      .catch((err) => alert(err.message));
+      .catch((err) => mostrarErrorEntrega(err.message))
+      .finally(() => { btnOk.disabled = false; });
   });
 
   render();

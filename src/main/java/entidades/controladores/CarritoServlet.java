@@ -15,20 +15,21 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 // Carrito de compras del usuario logueado (Comprador o Vendedor comprando).
-// Igual que el resto de endpoints "personales" (/api/perfil), la
-// identidad NO se manda desde el cliente: se lee de la sesión real del
-// servidor (session.getAttribute("usuarioId")), que ya se crea en
-// LoginVendedorServlet / LoginCompradorServlet al autenticar. Así un
-// Invitado (sin sesión) nunca puede leer ni tocar el carrito de otra
-// persona.
+// La identidad se lee de la sesión del servidor, nunca del cliente.
 //
 // GET  /api/carrito                -> lista el carrito del usuario (crea uno vacío si no existe)
-// POST /api/carrito  accion=agregar        (producto_id, cantidad)
-// POST /api/carrito  accion=actualizar     (producto_id, cantidad)  -> si cantidad<=0, elimina la línea
-// POST /api/carrito  accion=eliminar       (producto_id)
+// POST /api/carrito  accion=agregar          (producto_id, cantidad)
+// POST /api/carrito  accion=comprar_ahora    (producto_id)  🆕 botón "Comprar" de detalle-nacional:
+//                                            deja el producto en el carrito con cantidad 1 SIN sumar
+//                                            si ya estaba (para no duplicar al tocar el botón dos veces)
+// POST /api/carrito  accion=actualizar       (producto_id, cantidad)  -> si cantidad<=0, elimina la línea
+// POST /api/carrito  accion=especificaciones (producto_id, especificaciones)  🆕 color, talla, etc.
+// POST /api/carrito  accion=eliminar         (producto_id)
 // POST /api/carrito  accion=vaciar
 @WebServlet("/api/carrito")
 public class CarritoServlet extends HttpServlet {
+
+    private static final int MAX_ESPECIFICACIONES = 300;
 
     private Integer usuarioIdDeSesion(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
@@ -62,22 +63,24 @@ public class CarritoServlet extends HttpServlet {
         }
     }
 
+    private double precioActualDe(Connection conn, int productoId) throws Exception {
+        try (PreparedStatement precioStmt = conn.prepareStatement(
+                "SELECT precio FROM Productos WHERE id = ?")) {
+            precioStmt.setInt(1, productoId);
+            try (ResultSet rs = precioStmt.executeQuery()) {
+                if (!rs.next()) return -1;
+                return rs.getDouble("precio");
+            }
+        }
+    }
+
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.setContentType("application/json;charset=UTF-8");
         Integer usuarioId = usuarioIdDeSesion(request);
         if (usuarioId == null) { responderSinSesion(response); return; }
 
-        // Se trae el precio y el stock/estado ACTUALES del producto (no el
-        // guardado al agregarlo) para poder avisar en el carrito si el
-        // precio cambió o si el producto ya no existe / fue desactivado.
-        //
-        // 🆕 Se agregan p.telefono, p.correo y p.Nombre_Empresa (alias
-        // "empresa") al SELECT: son los mismos campos que ya trae
-        // ListaProductosServlet y que usa detalle-nacional.html para el
-        // contacto del vendedor. Sin esto, carrito.html no tenía con qué
-        // armar el botón de WhatsApp del vendedor en el aviso de SINPE
-        // (renderizarAvisoSinpe esperaba item.telefono / item.empresa).
-        String sql = "SELECT dc.producto_id, dc.cantidad, dc.precio_unitario AS precio_guardado, "
+        // 🆕 Se agrega dc.especificaciones al SELECT.
+        String sql = "SELECT dc.producto_id, dc.cantidad, dc.precio_unitario AS precio_guardado, dc.especificaciones, "
                    + "p.nombre, p.imagen, p.precio AS precio_actual, p.categoria, p.usuario_id AS vendedor_id, "
                    + "p.telefono, p.correo, p.Nombre_Empresa AS empresa, "
                    + "d.precio_anterior "
@@ -111,15 +114,16 @@ public class CarritoServlet extends HttpServlet {
                     double precioAnterior = rs.getDouble("precio_anterior");
                     out.print("\"precio_anterior\":" + (rs.wasNull() ? "null" : precioAnterior) + ",");
 
-                    // 🆕 telefono/correo/empresa del vendedor dueño del
-                    // producto, para el aviso de WhatsApp de SINPE en
-                    // carrito.html (y por si se necesita más adelante).
                     String telefono = rs.getString("telefono");
                     out.print("\"telefono\":" + (telefono == null ? "null" : "\"" + JsonUtils.escapar(telefono) + "\"") + ",");
                     String correo = rs.getString("correo");
                     out.print("\"correo\":" + (correo == null ? "null" : "\"" + JsonUtils.escapar(correo) + "\"") + ",");
                     String empresa = rs.getString("empresa");
-                    out.print("\"empresa\":" + (empresa == null ? "null" : "\"" + JsonUtils.escapar(empresa) + "\""));
+                    out.print("\"empresa\":" + (empresa == null ? "null" : "\"" + JsonUtils.escapar(empresa) + "\"") + ",");
+
+                    // 🆕 Lo que el cliente pidió para ESTE producto (color, talla, etc.)
+                    String especificaciones = rs.getString("especificaciones");
+                    out.print("\"especificaciones\":" + (especificaciones == null ? "null" : "\"" + JsonUtils.escapar(especificaciones) + "\""));
 
                     out.print("}");
                 }
@@ -131,6 +135,7 @@ public class CarritoServlet extends HttpServlet {
     }
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        request.setCharacterEncoding("UTF-8");
         response.setContentType("application/json;charset=UTF-8");
         Integer usuarioId = usuarioIdDeSesion(request);
         if (usuarioId == null) { responderSinSesion(response); return; }
@@ -145,22 +150,13 @@ public class CarritoServlet extends HttpServlet {
                 int productoId = Integer.parseInt(request.getParameter("producto_id"));
                 int cantidad = Math.max(1, Integer.parseInt(request.getParameter("cantidad")));
 
-                double precioActual;
-                try (PreparedStatement precioStmt = conn.prepareStatement(
-                        "SELECT precio FROM Productos WHERE id = ?")) {
-                    precioStmt.setInt(1, productoId);
-                    try (ResultSet rs = precioStmt.executeQuery()) {
-                        if (!rs.next()) {
-                            response.setStatus(404);
-                            out.print("{\"error\":\"El producto ya no está disponible.\"}");
-                            return;
-                        }
-                        precioActual = rs.getDouble("precio");
-                    }
+                double precioActual = precioActualDe(conn, productoId);
+                if (precioActual < 0) {
+                    response.setStatus(404);
+                    out.print("{\"error\":\"El producto ya no está disponible.\"}");
+                    return;
                 }
 
-                // Si ya estaba en el carrito, se suma la cantidad y se
-                // refresca el precio guardado; si no, se inserta la línea.
                 try (PreparedStatement upsert = conn.prepareStatement(
                         "MERGE DetalleCarrito AS destino " +
                         "USING (SELECT ? AS carrito_id, ? AS producto_id) AS origen " +
@@ -176,6 +172,33 @@ public class CarritoServlet extends HttpServlet {
                     upsert.setInt(6, productoId);
                     upsert.setInt(7, cantidad);
                     upsert.setDouble(8, precioActual);
+                    upsert.executeUpdate();
+                }
+                out.print("{\"ok\":true}");
+
+            } else if ("comprar_ahora".equals(accion)) {
+                // 🆕 Igual que "agregar", pero si el producto ya estaba en el
+                // carrito NO suma cantidad (solo refresca el precio).
+                int productoId = Integer.parseInt(request.getParameter("producto_id"));
+                double precioActual = precioActualDe(conn, productoId);
+                if (precioActual < 0) {
+                    response.setStatus(404);
+                    out.print("{\"error\":\"El producto ya no está disponible.\"}");
+                    return;
+                }
+                try (PreparedStatement upsert = conn.prepareStatement(
+                        "MERGE DetalleCarrito AS destino " +
+                        "USING (SELECT ? AS carrito_id, ? AS producto_id) AS origen " +
+                        "ON destino.carrito_id = origen.carrito_id AND destino.producto_id = origen.producto_id " +
+                        "WHEN MATCHED THEN UPDATE SET precio_unitario = ? " +
+                        "WHEN NOT MATCHED THEN INSERT (carrito_id, producto_id, cantidad, precio_unitario) " +
+                        "VALUES (?, ?, 1, ?);")) {
+                    upsert.setInt(1, carritoId);
+                    upsert.setInt(2, productoId);
+                    upsert.setDouble(3, precioActual);
+                    upsert.setInt(4, carritoId);
+                    upsert.setInt(5, productoId);
+                    upsert.setDouble(6, precioActual);
                     upsert.executeUpdate();
                 }
                 out.print("{\"ok\":true}");
@@ -198,6 +221,26 @@ public class CarritoServlet extends HttpServlet {
                         upd.setInt(3, productoId);
                         upd.executeUpdate();
                     }
+                }
+                out.print("{\"ok\":true}");
+
+            } else if ("especificaciones".equals(accion)) {
+                // 🆕 Guarda lo que el cliente quiere de ESTE producto.
+                int productoId = Integer.parseInt(request.getParameter("producto_id"));
+                String texto = request.getParameter("especificaciones");
+                texto = (texto == null) ? "" : texto.trim();
+                if (texto.length() > MAX_ESPECIFICACIONES) {
+                    response.setStatus(400);
+                    out.print("{\"error\":\"Las especificaciones son muy largas (máx. " + MAX_ESPECIFICACIONES + " caracteres).\"}");
+                    return;
+                }
+                try (PreparedStatement upd = conn.prepareStatement(
+                        "UPDATE DetalleCarrito SET especificaciones = ? WHERE carrito_id = ? AND producto_id = ?")) {
+                    if (texto.isEmpty()) upd.setNull(1, java.sql.Types.NVARCHAR);
+                    else upd.setString(1, texto);
+                    upd.setInt(2, carritoId);
+                    upd.setInt(3, productoId);
+                    upd.executeUpdate();
                 }
                 out.print("{\"ok\":true}");
 

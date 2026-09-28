@@ -359,6 +359,24 @@
     filter: saturate(0.85);
   }
 
+  /* Botón "Comprar ahora": deja el producto en el carrito y abre carrito.html */
+  .comprar-ahora-wrap { margin: 0 0 14px; }
+  .btn-comprar-ahora {
+    width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 14px 18px;
+    border: none; border-radius: 10px;
+    background: var(--rojo); color: #fff;
+    font-family: inherit; font-size: 1rem; font-weight: 700; letter-spacing: 0.2px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(161, 51, 65, 0.25);
+    transition: background 0.2s ease, transform 0.1s ease;
+  }
+  .btn-comprar-ahora:hover { background: #8a2b37; }
+  .btn-comprar-ahora:active { transform: scale(0.98); }
+  .btn-comprar-ahora:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; }
+  .comprar-ahora-nota { margin: 6px 2px 0; font-size: 0.74rem; color: #777; text-align: center; }
+
   .procesos-compra-caja {
     border-radius: 8px;
     padding: 10px 12px;
@@ -728,6 +746,13 @@
       </div>
 
       <div class="panel-info-secundaria">
+        <div class="comprar-ahora-wrap">
+          <button type="button" id="btnComprarAhora" class="btn-comprar-ahora">
+            <i class="fa-solid fa-bag-shopping"></i> Comprar ahora
+          </button>
+          <p class="comprar-ahora-nota"><i class="fa-solid fa-lock"></i> Confirmas tus datos de entrega y el pago en el siguiente paso.</p>
+        </div>
+
         <h3 class="seccion-titulo">Procesos de compra</h3>
         <div class="procesos-compra-caja procesos-compra-vendedor">
           <h4>Hacer el proceso de compra directamente con el vendedor</h4>
@@ -1445,6 +1470,37 @@
   }
   // 🆕 ================= Fin de reseñas =================
 
+  // 🆕 Botón "Comprar ahora": deja el producto en el carrito (cantidad 1, sin
+  // sumar si ya estaba) y lleva a carrito.html a confirmar el pedido.
+  function configurarComprarAhora(producto) {
+    const btn = document.getElementById("btnComprarAhora");
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      if (!window.Carrito || !window.Carrito.haySesion()) {
+        if (window.Carrito) window.Carrito.pedirLogin();
+        return;
+      }
+      btn.disabled = true;
+      fetch("/api/carrito", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ accion: "comprar_ahora", producto_id: producto.id }).toString(),
+      })
+        .then((res) => {
+          if (res.status === 401) { window.Carrito.pedirLogin(); throw new Error("sin sesión"); }
+          return res.json().then((data) => {
+            if (!res.ok) throw new Error(data.error || "No se pudo iniciar la compra.");
+            return data;
+          });
+        })
+        .then(() => { window.location.href = "carrito.html"; })
+        .catch((err) => {
+          if (err.message !== "sin sesión") alert(err.message);
+          btn.disabled = false;
+        });
+    });
+  }
+
   function renderizar(producto, puestoBestseller) {
     document.getElementById("tituloProducto").textContent = producto.nombre || "";
     construirVendedor(producto);
@@ -1459,6 +1515,7 @@
     construirUbicacion(producto);
     construirContactoVendedor(producto);
     configurarCompartir(producto);
+    configurarComprarAhora(producto);
     cargarRelacionados(producto);
     cargarResenas(producto.id);
     configurarFormularioResena(producto.id);

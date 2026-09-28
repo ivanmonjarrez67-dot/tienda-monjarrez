@@ -23,11 +23,13 @@ import jakarta.servlet.http.HttpSession;
 
 // GET  /api/pedido?id=X     -> detalle de un pedido (factura). Solo lo puede ver
 //                              quien lo hizo (se compara contra la sesión).
-// POST /api/pedido accion=confirmar  (metodo_pago, referencia_pago opcional)
-//      -> copia el carrito actual del usuario a Pedidos/DetallePedido,
-//         vacía el carrito, envía los correos de confirmación (comprador,
-//         cada vendedor involucrado y el admin, todos con el PDF de la
-//         factura adjunto) y devuelve el id del pedido creado.
+// POST /api/pedido accion=confirmar
+//        (metodo_pago, referencia_pago opcional,
+//         🆕 telefono_contacto y direccion_entrega OBLIGATORIOS)
+//      -> copia el carrito actual (con las especificaciones de cada producto)
+//         a Pedidos/DetallePedido, guarda teléfono/dirección en el perfil para
+//         el próximo pedido, vacía el carrito, envía los correos con el PDF
+//         y devuelve el id del pedido creado.
 @WebServlet("/api/pedido")
 public class PedidoServlet extends HttpServlet {
 
@@ -36,6 +38,18 @@ public class PedidoServlet extends HttpServlet {
         if (session == null) return null;
         Object id = session.getAttribute("usuarioId");
         return (id instanceof Integer) ? (Integer) id : null;
+    }
+
+    private static String jsonStr(String s) {
+        return s == null ? "null" : "\"" + JsonUtils.escapar(s) + "\"";
+    }
+
+    /** Deja solo dígitos. Devuelve null si no es un teléfono razonable (8 a 15 dígitos). */
+    private static String limpiarTelefono(String crudo) {
+        if (crudo == null) return null;
+        String soloDigitos = crudo.replaceAll("\\D", "");
+        if (soloDigitos.length() < 8 || soloDigitos.length() > 15) return null;
+        return soloDigitos;
     }
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -57,8 +71,11 @@ public class PedidoServlet extends HttpServlet {
         }
 
         try (Connection conn = DatabaseConnection.getConnection()) {
-            String sqlPedido = "SELECT id, usuario_id, fecha, metodo_pago, referencia_pago, estado, total "
-                              + "FROM Pedidos WHERE id = ?";
+            // 🆕 Se une con Usuarios para mostrar nombre/correo del cliente,
+            // y se traen telefono_contacto y direccion_entrega.
+            String sqlPedido = "SELECT p.id, p.usuario_id, p.fecha, p.metodo_pago, p.referencia_pago, p.estado, p.total, "
+                              + "p.telefono_contacto, p.direccion_entrega, u.nombre AS nombre_cliente, u.correo AS correo_cliente "
+                              + "FROM Pedidos p JOIN Usuarios u ON u.id = p.usuario_id WHERE p.id = ?";
             try (PreparedStatement stmt = conn.prepareStatement(sqlPedido)) {
                 stmt.setInt(1, pedidoId);
                 try (ResultSet rs = stmt.executeQuery()) {
@@ -67,7 +84,6 @@ public class PedidoServlet extends HttpServlet {
                         response.getWriter().print("{\"error\":\"Pedido no encontrado.\"}");
                         return;
                     }
-                    // Solo el dueño del pedido puede verlo (nada de facturas ajenas por id adivinado).
                     if (rs.getInt("usuario_id") != usuarioId) {
                         response.setStatus(403);
                         response.getWriter().print("{\"error\":\"No tienes acceso a este pedido.\"}");
@@ -79,14 +95,17 @@ public class PedidoServlet extends HttpServlet {
                     out.print("\"id\":" + rs.getInt("id") + ",");
                     out.print("\"fecha\":\"" + rs.getTimestamp("fecha") + "\",");
                     out.print("\"metodo_pago\":\"" + JsonUtils.escapar(rs.getString("metodo_pago")) + "\",");
-                    String referencia = rs.getString("referencia_pago");
-                    out.print("\"referencia_pago\":" + (referencia == null ? "null" : "\"" + JsonUtils.escapar(referencia) + "\"") + ",");
+                    out.print("\"referencia_pago\":" + jsonStr(rs.getString("referencia_pago")) + ",");
                     out.print("\"estado\":\"" + JsonUtils.escapar(rs.getString("estado")) + "\",");
                     out.print("\"total\":" + rs.getDouble("total") + ",");
+                    out.print("\"nombre_cliente\":" + jsonStr(rs.getString("nombre_cliente")) + ",");
+                    out.print("\"correo_cliente\":" + jsonStr(rs.getString("correo_cliente")) + ",");
+                    out.print("\"telefono_contacto\":" + jsonStr(rs.getString("telefono_contacto")) + ",");
+                    out.print("\"direccion_entrega\":" + jsonStr(rs.getString("direccion_entrega")) + ",");
 
                     out.print("\"items\":[");
                     try (PreparedStatement itemsStmt = conn.prepareStatement(
-                            "SELECT producto_id, nombre_producto, imagen_producto, cantidad, precio_unitario "
+                            "SELECT producto_id, nombre_producto, imagen_producto, cantidad, precio_unitario, especificaciones "
                           + "FROM DetallePedido WHERE pedido_id = ?")) {
                         itemsStmt.setInt(1, pedidoId);
                         try (ResultSet itemsRs = itemsStmt.executeQuery()) {
@@ -97,10 +116,10 @@ public class PedidoServlet extends HttpServlet {
                                 out.print("{");
                                 out.print("\"producto_id\":" + itemsRs.getInt("producto_id") + ",");
                                 out.print("\"nombre\":\"" + JsonUtils.escapar(itemsRs.getString("nombre_producto")) + "\",");
-                                String imagen = itemsRs.getString("imagen_producto");
-                                out.print("\"imagen\":" + (imagen == null ? "null" : "\"" + JsonUtils.escapar(imagen) + "\"") + ",");
+                                out.print("\"imagen\":" + jsonStr(itemsRs.getString("imagen_producto")) + ",");
                                 out.print("\"cantidad\":" + itemsRs.getInt("cantidad") + ",");
-                                out.print("\"precio_unitario\":" + itemsRs.getDouble("precio_unitario"));
+                                out.print("\"precio_unitario\":" + itemsRs.getDouble("precio_unitario") + ",");
+                                out.print("\"especificaciones\":" + jsonStr(itemsRs.getString("especificaciones")));
                                 out.print("}");
                             }
                         }
@@ -114,6 +133,7 @@ public class PedidoServlet extends HttpServlet {
     }
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        request.setCharacterEncoding("UTF-8");
         response.setContentType("application/json;charset=UTF-8");
         Integer usuarioId = usuarioIdDeSesion(request);
         if (usuarioId == null) {
@@ -137,13 +157,29 @@ public class PedidoServlet extends HttpServlet {
             return;
         }
 
+        // 🆕 Teléfono y dirección de entrega: obligatorios.
+        String telefono = limpiarTelefono(request.getParameter("telefono_contacto"));
+        if (telefono == null) {
+            response.setStatus(400);
+            response.getWriter().print("{\"error\":\"Ingresa un teléfono de contacto válido (mínimo 8 dígitos).\"}");
+            return;
+        }
+        String direccion = request.getParameter("direccion_entrega");
+        direccion = (direccion == null) ? "" : direccion.trim();
+        if (direccion.length() < 10) {
+            response.setStatus(400);
+            response.getWriter().print("{\"error\":\"Ingresa tu dirección de entrega completa (provincia, cantón, distrito y señas).\"}");
+            return;
+        }
+        if (direccion.length() > 400) {
+            response.setStatus(400);
+            response.getWriter().print("{\"error\":\"La dirección es demasiado larga (máx. 400 caracteres).\"}");
+            return;
+        }
+
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
             try {
-                // 1) Traer las líneas del carrito con el precio y datos ACTUALES
-                //    del producto (lo que ve la persona en carrito.html justo
-                //    antes de confirmar), para que la factura quede "congelada"
-                //    con esos valores.
                 int carritoId = -1;
                 try (PreparedStatement buscarCarrito = conn.prepareStatement(
                         "SELECT id FROM Carrito WHERE usuario_id = ?")) {
@@ -180,8 +216,8 @@ public class PedidoServlet extends HttpServlet {
 
                 int pedidoId;
                 try (PreparedStatement crearPedido = conn.prepareStatement(
-                        "INSERT INTO Pedidos (usuario_id, metodo_pago, referencia_pago, total) "
-                      + "OUTPUT INSERTED.id VALUES (?, ?, ?, ?)")) {
+                        "INSERT INTO Pedidos (usuario_id, metodo_pago, referencia_pago, total, telefono_contacto, direccion_entrega) "
+                      + "OUTPUT INSERTED.id VALUES (?, ?, ?, ?, ?, ?)")) {
                     crearPedido.setInt(1, usuarioId);
                     crearPedido.setString(2, metodoPago);
                     if (referenciaPago == null || referenciaPago.trim().isEmpty()) {
@@ -190,18 +226,19 @@ public class PedidoServlet extends HttpServlet {
                         crearPedido.setString(3, referenciaPago.trim());
                     }
                     crearPedido.setDouble(4, total);
+                    crearPedido.setString(5, telefono);
+                    crearPedido.setString(6, direccion);
                     try (ResultSet rs = crearPedido.executeQuery()) {
                         rs.next();
                         pedidoId = rs.getInt(1);
                     }
                 }
 
-                // 2) Copiar cada línea del carrito a DetallePedido, "congelando"
-                //    nombre/imagen/precio y guardando también el vendedor dueño
-                //    de cada producto (para que después pueda ver sus pedidos).
+                // Copiar cada línea del carrito a DetallePedido, "congelando"
+                // nombre/imagen/precio y 🆕 las especificaciones del cliente.
                 try (PreparedStatement copiar = conn.prepareStatement(
-                        "INSERT INTO DetallePedido (pedido_id, producto_id, nombre_producto, imagen_producto, cantidad, precio_unitario, usuario_id_vendedor) "
-                      + "SELECT ?, p.id, p.nombre, p.imagen, dc.cantidad, p.precio, p.usuario_id "
+                        "INSERT INTO DetallePedido (pedido_id, producto_id, nombre_producto, imagen_producto, cantidad, precio_unitario, usuario_id_vendedor, especificaciones) "
+                      + "SELECT ?, p.id, p.nombre, p.imagen, dc.cantidad, p.precio, p.usuario_id, dc.especificaciones "
                       + "FROM DetalleCarrito dc JOIN Productos p ON p.id = dc.producto_id "
                       + "WHERE dc.carrito_id = ?")) {
                     copiar.setInt(1, pedidoId);
@@ -209,7 +246,22 @@ public class PedidoServlet extends HttpServlet {
                     copiar.executeUpdate();
                 }
 
-                // 3) Vaciar el carrito: el pedido ya quedó "congelado" aparte.
+                // 🆕 Recordar teléfono y dirección para el próximo pedido
+                // (y para "Mi Perfil"). Se pisa lo anterior con lo más reciente.
+                try (PreparedStatement guardarEnvio = conn.prepareStatement(
+                        "MERGE DatosEnvioUsuario AS d "
+                      + "USING (SELECT ? AS usuario_id) AS o ON d.usuario_id = o.usuario_id "
+                      + "WHEN MATCHED THEN UPDATE SET telefono = ?, direccion = ?, fecha_actualizacion = SYSDATETIME() "
+                      + "WHEN NOT MATCHED THEN INSERT (usuario_id, telefono, direccion) VALUES (?, ?, ?);")) {
+                    guardarEnvio.setInt(1, usuarioId);
+                    guardarEnvio.setString(2, telefono);
+                    guardarEnvio.setString(3, direccion);
+                    guardarEnvio.setInt(4, usuarioId);
+                    guardarEnvio.setString(5, telefono);
+                    guardarEnvio.setString(6, direccion);
+                    guardarEnvio.executeUpdate();
+                }
+
                 try (PreparedStatement vaciar = conn.prepareStatement(
                         "DELETE FROM DetalleCarrito WHERE carrito_id = ?")) {
                     vaciar.setInt(1, carritoId);
@@ -218,23 +270,10 @@ public class PedidoServlet extends HttpServlet {
 
                 conn.commit();
 
-                // 4) 🆕 Generar el PDF de la factura y avisar por correo a
-                //    comprador, cada vendedor involucrado y al admin.
-                //    Se hace DESPUÉS del commit y en su propio try/catch: si
-                //    algo falla acá (Brevo caído, PDF, etc.) el pedido ya
-                //    quedó guardado y la respuesta al front no se ve afectada.
-                //
-                // 🔧 FIX: antes solo se imprimía correoErr.getMessage(), que
-                // para errores como NoClassDefFoundError (ej. si falta la
-                // librería OpenPDF en el classpath de despliegue) suele venir
-                // vacío o poco útil, dejando el fallo prácticamente invisible
-                // en el log. Ahora se imprime el stack trace completo con
-                // printStackTrace(), para poder ver EXACTAMENTE en qué clase/
-                // línea explota (generación del PDF, alguna de las consultas
-                // SQL de vendedor/comprador, etc.) la próxima vez que un
-                // pedido no mande los correos.
+                // Correos DESPUÉS del commit y en su propio try/catch: si
+                // Brevo o el PDF fallan, el pedido ya quedó guardado.
                 try {
-                    enviarCorreosDePedido(conn, pedidoId, usuarioId, metodoPago, referenciaPago, total);
+                    enviarCorreosDePedido(conn, pedidoId, usuarioId, metodoPago, referenciaPago, total, telefono, direccion);
                 } catch (Exception correoErr) {
                     System.out.println("[PedidoServlet] No se pudieron enviar los correos del pedido #" + pedidoId + ":");
                     correoErr.printStackTrace();
@@ -252,19 +291,11 @@ public class PedidoServlet extends HttpServlet {
         }
     }
 
-    // ---------------------------------------------------------
-    // 🆕 Arma el PDF de la factura y dispara los tres correos:
+    // Arma el PDF de la factura y dispara los tres correos:
     // comprador, cada vendedor distinto con productos en el pedido, y admin.
-    //
-    // ⚠️ AJUSTA ESTO A TU ESQUEMA REAL: se asume una tabla "Usuarios" con
-    // columnas "nombre" y "correo" tanto para compradores como vendedores,
-    // y opcionalmente "empresa" para el nombre comercial del vendedor. Si
-    // tus nombres de tabla/columna son distintos, cambia solo las dos
-    // consultas SQL de acá abajo — el resto no necesita tocarse.
-    // ---------------------------------------------------------
     private void enviarCorreosDePedido(Connection conn, int pedidoId, int compradorId,
-                                        String metodoPago, String referenciaPago, double total) throws Exception {
-        // Datos del comprador
+                                        String metodoPago, String referenciaPago, double total,
+                                        String telefono, String direccion) throws Exception {
         String nombreComprador = "Cliente";
         String correoComprador = null;
         try (PreparedStatement stmt = conn.prepareStatement(
@@ -278,13 +309,11 @@ public class PedidoServlet extends HttpServlet {
             }
         }
 
-        // Items del pedido + datos del vendedor de cada uno
         List<ItemFactura> itemsFactura = new ArrayList<>();
-        // vendedorId -> {nombre, correo}
         Map<Integer, String[]> vendedoresMap = new LinkedHashMap<>();
 
         try (PreparedStatement stmt = conn.prepareStatement(
-                "SELECT dp.nombre_producto, dp.cantidad, dp.precio_unitario, dp.usuario_id_vendedor, "
+                "SELECT dp.nombre_producto, dp.cantidad, dp.precio_unitario, dp.usuario_id_vendedor, dp.especificaciones, "
               + "       v.nombre AS nombre_vendedor, v.correo AS correo_vendedor "
               + "FROM DetallePedido dp "
               + "JOIN Usuarios v ON v.id = dp.usuario_id_vendedor "
@@ -295,7 +324,8 @@ public class PedidoServlet extends HttpServlet {
                     itemsFactura.add(new ItemFactura(
                             rs.getString("nombre_producto"),
                             rs.getInt("cantidad"),
-                            rs.getDouble("precio_unitario")
+                            rs.getDouble("precio_unitario"),
+                            rs.getString("especificaciones")
                     ));
                     int vendedorId = rs.getInt("usuario_id_vendedor");
                     vendedoresMap.putIfAbsent(vendedorId, new String[]{
@@ -306,7 +336,8 @@ public class PedidoServlet extends HttpServlet {
         }
 
         byte[] pdfBytes = FacturaPdfGenerator.generar(
-                pedidoId, new java.util.Date(), metodoPago, referenciaPago, total, itemsFactura);
+                pedidoId, new java.util.Date(), metodoPago, referenciaPago, total, itemsFactura,
+                nombreComprador, correoComprador, telefono, direccion);
 
         String numeroPedido = String.valueOf(pedidoId);
 
