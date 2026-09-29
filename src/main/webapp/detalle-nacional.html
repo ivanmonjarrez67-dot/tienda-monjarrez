@@ -367,21 +367,63 @@
 
   /* Botón "Comprar ahora": deja el producto en el carrito y abre carrito.html */
   .comprar-ahora-wrap { margin: 0 0 14px; }
+  /* Botón con degradado de la marca, borde de luz superior y un reflejo tipo
+     espejo que lo recorre cada pocos segundos (igual que el botón "Publicar"
+     de la página principal). */
   .btn-comprar-ahora {
+    position: relative;
+    overflow: hidden;
     width: 100%;
     display: flex; align-items: center; justify-content: center; gap: 10px;
-    padding: 14px 18px;
-    border: none; border-radius: 10px;
-    background: var(--rojo); color: #fff;
-    font-family: inherit; font-size: 1rem; font-weight: 700; letter-spacing: 0.2px;
+    padding: 15px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 12px;
+    background: linear-gradient(135deg, #b33a3a 0%, var(--rojo) 45%, #6f1f2a 100%);
+    color: #fff;
+    font-family: inherit; font-size: 1.02rem; font-weight: 700; letter-spacing: 0.3px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(161, 51, 65, 0.25);
-    transition: background 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 8px 20px rgba(161, 51, 65, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
   }
-  .btn-comprar-ahora:hover { background: #8a2b37; }
-  .btn-comprar-ahora:active { transform: scale(0.98); }
-  .btn-comprar-ahora:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; }
-  .comprar-ahora-nota { margin: 6px 2px 0; font-size: 0.74rem; color: #777; text-align: center; }
+  .btn-comprar-ahora:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.07);
+    box-shadow: 0 12px 26px rgba(161, 51, 65, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+  .btn-comprar-ahora:active { transform: translateY(0) scale(0.99); }
+  .btn-comprar-ahora:focus-visible { outline: 3px solid rgba(161, 51, 65, 0.35); outline-offset: 3px; }
+  .btn-comprar-ahora i,
+  .btn-comprar-ahora .btn-label { position: relative; z-index: 1; }
+  .btn-comprar-ahora .btn-flecha { font-size: 0.85em; transition: transform 0.2s ease; }
+  .btn-comprar-ahora:hover .btn-flecha { transform: translateX(4px); }
+  .btn-comprar-ahora .btn-shine {
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 45%;
+    height: 100%;
+    background: linear-gradient(115deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 100%);
+    transform: skewX(-20deg);
+    animation: comprar-mirror-shine 3.2s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes comprar-mirror-shine {
+    0% { left: -60%; }
+    35% { left: 130%; }
+    100% { left: 130%; }
+  }
+  .btn-comprar-ahora:disabled {
+    background: #ccc; border-color: transparent; box-shadow: none; text-shadow: none;
+    transform: none; filter: none; cursor: not-allowed;
+  }
+  .btn-comprar-ahora:disabled .btn-shine { display: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .btn-comprar-ahora .btn-shine { animation: none; display: none; }
+    .btn-comprar-ahora, .btn-comprar-ahora .btn-flecha { transition: none; }
+  }
+  .comprar-ahora-nota { margin: 8px 2px 0; font-size: 0.74rem; color: #777; text-align: center; }
+  .comprar-ahora-nota i { margin-right: 4px; color: #999; }
 
   .procesos-compra-caja {
     border-radius: 8px;
@@ -745,9 +787,12 @@
 
         <div class="comprar-ahora-wrap">
           <button type="button" id="btnComprarAhora" class="btn-comprar-ahora">
-            Comprar ahora
+            <span class="btn-shine"></span>
+            <i class="fa-solid fa-bag-shopping"></i>
+            <span class="btn-label">Comprar ahora</span>
+            <i class="fa-solid fa-arrow-right btn-flecha"></i>
           </button>
-          <p class="comprar-ahora-nota">Confirmas tus datos de entrega y el pago en el siguiente paso.</p>
+          <p class="comprar-ahora-nota"><i class="fa-solid fa-lock"></i>Confirmas tus datos de entrega y el pago en el siguiente paso.</p>
         </div>
 
         <p class="compartir-wrap">
