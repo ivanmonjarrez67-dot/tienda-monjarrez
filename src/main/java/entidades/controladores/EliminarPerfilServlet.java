@@ -29,30 +29,31 @@ import jakarta.servlet.http.HttpSession;
  *   -- Como usuario/cliente (compradores Y vendedores) --
  *   1.  Intereses                    (usuario_id)
  *   2.  Compradores                  (usuario_id)
- *   3.  Resenas                      (usuario_id — reseñas que ESCRIBIÓ)
- *   4.  ToquesContacto               (usuario_id — sus clics de contacto)
- *   5.  DetalleCarrito               (carrito_id, de SU carrito)
- *   6.  Carrito                      (usuario_id)
- *   7.  DetallePedido                (pedido_id, de SUS pedidos como comprador)
- *   8.  Pedidos                      (usuario_id)
+ *   3.  DatosEnvioUsuario            (usuario_id — teléfono y dirección de entrega)
+ *   4.  Resenas                      (usuario_id — reseñas que ESCRIBIÓ)
+ *   5.  ToquesContacto               (usuario_id — sus clics de contacto)
+ *   6.  DetalleCarrito               (carrito_id, de SU carrito)
+ *   7.  Carrito                      (usuario_id)
+ *   8.  DetallePedido                (pedido_id, de SUS pedidos como comprador)
+ *   9.  Pedidos                      (usuario_id)
  *
  *   -- Ligado a SUS productos (vendedores) --
- *   9.  Resenas                      (producto_id de sus productos)
- *  10.  ToquesContacto               (producto_id de sus productos)
- *  11.  DetalleCarrito               (producto_id de sus productos, en carritos ajenos)
- *  12.  DetallePedido                (usuario_id_vendedor / producto_id de sus productos)
- *  13.  ImagenesAdicionalesProducto  (producto_id)
- *  14.  Descuentos                   (producto_id)
- *  15.  ProductosExtranjeros         (producto_id)
- *  16.  Productos                    (usuario_id) — ya sin hijos pendientes
+ *  10.  Resenas                      (producto_id de sus productos)
+ *  11.  ToquesContacto               (producto_id de sus productos)
+ *  12.  DetalleCarrito               (producto_id de sus productos, en carritos ajenos)
+ *  13.  DetallePedido                (usuario_id_vendedor / producto_id de sus productos)
+ *  14.  ImagenesAdicionalesProducto  (producto_id)
+ *  15.  Descuentos                   (producto_id)
+ *  16.  ProductosExtranjeros         (producto_id)
+ *  17.  Productos                    (usuario_id) — ya sin hijos pendientes
  *
  *   -- Datos del registro de vendedor y tabla padre --
- *  17.  SuscripcionVendedor          (usuario_id)
- *  18.  Notas                        (solicitud_id, de sus solicitudes)
- *  19.  SolicitudesDeVendedor        (usuario_id) — ya sin Notas pendientes
- *  20.  IconosVendedor               (vendedor_id, de la fila del usuario en Vendedores)
- *  21.  Vendedores                   (usuario_id) — ya sin hijos pendientes
- *  22.  Usuarios                     (al final, porque las demás tablas dependen de este id)
+ *  18.  SuscripcionVendedor          (usuario_id)
+ *  19.  Notas                        (solicitud_id, de sus solicitudes)
+ *  20.  SolicitudesDeVendedor        (usuario_id) — ya sin Notas pendientes
+ *  21.  IconosVendedor               (vendedor_id, de la fila del usuario en Vendedores)
+ *  22.  Vendedores                   (usuario_id) — ya sin hijos pendientes
+ *  23.  Usuarios                     (al final, porque las demás tablas dependen de este id)
  *
  * Por qué este orden: cada tabla hija tiene que vaciarse ANTES que la
  * tabla a la que apunta, o SQL Server rechaza el DELETE por la llave
@@ -133,6 +134,8 @@ public class EliminarPerfilServlet extends HttpServlet {
                 ejecutarDelete(conn, "DELETE FROM Intereses WHERE usuario_id = ?", usuarioId);
                 // 🆕 Compradores.usuario_id → Usuarios (FK__Comprador__usuar__7C4F7684)
                 ejecutarDelete(conn, "DELETE FROM Compradores WHERE usuario_id = ?", usuarioId);
+                // 🆕 DatosEnvioUsuario.usuario_id → Usuarios (teléfono y dirección de entrega)
+                ejecutarDelete(conn, "DELETE FROM DatosEnvioUsuario WHERE usuario_id = ?", usuarioId);
                 ejecutarDelete(conn, "DELETE FROM Resenas WHERE usuario_id = ?", usuarioId);
                 ejecutarDelete(conn, "DELETE FROM ToquesContacto WHERE usuario_id = ?", usuarioId);
 

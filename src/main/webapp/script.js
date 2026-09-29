@@ -1685,6 +1685,17 @@ async function enviarRegistroCompradorGoogle(credential) {
   }
 }
 
+// 🆕 Lee el correo del token de Google SOLO para prellenar el registro
+// (la seguridad no depende de esto: el servidor vuelve a verificar el token).
+function correoDesdeCredencialGoogle(credential) {
+  try {
+    const b64 = credential.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(atob(b64)).email || "";
+  } catch (e) {
+    return "";
+  }
+}
+
 async function enviarLoginCompradorGoogle(credential) {
   try {
     const res = await fetch("LoginCompradorGoogleServlet", {
@@ -1694,6 +1705,11 @@ async function enviarLoginCompradorGoogle(credential) {
     });
     if (res.ok) {
       completarLoginComprador();
+      return;
+    }
+    // 🆕 404 = ese correo de Google no tiene cuenta: mismo aviso con "Ir a registrarme"
+    if (res.status === 404) {
+      mostrarCuentaNoExiste(correoDesdeCredencialGoogle(credential));
       return;
     }
     alert((await res.text()) || "No se pudo iniciar sesión con Google.");
@@ -1911,9 +1927,47 @@ function actualizarMiTienda(usuario) {
 }
 window.actualizarMiTienda = actualizarMiTienda;
 
+// 🆕 Aviso "Esta cuenta aún no existe" del login de VENDEDOR.
+let cedulaAvisoCuentaNoExiste = "";
+
+function mostrarCuentaNoExisteVendedor(cedula) {
+  cedulaAvisoCuentaNoExiste = cedula || "";
+  const aviso = document.getElementById("avisoCuentaNoExisteVendedor");
+  if (!aviso) return;
+  aviso.style.display = "block";
+  aviso.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function ocultarCuentaNoExisteVendedor() {
+  const aviso = document.getElementById("avisoCuentaNoExisteVendedor");
+  if (aviso) aviso.style.display = "none";
+}
+
+// Al cambiar la cédula o volver atrás, el aviso deja de tener sentido.
+document.getElementById("cedulaVendedor")?.addEventListener("input", ocultarCuentaNoExisteVendedor);
+btnVolverVendedor?.addEventListener("click", ocultarCuentaNoExisteVendedor);
+
+// "Ir a registrarme": cierra el login y abre el registro de vendedor (paso 1),
+// con la cédula ya escrita en el campo del paso de suscripción.
+document.getElementById("btnIrARegistrarmeVendedor")?.addEventListener("click", () => {
+  ocultarCuentaNoExisteVendedor();
+  hideModal(modalVendedor);
+  showModal(registroModal);
+  rolesContainer.style.display = "none";
+  formularioComprador.style.display = "none";
+  registroVendedorUnificado.style.display = "block";
+  pasoUsuario.style.display = "block";
+  pasoSolicitud.style.display = "none";
+  pasoSuscripcion.style.display = "none";
+  const campoCedula = document.getElementById("cedula");
+  if (campoCedula && cedulaAvisoCuentaNoExiste) campoCedula.value = cedulaAvisoCuentaNoExiste;
+  document.getElementById("nombreV")?.focus();
+});
+
 document.getElementById("btnAccederVendedor")?.addEventListener("click", function () {
   const cedula = document.getElementById("cedulaVendedor").value;
   const contraseña = document.getElementById("passwordVendedor").value;
+  ocultarCuentaNoExisteVendedor(); // 🆕
   fetch("LoginVendedorServlet", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -1929,6 +1983,8 @@ document.getElementById("btnAccederVendedor")?.addEventListener("click", functio
       document.getElementById("modalVendedor")?.style.setProperty("display", "none");
       actualizarMiTienda("vendedor");
       iniciarSesion("vendedor");
+    } else if (response.status === 404) { // 🆕 esa cédula no está registrada
+      mostrarCuentaNoExisteVendedor(cedula.trim());
     } else {
       return response.text().then(text => { throw new Error(text); });
     }
@@ -1937,9 +1993,44 @@ document.getElementById("btnAccederVendedor")?.addEventListener("click", functio
   document.getElementById("olvideVendedor").style.display = "block";
 });
 
+// 🆕 Aviso "Esta cuenta aún no existe" del login de COMPRADOR (con correo o con Google).
+let correoAvisoCuentaNoExiste = "";
+
+function mostrarCuentaNoExiste(correo) {
+  correoAvisoCuentaNoExiste = correo || "";
+  const aviso = document.getElementById("avisoCuentaNoExiste");
+  if (!aviso) return;
+  aviso.style.display = "block";
+  aviso.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function ocultarCuentaNoExiste() {
+  const aviso = document.getElementById("avisoCuentaNoExiste");
+  if (aviso) aviso.style.display = "none";
+}
+
+// Al cambiar el correo o volver atrás, el aviso deja de tener sentido.
+document.getElementById("correoComprador")?.addEventListener("input", ocultarCuentaNoExiste);
+btnVolverComprador?.addEventListener("click", ocultarCuentaNoExiste);
+
+// "Ir a registrarme": cierra el login y abre directo el formulario de registro
+// de comprador, con el correo que ya había escrito.
+document.getElementById("btnIrARegistrarme")?.addEventListener("click", () => {
+  ocultarCuentaNoExiste();
+  hideModal(modalComprador);
+  showModal(registroModal);
+  rolesContainer.style.display = "none";
+  registroVendedorUnificado.style.display = "none";
+  formularioComprador.style.display = "block";
+  const campoCorreo = document.getElementById("correoC");
+  if (campoCorreo && correoAvisoCuentaNoExiste) campoCorreo.value = correoAvisoCuentaNoExiste;
+  document.getElementById("nombreC")?.focus();
+});
+
 document.getElementById("btnAccederComprador")?.addEventListener("click", function () {
   const correo = document.getElementById("correoComprador").value;
   const contraseña = document.getElementById("passwordComprador").value;
+  ocultarCuentaNoExiste(); // 🆕
   fetch("LoginCompradorServlet", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -1955,6 +2046,8 @@ document.getElementById("btnAccederComprador")?.addEventListener("click", functi
       document.getElementById("contenidoCompradorActivo").style.display = "block";
       actualizarMiTienda("comprador");
       iniciarSesion("comprador");
+    } else if (response.status === 404) { // 🆕 el correo no está registrado
+      mostrarCuentaNoExiste(correo.trim());
     } else {
       return response.text().then(text => { throw new Error(text); });
     }

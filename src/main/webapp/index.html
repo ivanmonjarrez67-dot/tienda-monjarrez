@@ -1507,6 +1507,21 @@
           <i class="fa-solid fa-right-to-bracket"></i> Acceder
         </button>
 
+        <!-- 🆕 Aviso: la cuenta no existe (login de vendedor) -->
+        <div id="avisoCuentaNoExisteVendedor" role="alert"
+             style="display:none;margin-top:12px;padding:12px;border:1px solid #D4AF37;border-radius:10px;background:#fffaf0;color:#333;text-align:center;font-size:14px;line-height:1.4;">
+          <p style="margin:0 0 4px;font-weight:bold;">Esta cuenta aún no existe</p>
+          <p style="margin:0 0 10px;">
+            No encontramos una cuenta de vendedor con esa cédula. Regístrate primero
+            para poder entrar. Si ya empezaste tu registro y no lo terminaste,
+            continúalo con el mismo correo y contraseña que usaste.
+          </p>
+          <button type="button" id="btnIrARegistrarmeVendedor"
+                  style="padding:8px 18px;border:none;border-radius:8px;background:#D4AF37;color:#fff;font-weight:bold;cursor:pointer;">
+            Ir a registrarme
+          </button>
+        </div>
+
         <p id="olvideVendedor" class="olvide-password" style="display:none;">
   ¿Olvidaste tu contraseña?
 </p>
@@ -1564,6 +1579,21 @@
         <button id="btnAccederComprador" class="registrarse acceder-btn">
           <i class="fa-solid fa-right-to-bracket"></i> Acceder
         </button>
+
+        <!-- 🆕 Aviso: la cuenta no existe (login de comprador con correo o con Google) -->
+        <div id="avisoCuentaNoExiste" role="alert"
+             style="display:none;margin-top:12px;padding:12px;border:1px solid #D4AF37;border-radius:10px;background:#fffaf0;color:#333;text-align:center;font-size:14px;line-height:1.4;">
+          <p style="margin:0 0 4px;font-weight:bold;">Esta cuenta aún no existe</p>
+          <p style="margin:0 0 10px;">
+            No encontramos una cuenta de comprador con ese correo. Regístrate primero
+            para poder entrar; toma menos de un minuto. Si ya te habías registrado,
+            revisa que el correo esté bien escrito.
+          </p>
+          <button type="button" id="btnIrARegistrarme"
+                  style="padding:8px 18px;border:none;border-radius:8px;background:#D4AF37;color:#fff;font-weight:bold;cursor:pointer;">
+            Ir a registrarme
+          </button>
+        </div>
 
         <p id="olvideComprador" class="olvide-password" style="display:none;">
   ¿Olvidaste tu contraseña?

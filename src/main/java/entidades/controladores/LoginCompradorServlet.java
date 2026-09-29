@@ -7,6 +7,7 @@ import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -96,6 +97,18 @@ public class LoginCompradorServlet extends HttpServlet {
                         response.setStatus(HttpServletResponse.SC_OK);
                         response.getWriter().write("OK");
                     } else {
+                        // 🆕 Si el correo NO existe en la BD, no es un error de contraseña:
+                        // la persona seguramente aún no se ha registrado. Se responde 404
+                        // para que el frontend muestre "Esta cuenta aún no existe" con el
+                        // botón "Ir a registrarme". No suma intentos fallidos (no hay
+                        // ninguna cuenta que proteger).
+                        if (!correoExiste(conn, correo)) {
+                            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                            response.getWriter().write("CUENTA_NO_EXISTE");
+                            System.out.println("[LoginCompradorServlet] ℹ️ Login con correo inexistente: " + correoClave);
+                            return;
+                        }
+
                         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                         response.getWriter().write("Credenciales incorrectas");
 
@@ -132,6 +145,16 @@ public class LoginCompradorServlet extends HttpServlet {
             e.printStackTrace();
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             response.getWriter().write("Error en el servidor: " + e.getMessage());
+        }
+    }
+
+    /** 🆕 ¿Existe un usuario con ese correo (sin importar la contraseña)? */
+    private boolean correoExiste(Connection conn, String correo) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT 1 FROM Usuarios WHERE correo = ?")) {
+            ps.setString(1, correo);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
         }
     }
 

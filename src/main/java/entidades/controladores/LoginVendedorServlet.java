@@ -7,6 +7,7 @@ import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -98,6 +99,18 @@ public class LoginVendedorServlet extends HttpServlet {
                         response.setStatus(HttpServletResponse.SC_OK);
                         response.getWriter().write("OK");
                     } else {
+                        // 🆕 Si esa cédula NO existe en Vendedores, no es un error de
+                        // contraseña: la persona seguramente aún no se ha registrado (o dejó
+                        // su registro a medias). Se responde 404 para que el frontend
+                        // muestre "Esta cuenta aún no existe" con el botón "Ir a
+                        // registrarme". No suma intentos fallidos (no hay cuenta que proteger).
+                        if (!cedulaExiste(conn, cedula)) {
+                            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                            response.getWriter().write("CUENTA_NO_EXISTE");
+                            System.out.println("[LoginVendedorServlet] ℹ️ Login con cédula inexistente: " + cedula);
+                            return;
+                        }
+
                         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                         response.getWriter().write("Credenciales incorrectas");
 
@@ -140,6 +153,16 @@ public class LoginVendedorServlet extends HttpServlet {
             e.printStackTrace();
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             response.getWriter().write("Error en el servidor: " + e.getMessage());
+        }
+    }
+
+    /** 🆕 ¿Existe un vendedor registrado con esa cédula (sin importar la contraseña)? */
+    private boolean cedulaExiste(Connection conn, String cedula) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT 1 FROM Vendedores WHERE cedula = ?")) {
+            ps.setString(1, cedula);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
         }
     }
 
