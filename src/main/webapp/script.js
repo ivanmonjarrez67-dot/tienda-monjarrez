@@ -10,6 +10,7 @@ window.__llegaDesdeProductoCompartido = new URLSearchParams(window.location.sear
 document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("addProductButton").onclick = function () {
     document.getElementById("addProductModal").style.display = "block";
+    precargarContactoProducto();
   };
 
   // 🔧 Antes solo tomaba el PRIMER ".close" del documento (querySelector),
@@ -265,6 +266,44 @@ if (ayudaModal) {
   ayudaModal.addEventListener("click", (e) => {
     if (e.target === ayudaModal) ayudaModal.classList.remove("activo");
   });
+}
+
+// 🆕 Precarga teléfono, correo, provincia, ciudad y empresa al abrir "Agregar Producto".
+// Los datos vienen del último producto del vendedor (o de su solicitud/cuenta si es el primero).
+// Solo rellena campos vacíos, así nunca pisa lo que el usuario ya escribió.
+async function precargarContactoProducto() {
+  const idText = document.getElementById("usuarioIdVisibleMitienda")?.textContent.trim() || "";
+  const usuarioId = idText.replace("ID de usuario:", "").trim();
+  if (!usuarioId || isNaN(usuarioId)) return;
+
+  try {
+    const res = await fetch("/api/productos/datosContacto?usuario_id=" + encodeURIComponent(usuarioId));
+    if (!res.ok) return;
+    const d = await res.json();
+
+    const poner = (id, valor) => {
+      const el = document.getElementById(id);
+      if (el && !el.value.trim() && valor) el.value = valor;
+    };
+    poner("empresa", d.empresa);
+    poner("telefono", d.telefono);
+    poner("correoProducto", d.correo);
+    poner("ciudad", d.ciudad);
+
+    // provincia es un <select>: se compara sin tildes ni mayúsculas para que
+    // "San Jose" de la solicitud coincida con "San José" del combobox.
+    const sel = document.getElementById("provincia");
+    if (sel && !sel.value && d.provincia) {
+      const norm = (t) => (t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+      const buscada = norm(d.provincia);
+      const opcion = [...sel.options].find(
+        (o) => o.value && (norm(o.value) === buscada || norm(o.textContent) === buscada)
+      );
+      if (opcion) sel.value = opcion.value;
+    }
+  } catch (e) {
+    // Si falla, el formulario queda vacío y se llena a mano como antes.
+  }
 }
 
 document.getElementById("addProductForm").onsubmit = function (event) {
