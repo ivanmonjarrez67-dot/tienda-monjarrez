@@ -345,6 +345,85 @@
   .btn-login-ir { background: var(--rojo); color: #fff; }
   .btn-login-cerrar { background: #f0f0f0; color: #333; }
 
+  /* ---------- Código QR del perfil ---------- */
+  .btn-qr { flex: 0 0 auto; padding: 10px 14px; background: #fff; color: var(--text); border: 1.5px solid #d6d6d6; }
+  .btn-qr:hover { border-color: var(--text); }
+  .qr-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 55;
+    padding: 16px;
+    overflow-y: auto;
+  }
+  .qr-overlay.visible { display: flex; }
+  .qr-modal {
+    position: relative;
+    background: #fff;
+    border-radius: 14px;
+    width: min(360px, 100%);
+    padding: 22px 20px 18px;
+    margin: auto;
+  }
+  .qr-cerrar {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: #f0f0f0;
+    color: #333;
+    cursor: pointer;
+    z-index: 1;
+  }
+  .qr-cerrar:hover { background: #e4e4e4; }
+  .qr-tarjeta {
+    text-align: center;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-top: 5px solid var(--rojo);
+    border-radius: 12px;
+    padding: 18px 16px 16px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .qr-logo { width: 56px; height: 56px; object-fit: contain; display: block; margin: 0 auto 6px; }
+  .qr-marca { font-size: 1.05rem; font-weight: 700; color: var(--text); }
+  .qr-marca span { color: var(--rojo); }
+  .qr-empresa { margin: 6px 0 12px; font-size: 1.05rem; font-weight: 600; line-height: 1.3; word-break: break-word; }
+  .qr-img { width: 220px; max-width: 100%; height: auto; display: block; margin: 0 auto; image-rendering: pixelated; }
+  .qr-frase { margin: 12px 0 2px; font-size: 0.95rem; font-weight: 600; }
+  .qr-url { margin: 0; font-size: 0.78rem; color: var(--text-dim); }
+  .qr-acciones { display: flex; gap: 10px; margin-top: 14px; }
+
+  /* Al imprimir solo sale la tarjeta del QR, centrada en la hoja */
+  @media print {
+    @page { margin: 12mm; }
+    body * { visibility: hidden !important; }
+    #tarjetaQr, #tarjetaQr * { visibility: visible !important; }
+    #tarjetaQr {
+      position: fixed;
+      top: 15mm;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120mm;
+      padding: 10mm 8mm;
+      border: 1px solid #ccc;
+      border-top: 3mm solid #a13341;
+    }
+    #tarjetaQr .qr-logo { width: 22mm; height: 22mm; }
+    #tarjetaQr .qr-marca { font-size: 18pt; }
+    #tarjetaQr .qr-empresa { font-size: 18pt; }
+    #tarjetaQr .qr-img { width: 90mm; }
+    #tarjetaQr .qr-frase { font-size: 15pt; }
+    #tarjetaQr .qr-url { font-size: 11pt; }
+  }
+
   @media (max-width: 640px) {
     .vendedor-lado { border-left: none; padding-left: 0; padding-top: 16px; border-top: 1px solid var(--border); width: 100%; min-width: 0; }
   }
@@ -396,6 +475,9 @@
           <button type="button" class="btn-accion btn-compartir" id="btnCompartir">
             <i class="fa-solid fa-share-nodes"></i> Compartir
           </button>
+          <button type="button" class="btn-accion btn-qr" id="btnQr" title="Código QR del perfil" aria-label="Código QR del perfil">
+            <i class="fa-solid fa-qrcode"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -424,6 +506,26 @@
   </div>
 </div>
 
+<!-- Código QR del perfil (para mostrar/imprimir) -->
+<div id="qrOverlay" class="qr-overlay" aria-hidden="true">
+  <div class="qr-modal" role="dialog" aria-modal="true" aria-label="Código QR del perfil">
+    <button type="button" class="qr-cerrar" id="btnQrCerrar" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+    <div class="qr-tarjeta" id="tarjetaQr">
+      <img class="qr-logo" src="icon-512.png" alt="Tienda Monjarrez" />
+      <div class="qr-marca">Tienda <span>Monjarrez</span></div>
+      <h3 class="qr-empresa" id="qrEmpresa"></h3>
+      <img class="qr-img" id="qrImg" alt="Código QR del perfil" />
+      <p class="qr-frase">Escanea y mira mi catálogo</p>
+      <p class="qr-url">tiendamonjarrez.com</p>
+    </div>
+    <div class="qr-acciones">
+      <button type="button" class="btn-accion btn-seguir" id="btnQrDescargar"><i class="fa-solid fa-download"></i> Descargar</button>
+      <button type="button" class="btn-accion btn-compartir" id="btnQrImprimir"><i class="fa-solid fa-print"></i> Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<script src="qrcode-generator.min.js"></script>
 <script src="carrito.js?v=2"></script>
 <script>
 (function () {
@@ -616,6 +718,145 @@
       .then(() => mostrarToast("Enlace del perfil copiado"))
       .catch(() => window.prompt("Copia el enlace del perfil:", url));
   });
+
+  // ---------- Código QR del perfil ----------
+  // El QR apunta al mismo enlace que "Compartir" (con vista previa) más ref=qr.
+  // La imagen se genera en el navegador con qrcode-generator.min.js (sin servidor).
+  const btnQr = document.getElementById("btnQr");
+  const elQrOverlay = document.getElementById("qrOverlay");
+  const elQrImg = document.getElementById("qrImg");
+  let qrDataUrl = "";
+
+  function urlParaQr() {
+    const base = enlaceParaCompartir();
+    return base + (base.indexOf("?") >= 0 ? "&" : "?") + "ref=qr";
+  }
+
+  function abrirQr() {
+    if (typeof qrcode !== "function") {
+      mostrarToast("No se pudo generar el código QR");
+      return;
+    }
+    try {
+      const qr = qrcode(0, "M");
+      qr.addData(urlParaQr());
+      qr.make();
+      qrDataUrl = qr.createDataURL(12, 4);
+    } catch (e) {
+      mostrarToast("No se pudo generar el código QR");
+      return;
+    }
+    elQrImg.src = qrDataUrl;
+    document.getElementById("qrEmpresa").textContent = empresaActual || "Emprendimiento";
+    elQrOverlay.classList.add("visible");
+    elQrOverlay.setAttribute("aria-hidden", "false");
+  }
+
+  function cerrarQr() {
+    elQrOverlay.classList.remove("visible");
+    elQrOverlay.setAttribute("aria-hidden", "true");
+  }
+
+  function cargarImagen(src) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
+  }
+
+  // Arma una tarjeta PNG lista para guardar o mandar por WhatsApp.
+  async function descargarQr() {
+    try { await document.fonts.load("700 40px Poppins"); } catch (e) { /* sigue con la fuente de respaldo */ }
+    const [qrImg, logo] = await Promise.all([cargarImagen(qrDataUrl), cargarImagen("icon-512.png")]);
+    if (!qrImg) { mostrarToast("No se pudo crear la imagen"); return; }
+
+    const W = 900, H = 1240;
+    const canvas = document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d");
+    const fuente = (peso, px) => `${peso} ${px}px Poppins, sans-serif`;
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#a13341";
+    ctx.fillRect(0, 0, W, 22);
+
+    let y = 80;
+    if (logo) {
+      ctx.drawImage(logo, W / 2 - 75, y, 150, 150);
+      y += 150 + 30;
+    }
+
+    // "Tienda Monjarrez" con "Monjarrez" en rojo, centrado
+    ctx.textBaseline = "alphabetic";
+    ctx.textAlign = "left";
+    ctx.font = fuente(700, 52);
+    const w1 = ctx.measureText("Tienda ").width;
+    const w2 = ctx.measureText("Monjarrez").width;
+    const x0 = (W - (w1 + w2)) / 2;
+    y += 40;
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillText("Tienda ", x0, y);
+    ctx.fillStyle = "#a13341";
+    ctx.fillText("Monjarrez", x0 + w1, y);
+
+    // Nombre del emprendimiento (se achica si es largo)
+    let nombre = empresaActual || "Emprendimiento";
+    let tam = 60;
+    ctx.font = fuente(600, tam);
+    while (ctx.measureText(nombre).width > W - 120 && tam > 30) {
+      tam -= 2;
+      ctx.font = fuente(600, tam);
+    }
+    while (ctx.measureText(nombre).width > W - 120 && nombre.length > 3) {
+      nombre = nombre.slice(0, -2);
+    }
+    if (nombre !== (empresaActual || "Emprendimiento")) nombre = nombre.trimEnd() + "…";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#1a1a1a";
+    y += 30 + tam;
+    ctx.fillText(nombre, W / 2, y);
+
+    // QR
+    const lado = 660;
+    y += 40;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(qrImg, (W - lado) / 2, y, lado, lado);
+    y += lado + 70;
+
+    ctx.font = fuente(600, 46);
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillText("Escanea y mira mi catálogo", W / 2, y);
+    y += 56;
+    ctx.font = fuente(400, 34);
+    ctx.fillStyle = "#777777";
+    ctx.fillText("tiendamonjarrez.com", W / 2, y);
+
+    const slug = (empresaActual || "perfil")
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "perfil";
+    canvas.toBlob((blob) => {
+      if (!blob) { mostrarToast("No se pudo crear la imagen"); return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `qr-${slug}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }, "image/png");
+  }
+
+  btnQr.addEventListener("click", abrirQr);
+  document.getElementById("btnQrCerrar").addEventListener("click", cerrarQr);
+  document.getElementById("btnQrDescargar").addEventListener("click", descargarQr);
+  document.getElementById("btnQrImprimir").addEventListener("click", () => window.print());
+  elQrOverlay.addEventListener("click", (e) => { if (e.target === elQrOverlay) cerrarQr(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") cerrarQr(); });
 
   function construirTarjetaProducto(p) {
     const precioNum = parseFloat(p.precio);

@@ -686,10 +686,16 @@ function puntajeBestsellerProducto(idProducto, dia) {
   return pseudoAleatorio(id * 7.9218 + dia * 31.415);
 }
 
+// 🆕 Los servicios (categoría "Servicios") NO llevan estrategia de urgencia:
+// ni precio tachado/contador, ni "Solo quedan X", ni "Artículo más vendido".
+function esProductoServicio(producto) {
+  return String((producto && producto.categoria) || "").trim().toLowerCase() === "servicios";
+}
+
 function calcularBestsellersDelDia(productos) {
   const dia = Math.floor(Date.now() / MS_DIA_URGENCIA);
   const conPuntaje = (productos || [])
-    .filter((p) => p && p.id !== undefined && p.id !== null && p.id !== "")
+    .filter((p) => p && p.id !== undefined && p.id !== null && p.id !== "" && !esProductoServicio(p))
     .map((p) => ({ id: String(p.id), puntaje: puntajeBestsellerProducto(p.id, dia) }));
   conPuntaje.sort((a, b) => b.puntaje - a.puntaje);
   const mapa = new Map();
@@ -716,7 +722,12 @@ function construirTarjetaProductoHTML(producto) {
   // 🆕 Motor de urgencia: calcula el precio tachado FALSO (solo si el
   // producto no tiene ya una rebaja real, para no pisarla) y si le toca
   // franja de urgencia este ciclo (independiente de si hay o no rebaja).
-  const urgencia = calcularUrgenciaProducto(producto);
+  // 🆕 Servicios: sin urgencia (se usa un objeto "vacío" para que el resto del
+  // armado de la tarjeta no cambie). La rebaja REAL del vendedor sí se respeta.
+  const esServicio = esProductoServicio(producto);
+  const urgencia = esServicio
+    ? { precioFalsoTachado: null, porcentajeFalso: null, msRestantes: 0, mostrarFranja: false, frase: "", fraseSecundaria: "" }
+    : calcularUrgenciaProducto(producto);
 
   let precioAnteriorHtml = "";
   let contadorHtml = "";
@@ -757,7 +768,7 @@ function construirTarjetaProductoHTML(producto) {
   // lugar donde iría "Solo quedan X" / "Último día", debajo del
   // nombre, y le gana ese lugar: si el producto es uno de los 20 del
   // día se muestra ESTO en vez de "Solo quedan X".
-  const puestoBestseller = mapaBestsellerHoy.get(String(producto.id ?? ""));
+  const puestoBestseller = esServicio ? undefined : mapaBestsellerHoy.get(String(producto.id ?? ""));
   const quedanBadgeHtml = puestoBestseller
     ? `<div class="producto-bestseller-badge">Artículo más vendido #${puestoBestseller}</div>`
     : urgencia.mostrarFranja

@@ -936,10 +936,14 @@
     const id = parseInt(idProducto, 10) || 0;
     return pseudoAleatorio(id * 7.9218 + dia * 31.415);
   }
+  // 🆕 Los servicios (categoría "Servicios") NO llevan estrategia de urgencia.
+  function esProductoServicio(producto) {
+    return String((producto && producto.categoria) || "").trim().toLowerCase() === "servicios";
+  }
   function calcularBestsellersDelDia(productos) {
     const dia = Math.floor(Date.now() / MS_DIA_URGENCIA);
     const conPuntaje = (productos || [])
-      .filter((p) => p && p.id !== undefined && p.id !== null && p.id !== "")
+      .filter((p) => p && p.id !== undefined && p.id !== null && p.id !== "" && !esProductoServicio(p))
       .map((p) => ({ id: String(p.id), puntaje: puntajeBestsellerProducto(p.id, dia) }));
     conPuntaje.sort((a, b) => b.puntaje - a.puntaje);
     const mapa = new Map();
@@ -975,13 +979,17 @@
   }
 
   function construirPrecio(producto, puestoBestseller) {
+    const esServicio = esProductoServicio(producto);
+    if (esServicio) puestoBestseller = null;
     const precioNum = parseFloat(producto.precio);
     const precioAnteriorNum = parseFloat(producto.precio_anterior);
     const tieneDescuentoReal = !isNaN(precioAnteriorNum) && !isNaN(precioNum) && precioAnteriorNum > precioNum;
 
     // 🆕 Mismo motor de urgencia que el catálogo: franja sobre la foto,
     // "Solo quedan X" / "Último día" y "Ahorra ₡X extra".
-    const urgencia = calcularUrgenciaProducto(producto);
+    const urgencia = esServicio
+      ? { precioFalsoTachado: null, porcentajeFalso: null, msRestantes: 0, mostrarFranja: false, frase: "", fraseSecundaria: "" }
+      : calcularUrgenciaProducto(producto);
 
     let html = precioNum ? fmtCrc(precioNum) : "";
     let contadorHtml = "";
