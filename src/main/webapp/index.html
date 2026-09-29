@@ -1358,7 +1358,7 @@
     </style>
     <link rel="stylesheet" href="mascota.css" />
     
-  </head>
+    </head>
   <script src="mascota.js" defer></script>
   <body>
 <!-- 🔧 El <canvas id="starsCanvas"> se movió de aquí hacia abajo, justo
@@ -1507,6 +1507,10 @@
           <i class="fa-solid fa-right-to-bracket"></i> Acceder
         </button>
 
+        <p id="olvideVendedor" class="olvide-password" style="display:none;">
+  ¿Olvidaste tu contraseña?
+</p>
+
         <!-- 🆕 Aviso: la cuenta no existe (login de vendedor) -->
         <div id="avisoCuentaNoExisteVendedor" role="alert"
              style="display:none;margin-top:12px;padding:12px;border:1px solid #D4AF37;border-radius:10px;background:#fffaf0;color:#333;text-align:center;font-size:14px;line-height:1.4;">
@@ -1522,9 +1526,6 @@
           </button>
         </div>
 
-        <p id="olvideVendedor" class="olvide-password" style="display:none;">
-  ¿Olvidaste tu contraseña?
-</p>
 
         <button class="volver-btn"><i class="fa-solid fa-arrow-left"></i> Atrás</button>
       </div>
@@ -1580,6 +1581,10 @@
           <i class="fa-solid fa-right-to-bracket"></i> Acceder
         </button>
 
+        <p id="olvideComprador" class="olvide-password" style="display:none;">
+  ¿Olvidaste tu contraseña?
+</p>
+
         <!-- 🆕 Aviso: la cuenta no existe (login de comprador con correo o con Google) -->
         <div id="avisoCuentaNoExiste" role="alert"
              style="display:none;margin-top:12px;padding:12px;border:1px solid #D4AF37;border-radius:10px;background:#fffaf0;color:#333;text-align:center;font-size:14px;line-height:1.4;">
@@ -1595,9 +1600,6 @@
           </button>
         </div>
 
-        <p id="olvideComprador" class="olvide-password" style="display:none;">
-  ¿Olvidaste tu contraseña?
-</p>
 
         <button class="volver-btn"><i class="fa-solid fa-arrow-left"></i> Atrás</button>
       </div>
@@ -6224,7 +6226,7 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
       aviso.innerHTML =
         '<button type="button" class="aviso-registro-cerrar" aria-label="Cerrar aviso">&times;</button>' +
         '<div class="aviso-registro-texto"><i class="fa-solid fa-bell"></i>Regístrate ahora o inicia sesión en nuestra Tienda!</div>' +
-        '<div class="aviso-registro-subtexto">Y conoce más sobre nosotros</div>' +
+        '<div class="aviso-registro-subtexto">Para obtener la mejor experiencia</div>' +
         '<span class="aviso-registro-btn">Ingresar <i class="fa-solid fa-arrow-right"></i></span>';
       document.body.appendChild(aviso);
 
