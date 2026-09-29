@@ -2678,7 +2678,7 @@ async function cargarMisProductos(usuarioId) {
 <label for="imageUrl2">Foto adicional 1 (opcional):</label>
 <input type="text" id="imageUrl2" name="imagen2" placeholder="URL de otra foto (opcional)" />
 <div class="subir-preview">
-  <label for="imagenProducto2" class="btn-subir">Agregar foto adicional 1</label>
+  <label for="imagenProducto2" class="btn-subir">Agregar desde mi dispositivo</label>
   <input type="file" id="imagenProducto2" name="imagenProducto2" accept="image/*">
   <img id="previewImagen2" class="preview-img" alt="Preview foto adicional 1" />
 </div>
@@ -2686,7 +2686,7 @@ async function cargarMisProductos(usuarioId) {
 <label for="imageUrl3">Foto adicional 2 (opcional):</label>
 <input type="text" id="imageUrl3" name="imagen3" placeholder="URL de otra foto (opcional)" />
 <div class="subir-preview">
-  <label for="imagenProducto3" class="btn-subir">Agregar foto adicional 2</label>
+  <label for="imagenProducto3" class="btn-subir">Agregar desde mi dispositivo</label>
   <input type="file" id="imagenProducto3" name="imagenProducto3" accept="image/*">
   <img id="previewImagen3" class="preview-img" alt="Preview foto adicional 2" />
 </div>
@@ -2700,11 +2700,13 @@ async function cargarMisProductos(usuarioId) {
      detalles" se muestra una nota indicando que el precio ya incluye
      los costos de importación (para que el precio no se vea "inflado"
      sin explicación al comprador). -->
-<label class="check-extranjero" for="esExtranjero">
+<div class="aviso-extranjero">
   <input type="checkbox" id="esExtranjero" name="es_extranjero" value="1" />
-  Este producto es una reventa de una plataforma internacional (Temu, AliExpress, etc.)
-</label>
-<p class="check-extranjero-ayuda">Si lo marca, se mostrará una nota junto al precio indicando que ya incluye los costos de importación.</p>
+  <label for="esExtranjero">
+    <span class="aviso-extranjero-titulo"><i class="fa-solid fa-earth-americas"></i> Producto de reventa internacional</span>
+    <span class="aviso-extranjero-desc">Márquelo si lo compra en una plataforma internacional (Temu, AliExpress, etc.). Se mostrará una nota junto al precio indicando que ya incluye los costos de importación.</span>
+  </label>
+</div>
 
 
 
@@ -2822,7 +2824,7 @@ async function cargarMisProductos(usuarioId) {
             <label for="editImageUrl2">Foto adicional 1 (opcional):</label>
             <input type="text" id="editImageUrl2" name="imagen2" placeholder="URL de otra foto (opcional)" />
             <div class="subir-preview">
-              <label for="editImagenProducto2" class="btn-subir">Cambiar foto adicional 1</label>
+              <label for="editImagenProducto2" class="btn-subir">Cambiar desde mi dispositivo</label>
               <input type="file" id="editImagenProducto2" name="imagenProducto2" accept="image/*">
               <img id="editPreviewImagen2" class="preview-img" alt="Preview foto adicional 1" />
             </div>
@@ -2830,7 +2832,7 @@ async function cargarMisProductos(usuarioId) {
             <label for="editImageUrl3">Foto adicional 2 (opcional):</label>
             <input type="text" id="editImageUrl3" name="imagen3" placeholder="URL de otra foto (opcional)" />
             <div class="subir-preview">
-              <label for="editImagenProducto3" class="btn-subir">Cambiar foto adicional 2</label>
+              <label for="editImagenProducto3" class="btn-subir">Cambiar desde mi dispositivo</label>
               <input type="file" id="editImagenProducto3" name="imagenProducto3" accept="image/*">
               <img id="editPreviewImagen3" class="preview-img" alt="Preview foto adicional 2" />
             </div>
@@ -2841,11 +2843,13 @@ async function cargarMisProductos(usuarioId) {
 
             <!-- 🆕 Producto de reventa internacional: mismo campo que en
                  "Agregar Producto" (ver nota ahí). -->
-            <label class="check-extranjero" for="editEsExtranjero">
+            <div class="aviso-extranjero">
               <input type="checkbox" id="editEsExtranjero" name="es_extranjero" value="1" />
-              Este producto es una reventa de una plataforma internacional (Temu, AliExpress, etc.)
-            </label>
-            <p class="check-extranjero-ayuda">Si lo marca, se mostrará una nota junto al precio indicando que ya incluye los costos de importación.</p>
+              <label for="editEsExtranjero">
+                <span class="aviso-extranjero-titulo"><i class="fa-solid fa-earth-americas"></i> Producto de reventa internacional</span>
+                <span class="aviso-extranjero-desc">Márquelo si lo compra en una plataforma internacional (Temu, AliExpress, etc.). Se mostrará una nota junto al precio indicando que ya incluye los costos de importación.</span>
+              </label>
+            </div>
 
             <label for="editTelefono">Teléfono:</label>
             <input type="tel" id="editTelefono" name="telefono" required placeholder="Ej. 8888-8888" />
@@ -2908,6 +2912,83 @@ async function cargarMisProductos(usuarioId) {
         color: #888;
         margin: 2px 0 14px;
         line-height: 1.4;
+      }
+
+      /* 🆕 Botones "desde mi dispositivo": el <input type="file"> nativo
+         queda oculto en TODOS (principal y adicionales, Agregar y Editar);
+         solo se ve el botón rojo, que es el <label class="btn-subir">. */
+      .subir-preview input[type="file"] {
+        display: none;
+      }
+
+      /* 🆕 Aviso "producto de reventa internacional": casilla a la
+         izquierda y título + descripción alineados en un solo bloque. */
+      .aviso-extranjero {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin: 14px 0 16px;
+        padding: 12px 14px;
+        border: 1px solid rgba(128, 128, 128, 0.35);
+        border-radius: 10px;
+        background: rgba(128, 128, 128, 0.08);
+        text-align: left;
+      }
+      .aviso-extranjero input[type="checkbox"] {
+        -webkit-appearance: none;
+        appearance: none;
+        flex-shrink: 0;
+        width: 20px;
+        height: 20px;
+        margin: 2px 0 0;
+        padding: 0;
+        border: 2px solid rgba(128, 128, 128, 0.7);
+        border-radius: 5px;
+        background: transparent;
+        cursor: pointer;
+        display: inline-block;
+        position: relative;
+      }
+      .aviso-extranjero input[type="checkbox"]:checked {
+        background: #b33a3a;
+        border-color: #b33a3a;
+      }
+      .aviso-extranjero input[type="checkbox"]:checked::after {
+        content: "";
+        position: absolute;
+        left: 5px;
+        top: 1px;
+        width: 5px;
+        height: 10px;
+        border: solid #fff;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+      }
+      .aviso-extranjero label {
+        display: block;
+        flex: 1;
+        margin: 0;
+        padding: 0;
+        text-align: left !important;
+        cursor: pointer;
+      }
+      .aviso-extranjero-titulo {
+        display: block;
+        font-size: 14.5px;
+        font-weight: 600;
+        line-height: 1.3;
+      }
+      .aviso-extranjero-titulo i {
+        margin-right: 6px;
+        color: #b33a3a;
+      }
+      .aviso-extranjero-desc {
+        display: block;
+        margin-top: 4px;
+        font-size: 12.5px;
+        font-weight: 400;
+        line-height: 1.45;
+        opacity: 0.75;
       }
 
       /* Estilos del panel lateral y overlay (puedes mover a tu archivo CSS) */
@@ -3672,7 +3753,7 @@ async function cargarMisProductos(usuarioId) {
         <p>Tienda Monjarrez podrá eliminar publicaciones que incumplan estas normas.</p>
 
         <h3>Aviso sobre imágenes</h3>
-        <p>ℹ️ Utiliza imágenes propias o imágenes para las que cuentes con autorización de uso. El vendedor es responsable del contenido e imágenes que publica en Tienda Monjarrez.</p>
+        <p><i class="fa-solid fa-circle-info" style="margin-right:6px; color:#b33a3a;"></i>Utiliza imágenes propias o imágenes para las que cuentes con autorización de uso. El vendedor es responsable del contenido e imágenes que publica en Tienda Monjarrez.</p>
 
         <button type="button" class="registrarse cerrar-terminos-btn" id="cerrarTerminosBtnFooter">Entendido</button>
       </div>
@@ -4357,7 +4438,7 @@ async function cargarMisProductos(usuarioId) {
             if (esExtranjero) {
               notaExtranjeroHtml = `
                 <p class="nota-precio-extranjero">
-                  <span class="nota-precio-extranjero-icono">ℹ️</span>
+                  <span class="nota-precio-extranjero-icono"><i class="fa-solid fa-circle-info"></i></span>
                   Este es un producto internacional. El precio ya incluye los impuestos y costos de importación correspondientes.
                 </p>`;
             }

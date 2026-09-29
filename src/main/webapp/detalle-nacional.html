@@ -284,6 +284,12 @@
     line-height: 1.5;
     color: #555;
   }
+  .nota-precio-extranjero-icono {
+    flex-shrink: 0;
+    color: #b33a3a;
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
 
   h3.seccion-titulo {
     margin: 20px 0 8px;
@@ -1023,7 +1029,7 @@
     if (producto.es_extranjero) {
       document.getElementById("notaExtranjero").innerHTML = `
         <p class="nota-precio-extranjero">
-          <span>ℹ️</span>
+          <span class="nota-precio-extranjero-icono"><i class="fa-solid fa-circle-info"></i></span>
           Este es un producto internacional. El precio ya incluye los impuestos y costos de importación correspondientes.
         </p>`;
     }
