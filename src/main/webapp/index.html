@@ -1566,16 +1566,29 @@
             placeholder="Correo"
             id="correoComprador"
             class="modal-input"
+            name="email"
+            autocomplete="username"
+            autocapitalize="none"
+            autocorrect="off"
+            spellcheck="false"
           />
         </div>
-        <div class="input-icon-wrap">
+        <div class="input-icon-wrap" style="position:relative;">
           <i class="fa-solid fa-lock"></i>
           <input
             type="password"
             placeholder="Contraseña"
             id="passwordComprador"
+            style="padding-right:42px;"
             class="modal-input"
+            name="password"
+            autocomplete="current-password"
           />
+          <button type="button" aria-label="Mostrar u ocultar contraseña"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;color:inherit;opacity:.7;padding:6px;"
+            onclick="const i=document.getElementById('passwordComprador');const v=i.type==='password';i.type=v?'text':'password';this.firstElementChild.className=v?'fa-solid fa-eye-slash':'fa-solid fa-eye';">
+            <i class="fa-solid fa-eye"></i>
+          </button>
         </div>
         <button id="btnAccederComprador" class="registrarse acceder-btn">
           <i class="fa-solid fa-right-to-bracket"></i> Acceder
@@ -5838,11 +5851,17 @@ botonesMiniLoader.forEach(btn => {
    llamada real, más abajo, basada en comprobarSesion(). */
 
 /* --------- CONFIG --------- */
-const DURACION_SESION = 30 * 60 * 1000; // 30 minutos en ms
+const DURACION_SESION = 30 * 60 * 1000; // 30 minutos en ms (vendedores)
+// 🆕 Los compradores mantienen la sesión en su dispositivo hasta que ellos
+// decidan cerrarla (el servidor guarda una cookie larga de 90 días).
+const DURACION_SESION_COMPRADOR = 90 * 24 * 60 * 60 * 1000;
+function duracionPara(tipo) {
+  return tipo === "comprador" ? DURACION_SESION_COMPRADOR : DURACION_SESION;
+}
 
 /* --------- FUNCIONES DE SESIÓN --------- */
 function iniciarSesion(tipo) {
-  const expiracion = Date.now() + DURACION_SESION;
+  const expiracion = Date.now() + duracionPara(tipo);
   localStorage.setItem("sesionUsuario", JSON.stringify({ tipo, expiracion }));
 }
 
@@ -5850,6 +5869,8 @@ function cerrarSesion() {
    const confirmar = confirm("¿Estás seguro que deseas cerrar sesión?");
   if (!confirmar) return; 
   localStorage.removeItem("sesionUsuario");
+  // 🆕 Avisa al servidor: borra la sesión larga del comprador (cookie) y la sesión activa.
+  fetch("CerrarSesionServlet", { method: "POST" }).catch(() => {});
   mostrarLogin("Tiempo de sesión agotado");
   actualizarMiTienda("invitado"); // 🆕 vuelve a mostrar el hero y bloquea "Mi tienda"
 }
@@ -5879,7 +5900,7 @@ function manejarClicSesion() {
 function actualizarActividad() {
   const sesion = JSON.parse(localStorage.getItem("sesionUsuario"));
   if (!sesion) return;
-  sesion.expiracion = Date.now() + DURACION_SESION;
+  sesion.expiracion = Date.now() + duracionPara(sesion.tipo);
   localStorage.setItem("sesionUsuario", JSON.stringify(sesion));
 }
 
@@ -5941,8 +5962,22 @@ function mostrarContenido(tipo, registrado = true) {
 
 
 /* --------- INICIALIZACIÓN --------- */
-window.addEventListener("load", () => {
-  const tipo = comprobarSesion();
+window.addEventListener("load", async () => {
+  let tipo = comprobarSesion();
+
+  // 🆕 Sin sesión en el navegador, pero este dispositivo tiene sesión larga de
+  // comprador (cookie "rmt_ok"): el servidor la restaura y entra sin pedir nada.
+  if (!tipo && document.cookie.includes("rmt_ok=1")) {
+    try {
+      const r = await fetch("SesionActualServlet", { cache: "no-store" });
+      const d = await r.json();
+      if (d.logueado) {
+        iniciarSesion("comprador");
+        tipo = "comprador";
+      }
+    } catch (e) { /* sin conexión: se sigue como invitado */ }
+  }
+
   if (tipo) {
     mostrarContenido(tipo, false); // Sesión activa → mostrar contenido
     actualizarMiTienda(tipo);      // 🔹 Ajustar "Mi tienda" según tipo

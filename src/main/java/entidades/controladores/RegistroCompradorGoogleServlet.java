@@ -28,6 +28,7 @@ import com.google.api.client.json.gson.GsonFactory;
 import config.Config;
 import entidades.DatabaseConnection;
 import entidades.EmailService;
+import entidades.SesionPersistente;
 import entidades.Usuario;
 import entidades.VRegistro;
 import jakarta.servlet.annotation.WebServlet;
@@ -37,7 +38,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 /**
- * Registro de COMPRADOR con "Continuar con Google".
+ * Registro / ingreso de COMPRADOR con "Continuar con Google".
  *
  * Recibe por POST (x-www-form-urlencoded) solo:
  *   - credential : el ID token (JWT) que entrega Google en el navegador
@@ -46,6 +47,9 @@ import jakarta.servlet.http.HttpSession;
  * pedir otro rol. Responde el mismo formato JSON que RegistroCompradorServlet
  * y, como Google ya comprobó la identidad, deja la sesión iniciada
  * ("sesionIniciada":true) con los mismos atributos que LoginCompradorServlet.
+ *
+ * 🆕 Además: vincula el usuario con su cuenta de Google (tabla UsuarioGoogle)
+ * y crea la sesión larga (tabla SesionPersistente + cookie).
  */
 @WebServlet("/registroCompradorGoogle")
 public class RegistroCompradorGoogleServlet extends HttpServlet {
@@ -101,6 +105,7 @@ public class RegistroCompradorGoogleServlet extends HttpServlet {
             }
 
             String correo = payload.getEmail();
+            String sub = payload.getSubject(); // 🆕 id estable de la cuenta de Google
             String nombre = (String) payload.get("name");
             if (nombre == null || nombre.isBlank()) {
                 nombre = correo.substring(0, correo.indexOf('@'));
@@ -118,6 +123,8 @@ public class RegistroCompradorGoogleServlet extends HttpServlet {
 
                 if (usuarioId > 0) {
                     iniciarSesion(request, usuarioId, nombre, correo);
+                    // 🆕 Cuenta nueva creada con Google: sin contraseña conocida.
+                    vincularYRecordar(request, response, usuarioId, sub, true);
                     response.setStatus(HttpServletResponse.SC_OK);
                     out.print("{\"usuarioId\":" + usuarioId + ",\"sesionIniciada\":true}");
                     System.out.println("[RegistroCompradorGoogleServlet] ✅ Comprador registrado con Google, id=" + usuarioId);
@@ -143,7 +150,11 @@ public class RegistroCompradorGoogleServlet extends HttpServlet {
 
                     } else {
                         // Ya era comprador: Google confirmó que es él, así que entra directo.
-                        iniciarSesion(request, Integer.parseInt(existente[0]), existente[2], correo);
+                        int idExistente = Integer.parseInt(existente[0]);
+                        iniciarSesion(request, idExistente, existente[2], correo);
+                        // 🆕 Se vincula con Google (si no lo estaba) sin tocar su contraseña
+                        // ni sus pedidos. false = puede que tenga contraseña propia.
+                        vincularYRecordar(request, response, idExistente, sub, false);
                         response.setStatus(HttpServletResponse.SC_OK);
                         out.print("{\"usuarioId\":" + existente[0]
                                 + ",\"sesionIniciada\":true"
@@ -181,6 +192,17 @@ public class RegistroCompradorGoogleServlet extends HttpServlet {
             }
         }
         return null;
+    }
+
+    /** 🆕 Vincula con Google y crea la sesión larga. Nunca rompe el login si algo falla. */
+    private static void vincularYRecordar(HttpServletRequest request, HttpServletResponse response,
+                                          int usuarioId, String sub, boolean soloGoogle) {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            SesionPersistente.vincularGoogle(conn, usuarioId, sub, soloGoogle);
+            SesionPersistente.crear(conn, usuarioId, request, response);
+        } catch (SQLException e) {
+            System.out.println("[RegistroCompradorGoogleServlet] ⚠️ No se pudo guardar la sesión larga: " + e.getMessage());
+        }
     }
 
     /** Misma sesión que crea LoginCompradorServlet. */

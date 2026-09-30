@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import entidades.DatabaseConnection;
 import entidades.EmailService;
+import entidades.SesionPersistente;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -93,6 +94,10 @@ public class LoginCompradorServlet extends HttpServlet {
                         // 🆕 Esta sesión se inició con contraseña, no con Google: se limpia la
                         // marca por si antes en la misma sesión había entrado con Google.
                         session.removeAttribute("cuentaGoogle");
+
+                        // 🆕 Sesión larga: el comprador no tendrá que volver a escribir
+                        // correo y contraseña en este dispositivo hasta que cierre sesión.
+                        SesionPersistente.crear(conn, rs.getInt("id_usuario"), request, response);
 
                         response.setStatus(HttpServletResponse.SC_OK);
                         response.getWriter().write("OK");
