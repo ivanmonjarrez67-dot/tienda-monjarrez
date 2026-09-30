@@ -48,6 +48,7 @@
   .editar { display:none; margin-top:10px; } .editar.ver { display:block; }
   .editar input, .editar textarea { width:100%; padding:9px; border:1.5px solid #ddd; border-radius:8px; font:inherit; font-size:.85rem; margin-bottom:8px; }
   .err { color:var(--rojo); font-size:.8rem; }
+  .preview-banner { background:#fff8e1; border:1px solid #f0d98a; color:#7a5b00; border-radius:10px; padding:10px 14px; margin-bottom:14px; font-size:.82rem; }
 </style>
 </head>
 <body>
@@ -68,6 +69,7 @@
   const PASOS = { nacional:["pago_pendiente","pago_verificado","en_camino","entregado"], importado:ORDEN };
   const abiertos = new Set(); let primera = true, editando = null;
   const idUrl = new URLSearchParams(location.search).get("id");
+  const PREVIEW = new URLSearchParams(location.search).get("preview") === "1"; // vista previa desde panelAdmin (no guarda nada)
   const $l = document.getElementById("lista");
 
   const esc = s => { if (s == null) return ""; const d = document.createElement("div"); d.textContent = s; return d.innerHTML; };
@@ -116,7 +118,7 @@
         <div class="acciones">
           ${!fin ? `<a class="btn b-wa" target="_blank" rel="noopener" href="${wa(msg)}"><i class="fa-brands fa-whatsapp"></i> Pedir actualización</a>
             <a class="btn b-mail" href="mailto:${MAIL}?subject=${encodeURIComponent("Pedido #" + p.id)}&body=${encodeURIComponent(msg)}"><i class="fa-solid fa-envelope"></i> Por correo</a>` : ""}
-          <a class="btn b-lin" href="factura.html?id=${p.id}"><i class="fa-solid fa-file-invoice"></i> Ver factura</a>
+          ${PREVIEW ? "" : `<a class="btn b-lin" href="factura.html?id=${p.id}"><i class="fa-solid fa-file-invoice"></i> Ver factura</a>`}
           ${p.rastreo ? `<a class="btn b-lin" target="_blank" rel="noopener" href="${esc(p.rastreo)}"><i class="fa-solid fa-location-dot"></i> Rastrear${p.guia ? " (" + esc(p.guia) + ")" : ""}</a>` : ""}
           ${!fin && idx >= 3 ? `<button class="btn b-ok" data-recibido="${p.id}"><i class="fa-solid fa-check"></i> Ya recibí mi pedido</button>` : ""}
           <a class="btn b-lin" target="_blank" rel="noopener" href="${wa(prob)}"><i class="fa-solid fa-triangle-exclamation"></i> Reportar un problema</a>
@@ -130,6 +132,13 @@
   }
 
   function cargar() {
+    if (PREVIEW) {
+      const d = window.opener && window.opener.__previewPedido;
+      if (!d) { $l.innerHTML = '<div class="msg">No hay vista previa disponible. Ciérrala y ábrela de nuevo desde el panel.</div>'; return; }
+      abiertos.add(d.id);
+      $l.innerHTML = '<div class="preview-banner"><b>Vista previa.</b> Así verá el cliente su pedido con lo que hay en el formulario. Todavía no se ha guardado ni enviado nada.</div>' + pedidoHtml(d);
+      return;
+    }
     if (editando) return; // no pisar lo que el cliente está escribiendo
     fetch("/api/mis-pedidos").then(r => {
       if (r.status === 401) { $l.innerHTML = '<div class="msg">Inicia sesión para ver tus pedidos.<br><a href="index.html">Ir al inicio</a></div>'; throw 0; }
@@ -146,6 +155,7 @@
     const t = e.target.closest("[data-toggle],[data-editar],[data-guardar],[data-recibido]");
     if (!t) return;
     const ped = t.closest(".pedido"), id = Number(ped.dataset.id);
+    if (PREVIEW && (t.dataset.guardar || t.dataset.recibido)) { alert("Es una vista previa: este botón no hace nada aquí."); return; }
     if (t.hasAttribute("data-toggle")) { ped.classList.toggle("abierto"); ped.classList.contains("abierto") ? abiertos.add(id) : abiertos.delete(id); }
     else if (t.dataset.editar) { editando = id; ped.querySelector(".editar").classList.add("ver"); }
     else if (t.dataset.guardar) {
@@ -157,7 +167,7 @@
   });
 
   cargar();
-  setInterval(() => { if (!document.hidden) cargar(); }, 45000); // "tiempo real": consulta cada 45 s mientras la página está abierta
+  if (!PREVIEW) setInterval(() => { if (!document.hidden) cargar(); }, 45000); // "tiempo real": consulta cada 45 s mientras la página está abierta
 })();
 </script>
 </body>

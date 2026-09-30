@@ -30,6 +30,14 @@ public class PedidosAdminServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException {
         res.setContentType("application/json;charset=UTF-8");
         if (!esAdmin(req)) { res.setStatus(401); res.getWriter().print("{\"error\":\"No autorizado\"}"); return; }
+        // ?id=X -> detalle completo de un pedido (para la vista previa del panel)
+        String idParam = req.getParameter("id");
+        if (idParam != null) {
+            try (Connection c = DatabaseConnection.getConnection()) {
+                detalle(c, Integer.parseInt(idParam), res);
+            } catch (Exception e) { e.printStackTrace(); res.setStatus(500); res.getWriter().print("{\"error\":\"Error del servidor\"}"); }
+            return;
+        }
         boolean todos = "1".equals(req.getParameter("todos"));
         try (Connection c = DatabaseConnection.getConnection();
              PreparedStatement st = c.prepareStatement(
@@ -54,6 +62,55 @@ public class PedidosAdminServlet extends HttpServlet {
             }
             out.print("]");
         } catch (Exception e) { e.printStackTrace(); res.setStatus(500); res.getWriter().print("{\"error\":\"Error del servidor\"}"); }
+    }
+
+    // Mismo formato JSON que MisPedidosServlet (un solo pedido), para reusar el render de mis-pedidos.html
+    private void detalle(Connection c, int pid, HttpServletResponse res) throws Exception {
+        PrintWriter out = res.getWriter();
+        try (PreparedStatement st = c.prepareStatement(
+            "SELECT p.id, p.fecha, p.total, p.metodo_pago, p.telefono_contacto, p.direccion_entrega, "
+          + "ISNULL(s.estado,'pago_pendiente') estado, ISNULL(s.origen,'nacional') origen, ISNULL(s.monto_pagado,0) pagado, "
+          + "s.sinpe_numero, s.fecha_est_desde, s.fecha_est_hasta, s.numero_guia, s.url_rastreo, "
+          + "ISNULL(s.fecha_ultima_novedad,p.fecha) ult, s.recibido_fecha "
+          + "FROM Pedidos p LEFT JOIN PedidoSeguimiento s ON s.pedido_id=p.id WHERE p.id=?")) {
+            st.setInt(1, pid);
+            try (ResultSet rs = st.executeQuery()) {
+                if (!rs.next()) { res.setStatus(404); out.print("{\"error\":\"Pedido no encontrado\"}"); return; }
+                out.print("{\"id\":" + pid + ",\"fecha\":" + js(rs.getTimestamp("fecha")) + ",\"total\":" + rs.getDouble("total")
+                    + ",\"metodo_pago\":" + js(rs.getString("metodo_pago")) + ",\"telefono\":" + js(rs.getString("telefono_contacto"))
+                    + ",\"direccion\":" + js(rs.getString("direccion_entrega")) + ",\"estado\":" + js(rs.getString("estado"))
+                    + ",\"origen\":" + js(rs.getString("origen")) + ",\"pagado\":" + rs.getDouble("pagado")
+                    + ",\"sinpe\":" + js(rs.getString("sinpe_numero")) + ",\"desde\":" + js(rs.getDate("fecha_est_desde"))
+                    + ",\"hasta\":" + js(rs.getDate("fecha_est_hasta")) + ",\"guia\":" + js(rs.getString("numero_guia"))
+                    + ",\"rastreo\":" + js(rs.getString("url_rastreo")) + ",\"ultima\":" + js(rs.getTimestamp("ult"))
+                    + ",\"recibido\":" + js(rs.getTimestamp("recibido_fecha")) + ",\"items\":[");
+            }
+        }
+        try (PreparedStatement it = c.prepareStatement(
+            "SELECT nombre_producto, imagen_producto, cantidad, especificaciones FROM DetallePedido WHERE pedido_id=?")) {
+            it.setInt(1, pid);
+            try (ResultSet r2 = it.executeQuery()) {
+                boolean f = true;
+                while (r2.next()) {
+                    if (!f) out.print(","); f = false;
+                    out.print("{\"nombre\":" + js(r2.getString(1)) + ",\"imagen\":" + js(r2.getString(2))
+                        + ",\"cantidad\":" + r2.getInt(3) + ",\"especificaciones\":" + js(r2.getString(4)) + "}");
+                }
+            }
+        }
+        out.print("],\"novedades\":[");
+        try (PreparedStatement nv = c.prepareStatement(
+            "SELECT TOP 30 fecha, estado, mensaje FROM PedidoActualizaciones WHERE pedido_id=? ORDER BY fecha DESC, id DESC")) {
+            nv.setInt(1, pid);
+            try (ResultSet r3 = nv.executeQuery()) {
+                boolean f = true;
+                while (r3.next()) {
+                    if (!f) out.print(","); f = false;
+                    out.print("{\"fecha\":" + js(r3.getTimestamp(1)) + ",\"estado\":" + js(r3.getString(2)) + ",\"mensaje\":" + js(r3.getString(3)) + "}");
+                }
+            }
+        }
+        out.print("]}");
     }
 
     protected void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException {
