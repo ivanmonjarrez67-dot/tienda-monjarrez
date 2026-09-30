@@ -496,11 +496,14 @@
       <label>Enlace de rastreo</label><input type="text" id="pRastreo" maxlength="400">
       <label style="display:flex;gap:8px;align-items:center;"><input type="checkbox" id="pNotificar" checked style="width:auto;"> Avisar al cliente por correo</label>
       <div class="modal-actions">
-        <button type="button" class="btn secondary" onclick="cerrarPedidos()">Cerrar</button>
+        <button type="button" class="btn secondary" onclick="volverListaPedidos()">← Volver a la lista</button>
         <button type="submit" class="btn aprobar">Publicar novedad</button>
       </div>
       <div class="modal-error" id="errorPedido"></div>
     </form>
+    <div class="modal-actions" id="pedidosCerrarWrap">
+      <button type="button" class="btn secondary" onclick="cerrarPedidos()">Cerrar</button>
+    </div>
   </div>
 </div>
 
@@ -1031,11 +1034,20 @@ async function cargarPedidos(){
         <button class="btn nota" onclick="elegirPedido(${p.id})">Actualizar</button></div>`).join('') || '<div class="empty">Sin pedidos activos</div>';
   }catch(e){ document.getElementById('pedidosLista').textContent = 'No se pudo cargar: ' + e.message; }
 }
-function abrirPedidos(){ document.getElementById('modalPedidos').classList.add('show'); cargarPedidos(); }
+function volverListaPedidos(){
+  document.getElementById('formPedido').classList.remove('active');
+  document.getElementById('pedidosLista').style.display = '';
+  document.getElementById('pedidosCerrarWrap').style.display = '';
+  cargarPedidos();
+}
+function abrirPedidos(){ document.getElementById('modalPedidos').classList.add('show'); volverListaPedidos(); }
 function cerrarPedidos(){ document.getElementById('modalPedidos').classList.remove('show'); }
 function elegirPedido(id){
   const p = PEDIDOS.find(x => x.id === id); PED_ACTUAL = id;
   document.getElementById('formPedido').classList.add('active');
+  document.getElementById('pedidosLista').style.display = 'none';   // solo se ve el formulario
+  document.getElementById('pedidosCerrarWrap').style.display = 'none';
+  document.querySelector('#modalPedidos .modal').scrollTop = 0;
   document.getElementById('pedTitulo').textContent = `Pedido #${id} — ${p.nombre} (${p.correo}) · ${p.metodo_pago}${p.referencia ? ' · comprobante ' + p.referencia : ''}`;
   document.getElementById('pEstado').value = p.estado;
   document.getElementById('pMensaje').value = '';
@@ -1051,7 +1063,7 @@ document.getElementById('formPedido').addEventListener('submit', async (e) => {
     sinpe_numero:pSinpe.value, fecha_est_desde:pDesde.value, fecha_est_hasta:pHasta.value, numero_guia:pGuia.value, url_rastreo:pRastreo.value,
     notificar: pNotificar.checked ? '1' : '0'});
   const r = await fetch('/admin/pedidos', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:d});
-  if(r.ok){ toast('Novedad publicada'); document.getElementById('formPedido').classList.remove('active'); cargarPedidos(); }
+  if(r.ok){ toast('Novedad publicada'); volverListaPedidos(); }
   else { err.textContent = (await r.json()).error || 'Error'; err.classList.add('show'); }
 });
 cargarPedidos(); // deja el contador ⚠ del botón listo al abrir el panel

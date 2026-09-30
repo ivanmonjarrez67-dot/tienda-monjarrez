@@ -35,6 +35,13 @@
   .logo .rojo { color: var(--rojo); }
   .volver { color: var(--text-dim); text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; }
   .volver:hover { color: var(--text); }
+  .btn-pedidos { position: relative; display: flex; align-items: center; gap: 8px; background: var(--rojo); color: #fff; text-decoration: none; font-size: 0.85rem; font-weight: 600; padding: 9px 16px; border-radius: 999px; }
+  .btn-pedidos:hover { filter: brightness(1.12); }
+  .badge-pedidos { position: absolute; top: -7px; right: -7px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #e53935; color: #fff; font-size: 0.7rem; font-weight: 700; line-height: 1; align-items: center; justify-content: center; border: 2px solid #fff; }
+  .banner-pedidos { display: flex; align-items: center; gap: 12px; background: rgba(161,51,65,0.07); border: 1px solid rgba(161,51,65,0.3); border-radius: 12px; padding: 14px 18px; margin: 0 0 20px; color: var(--text); text-decoration: none; font-size: 0.9rem; }
+  .banner-pedidos > i { color: var(--rojo); font-size: 1.4rem; }
+  .banner-pedidos b { color: var(--rojo); }
+  .banner-pedidos .ir { margin-left: auto; color: var(--rojo); font-weight: 600; white-space: nowrap; }
 
   main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
   h1.titulo-carrito { font-size: 1.4rem; margin: 0 0 20px; }
@@ -147,11 +154,16 @@
 <header>
   <div class="logo"><span>Tienda</span> <span class="rojo">Monjarrez</span></div>
   <a class="volver" href="index.html"><i class="fa-solid fa-arrow-left"></i> Seguir comprando</a>
-  <a class="volver" href="mis-pedidos.html"><i class="fa-solid fa-box-open"></i> Mis pedidos</a>
+  <a class="btn-pedidos" href="mis-pedidos.html"><i class="fa-solid fa-box-open"></i> Mis pedidos <span class="badge-pedidos" id="badgePedidos" style="display:none;"></span></a>
 </header>
 
 <main>
   <h1 class="titulo-carrito">Tu carrito</h1>
+  <a id="bannerPedidos" class="banner-pedidos" href="mis-pedidos.html" style="display:none;">
+    <i class="fa-solid fa-truck-fast"></i>
+    <div>Tienes <b class="n"></b>. Mira cómo va tu compra.</div>
+    <span class="ir">Ver mis pedidos →</span>
+  </a>
   <div id="estadoInvitado" class="carrito-invitado" style="display:none;">
     <p>Debes iniciar sesión para ver y guardar tu carrito.</p>
     <button type="button" onclick="window.location.href='index.html'">Iniciar sesión</button>
@@ -494,6 +506,18 @@
 
   render();
 })();
+</script>
+<script>
+// Aviso de pedidos confirmados que siguen en proceso (badge + banner)
+fetch("/api/mis-pedidos").then(r => r.ok ? r.json() : []).then(lista => {
+  const n = lista.filter(p => p.estado !== "entregado").length;
+  if (!n) return;
+  const b = document.getElementById("badgePedidos");
+  b.textContent = n; b.style.display = "flex";
+  const bn = document.getElementById("bannerPedidos");
+  bn.querySelector(".n").textContent = n + (n === 1 ? " pedido en proceso" : " pedidos en proceso");
+  bn.style.display = "flex";
+}).catch(() => {});
 </script>
 </body>
 </html>
