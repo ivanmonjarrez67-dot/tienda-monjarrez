@@ -1645,6 +1645,50 @@ const GOOGLE_CLIENT_ID = "1084676337902-nub3qelb3qv7be1dq108iff6m5gbagfn.apps.go
 
 let credencialGooglePendiente = null; // tocó Google en el registro sin aceptar términos
 
+// ===== 🆕 "Continuar como tu-correo" (Google One Tap) para invitados =====
+let googleInicializado = false;
+let oneTapPendiente = false;
+
+function lanzarOneTap() {
+  // Tras "Cerrar sesión" no se vuelve a ofrecer en esta pestaña.
+  if (sessionStorage.getItem("sinOneTap")) return;
+  // Si ya hay un login/registro abierto, ahí están los botones de Google.
+  const hayModal = ["loginModal", "registroModal", "modalComprador", "modalVendedor"].some(id => {
+    const el = document.getElementById(id);
+    return el && getComputedStyle(el).display !== "none";
+  });
+  if (hayModal) return;
+  google.accounts.id.prompt();
+}
+
+// Se llama desde index.html SOLO cuando la persona entra como invitado
+// (sin sesión ni cookie de sesión larga).
+function mostrarOneTapGoogle() {
+  if (GOOGLE_CLIENT_ID.startsWith("TU_CLIENT_ID")) return;
+  if (googleInicializado) lanzarOneTap();
+  else oneTapPendiente = true; // el script de Google aún está cargando
+}
+window.mostrarOneTapGoogle = mostrarOneTapGoogle;
+
+// Eligió "Continuar como..." pero ese correo no tiene cuenta: abre el registro
+// de comprador con el correo puesto; al marcar los Términos se crea la cuenta
+// con el mismo token (no pasa otra vez por Google).
+function abrirRegistroConGoogle(credential) {
+  credencialGooglePendiente = credential;
+  hideModal(loginModal);
+  hideModal(modalComprador);
+  showModal(registroModal);
+  rolesContainer.style.display = "none";
+  registroVendedorUnificado.style.display = "none";
+  formularioComprador.style.display = "block";
+  const correo = correoDesdeCredencialGoogle(credential);
+  const campoCorreo = document.getElementById("correoC");
+  if (campoCorreo && correo) campoCorreo.value = correo;
+  alert("Aún no tienes cuenta con " + (correo || "ese correo") +
+        ". Marca la casilla de Términos y Condiciones y la creamos con tu cuenta de Google.");
+  document.getElementById("aceptaTerminosComprador")?.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
 // Deja al comprador dentro de la tienda, igual que el login con contraseña.
 function completarLoginComprador() {
   ocultarTodo();
@@ -1696,7 +1740,7 @@ function correoDesdeCredencialGoogle(credential) {
   }
 }
 
-async function enviarLoginCompradorGoogle(credential) {
+async function enviarLoginCompradorGoogle(credential, desdeOneTap = false) {
   try {
     const res = await fetch("LoginCompradorGoogleServlet", {
       method: "POST",
@@ -1709,7 +1753,10 @@ async function enviarLoginCompradorGoogle(credential) {
     }
     // 🆕 404 = ese correo de Google no tiene cuenta: mismo aviso con "Ir a registrarme"
     if (res.status === 404) {
-      mostrarCuentaNoExiste(correoDesdeCredencialGoogle(credential));
+      // 🆕 Desde "Continuar como..." (One Tap) no hay formulario de login a la
+      // vista: se abre el registro con sus términos pendientes.
+      if (desdeOneTap) abrirRegistroConGoogle(credential);
+      else mostrarCuentaNoExiste(correoDesdeCredencialGoogle(credential));
       return;
     }
     alert((await res.text()) || "No se pudo iniciar sesión con Google.");
@@ -1722,8 +1769,11 @@ async function enviarLoginCompradorGoogle(credential) {
 // en el registro o en el login según qué formulario está a la vista.
 function onGoogleCredential(resp) {
   const enRegistro = formularioComprador.offsetParent !== null;
+  // 🆕 select_by empieza con "btn" cuando tocó el botón de Google; cualquier
+  // otro valor ("user", "user_1tap", "fedcm"...) viene del "Continuar como...".
+  const esOneTap = !!resp.select_by && !/^btn/.test(resp.select_by);
   if (!enRegistro) {
-    enviarLoginCompradorGoogle(resp.credential);
+    enviarLoginCompradorGoogle(resp.credential, esOneTap);
     return;
   }
 
@@ -1762,7 +1812,17 @@ function iniciarGoogleRegistro() {
   const espera = setInterval(() => {
     if (window.google?.accounts?.id) {
       clearInterval(espera);
-      google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: onGoogleCredential });
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: onGoogleCredential,
+        auto_select: false,            // siempre pide un toque: nunca entra solo
+        cancel_on_tap_outside: false,  // no se cierra si toca/scrollea fuera
+        context: "signin",
+        itp_support: true,
+        use_fedcm_for_prompt: true
+      });
+      googleInicializado = true;
+      if (oneTapPendiente) { oneTapPendiente = false; lanzarOneTap(); }
       ["googleBtnComprador", "googleBtnLoginComprador"].forEach(id => {
         const cont = document.getElementById(id);
         if (cont) {
@@ -2741,4 +2801,61 @@ document.getElementById("btnCambiarPassword")?.addEventListener("click", async (
   });
 
   observer.observe(contenidoInvitado, { attributes: true, attributeFilter: ["style"] });
+})();
+
+// ===== Ojito para mostrar/ocultar contraseña =====
+// Añade un botón con ojo a TODO <input type="password"> de la página
+// (login, registro, recuperar contraseña, perfil y Mi tienda). Si más
+// adelante agregas otro campo de contraseña, el ojito aparece solo.
+(function () {
+  function agregarOjo(input) {
+    if (input.dataset.ojo === "1") return;
+    input.dataset.ojo = "1";
+
+    // En los bloques .input-icon-wrap el contenedor ya está posicionado;
+    // en el resto (perfil, Mi tienda) se envuelve el input.
+    let contenedor = input.parentElement;
+    if (!contenedor.classList.contains("input-icon-wrap")) {
+      const envoltura = document.createElement("span");
+      envoltura.className = "ojo-wrap";
+      input.parentNode.insertBefore(envoltura, input);
+      envoltura.appendChild(input);
+      contenedor = envoltura;
+    }
+    input.classList.add("tiene-ojo");
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn-ojo";
+    btn.setAttribute("aria-label", "Mostrar contraseña");
+    btn.setAttribute("aria-pressed", "false");
+    btn.innerHTML = '<i class="fa-solid fa-eye"></i>';
+
+    // mousedown/preventDefault: el campo no pierde el foco al tocar el ojito
+    btn.addEventListener("mousedown", (e) => e.preventDefault());
+    btn.addEventListener("click", () => {
+      const mostrar = input.type === "password";
+      input.type = mostrar ? "text" : "password";
+      btn.firstElementChild.className = mostrar ? "fa-solid fa-eye-slash" : "fa-solid fa-eye";
+      btn.setAttribute("aria-label", mostrar ? "Ocultar contraseña" : "Mostrar contraseña");
+      btn.setAttribute("aria-pressed", mostrar ? "true" : "false");
+    });
+
+    contenedor.appendChild(btn);
+  }
+
+  function escanear(raiz) {
+    (raiz || document).querySelectorAll('input[type="password"]').forEach(agregarOjo);
+  }
+
+  function iniciar() {
+    escanear();
+    new MutationObserver(() => escanear()).observe(document.body, { childList: true, subtree: true });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", iniciar);
+  } else {
+    iniciar();
+  }
 })();

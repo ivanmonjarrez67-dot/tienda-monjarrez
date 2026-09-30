@@ -40,23 +40,21 @@ import jakarta.servlet.http.HttpSession;
 /**
  * Registro / ingreso de COMPRADOR con "Continuar con Google".
  *
- * Recibe por POST (x-www-form-urlencoded) solo:
- *   - credential : el ID token (JWT) que entrega Google en el navegador
+ * Recibe por POST solo: credential (el ID token de Google).
+ * El tipo "Comprador" se fija aquí, en el servidor.
  *
- * El tipo "Comprador" se fija aquí, en el servidor: el navegador no puede
- * pedir otro rol. Responde el mismo formato JSON que RegistroCompradorServlet
- * y, como Google ya comprobó la identidad, deja la sesión iniciada
- * ("sesionIniciada":true) con los mismos atributos que LoginCompradorServlet.
- *
- * 🆕 Además: vincula el usuario con su cuenta de Google (tabla UsuarioGoogle)
- * y crea la sesión larga (tabla SesionPersistente + cookie).
+ * Vincula el usuario con su Google (UsuarioGoogle) y crea la sesión larga.
+ * "cuentaGoogle" solo se marca en cuentas creadas con Google (solo_google = 1),
+ * así un comprador con contraseña sigue viendo "Cambiar contraseña".
  */
 @WebServlet("/registroCompradorGoogle")
 public class RegistroCompradorGoogleServlet extends HttpServlet {
 
     private static final String TIPO = "Comprador";
 
-    // Client ID de Google: viene de la variable de entorno GOOGLE_CLIENT_ID (Render), vía Config.
+    // ⚠️ Nombre según tu sesion_persistente.sql. Si difiere, cámbialo solo aquí.
+    private static final String COL_USUARIO = "usuario_id";
+
     private static final String GOOGLE_CLIENT_ID = Config.GOOGLE_CLIENT_ID;
 
     private static final GoogleIdTokenVerifier VERIFIER =
@@ -79,7 +77,7 @@ public class RegistroCompradorGoogleServlet extends HttpServlet {
                 return;
             }
 
-            // 1) Verificar el token con Google (firma, vencimiento y audiencia).
+            // 1) Verificar el token con Google
             GoogleIdToken idToken;
             try {
                 idToken = VERIFIER.verify(credential);
@@ -97,7 +95,7 @@ public class RegistroCompradorGoogleServlet extends HttpServlet {
 
             GoogleIdToken.Payload payload = idToken.getPayload();
 
-            // 2) Solo se aceptan correos que Google ya verificó.
+            // 2) Solo correos verificados por Google
             if (!Boolean.TRUE.equals(payload.getEmailVerified())) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 out.print("{\"usuarioId\":-4, \"mensaje\":\"Tu correo de Google no está verificado\"}");
@@ -105,16 +103,14 @@ public class RegistroCompradorGoogleServlet extends HttpServlet {
             }
 
             String correo = payload.getEmail();
-            String sub = payload.getSubject(); // 🆕 id estable de la cuenta de Google
+            String sub = payload.getSubject();
             String nombre = (String) payload.get("name");
             if (nombre == null || nombre.isBlank()) {
                 nombre = correo.substring(0, correo.indexOf('@'));
             }
 
             try {
-                // 3) Crear el usuario. No hay contraseña: se guarda el hash de una
-                //    aleatoria (mismo hash que usa Usuario, así no cambia la tabla).
-                //    Nadie la conoce; estas cuentas entran solo con Google.
+                // 3) Crear el usuario con una contraseña aleatoria que nadie conoce
                 Usuario oUsuario = new Usuario(0, nombre, "", correo, UUID.randomUUID().toString(), TIPO, "");
                 String hashAleatorio = oUsuario.getContraseña();
 
@@ -123,18 +119,15 @@ public class RegistroCompradorGoogleServlet extends HttpServlet {
 
                 if (usuarioId > 0) {
                     iniciarSesion(request, usuarioId, nombre, correo);
-                    // 🆕 Cuenta nueva creada con Google: sin contraseña conocida.
+                    // Cuenta nueva creada con Google: sin contraseña conocida.
                     vincularYRecordar(request, response, usuarioId, sub, true);
                     response.setStatus(HttpServletResponse.SC_OK);
                     out.print("{\"usuarioId\":" + usuarioId + ",\"sesionIniciada\":true}");
                     System.out.println("[RegistroCompradorGoogleServlet] ✅ Comprador registrado con Google, id=" + usuarioId);
 
-                    // Correo de bienvenida (no bloqueante)
                     EmailService.enviarBienvenidaComprador(correo, nombre);
 
                 } else if (usuarioId == -1) {
-                    // El correo ya existe. No se compara contraseña: Google ya
-                    // comprobó que la persona es dueña de ese correo.
                     String[] existente = buscarPorCorreo(correo); // {id, tipo, nombre}
 
                     if (existente == null) {
@@ -142,18 +135,16 @@ public class RegistroCompradorGoogleServlet extends HttpServlet {
                         out.print("{\"usuarioId\":-2, \"mensaje\":\"Error al verificar el registro existente\"}");
 
                     } else if (!existente[1].equalsIgnoreCase(TIPO)) {
-                        // Ya tiene cuenta con otro rol (Vendedor)
                         response.setStatus(HttpServletResponse.SC_CONFLICT);
                         out.print("{\"usuarioId\":-1, \"rolDistinto\":true"
                                 + ", \"mensaje\":\"Ya tienes una cuenta registrada con este correo como " + esc(existente[1])
                                 + ". Para registrarte con un rol diferente, primero inicia sesión y elimina tu cuenta actual desde tu perfil.\"}");
 
                     } else {
-                        // Ya era comprador: Google confirmó que es él, así que entra directo.
+                        // Ya era comprador: Google confirmó que es él, entra directo.
                         int idExistente = Integer.parseInt(existente[0]);
                         iniciarSesion(request, idExistente, existente[2], correo);
-                        // 🆕 Se vincula con Google (si no lo estaba) sin tocar su contraseña
-                        // ni sus pedidos. false = puede que tenga contraseña propia.
+                        // Vincula con Google sin tocar su contraseña ni sus pedidos.
                         vincularYRecordar(request, response, idExistente, sub, false);
                         response.setStatus(HttpServletResponse.SC_OK);
                         out.print("{\"usuarioId\":" + existente[0]
@@ -194,24 +185,48 @@ public class RegistroCompradorGoogleServlet extends HttpServlet {
         return null;
     }
 
-    /** 🆕 Vincula con Google y crea la sesión larga. Nunca rompe el login si algo falla. */
+    /**
+     * Vincula con Google, crea la sesión larga y ajusta "cuentaGoogle" según solo_google.
+     * Nunca rompe el login si algo falla.
+     */
     private static void vincularYRecordar(HttpServletRequest request, HttpServletResponse response,
                                           int usuarioId, String sub, boolean soloGoogle) {
+        boolean marcar = soloGoogle; // valor de respaldo si la consulta falla
         try (Connection conn = DatabaseConnection.getConnection()) {
             SesionPersistente.vincularGoogle(conn, usuarioId, sub, soloGoogle);
             SesionPersistente.crear(conn, usuarioId, request, response);
+            marcar = esSoloGoogle(conn, usuarioId, soloGoogle);
         } catch (SQLException e) {
             System.out.println("[RegistroCompradorGoogleServlet] ⚠️ No se pudo guardar la sesión larga: " + e.getMessage());
         }
+        HttpSession session = request.getSession();
+        if (marcar) {
+            session.setAttribute("cuentaGoogle", true);
+        } else {
+            session.removeAttribute("cuentaGoogle");
+        }
     }
 
-    /** Misma sesión que crea LoginCompradorServlet. */
+    /** true si UsuarioGoogle.solo_google = 1. Si falla la consulta, devuelve el valor de respaldo. */
+    private static boolean esSoloGoogle(Connection conn, int usuarioId, boolean respaldo) {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT solo_google FROM UsuarioGoogle WHERE " + COL_USUARIO + " = ?")) {
+            ps.setInt(1, usuarioId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt("solo_google") == 1 : respaldo;
+            }
+        } catch (SQLException e) {
+            System.out.println("[RegistroCompradorGoogleServlet] ⚠️ No se pudo leer solo_google: " + e.getMessage());
+            return respaldo;
+        }
+    }
+
+    /** Sesión base (sin "cuentaGoogle": se decide después en vincularYRecordar). */
     private static void iniciarSesion(HttpServletRequest request, int usuarioId, String nombre, String correo) {
         HttpSession session = request.getSession();
         session.setAttribute("usuarioId", usuarioId);
         session.setAttribute("nombreUsuario", nombre);
         session.setAttribute("correoUsuario", correo);
-        session.setAttribute("cuentaGoogle", true); // PerfilServlet lo usa para esconder "Cambiar contraseña"
     }
 
     private static String esc(String s) {

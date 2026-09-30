@@ -1492,6 +1492,8 @@
             placeholder="Cédula"
             id="cedulaVendedor"
             class="modal-input"
+            name="cedula"
+            autocomplete="username"
           />
         </div>
         <div class="input-icon-wrap">
@@ -1501,6 +1503,8 @@
             placeholder="Contraseña"
             id="passwordVendedor"
             class="modal-input"
+            name="password"
+            autocomplete="current-password"
           />
         </div>
         <button id="btnAccederVendedor" class="registrarse acceder-btn">
@@ -1573,22 +1577,16 @@
             spellcheck="false"
           />
         </div>
-        <div class="input-icon-wrap" style="position:relative;">
+        <div class="input-icon-wrap">
           <i class="fa-solid fa-lock"></i>
           <input
             type="password"
             placeholder="Contraseña"
             id="passwordComprador"
-            style="padding-right:42px;"
             class="modal-input"
             name="password"
             autocomplete="current-password"
           />
-          <button type="button" aria-label="Mostrar u ocultar contraseña"
-            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;color:inherit;opacity:.7;padding:6px;"
-            onclick="const i=document.getElementById('passwordComprador');const v=i.type==='password';i.type=v?'text':'password';this.firstElementChild.className=v?'fa-solid fa-eye-slash':'fa-solid fa-eye';">
-            <i class="fa-solid fa-eye"></i>
-          </button>
         </div>
         <button id="btnAccederComprador" class="registrarse acceder-btn">
           <i class="fa-solid fa-right-to-bracket"></i> Acceder
@@ -1670,6 +1668,7 @@
           placeholder="Nueva contraseña"
           id="recuperarNueva"
           class="modal-input"
+          autocomplete="new-password"
         />
       </div>
       <div class="input-icon-wrap">
@@ -1679,6 +1678,7 @@
           placeholder="Confirmar contraseña"
           id="recuperarConfirmar"
           class="modal-input"
+          autocomplete="new-password"
         />
       </div>
       <button id="btnCambiarPassword" class="registrarse acceder-btn">
@@ -1799,15 +1799,15 @@
       <form id="registroFormComprador">
         <div class="input-icon-wrap">
           <i class="fa-solid fa-user"></i>
-          <input type="text" id="nombreC" name="nombre" placeholder="Nombre" required />
+          <input type="text" id="nombreC" name="nombre" placeholder="Nombre" autocomplete="name" required />
         </div>
         <div class="input-icon-wrap">
           <i class="fa-solid fa-envelope"></i>
-          <input type="email" id="correoC" name="correo" placeholder="Correo" required />
+          <input type="email" id="correoC" name="correo" placeholder="Correo" autocomplete="email" required />
         </div>
         <div class="input-icon-wrap">
           <i class="fa-solid fa-lock"></i>
-          <input type="password" id="contraseñaC" name="contraseña" placeholder="Crear contraseña" required />
+          <input type="password" id="contraseñaC" name="contraseña" placeholder="Crear contraseña" autocomplete="new-password" required />
         </div>
         <label class="aceptar-terminos">
           <input type="checkbox" id="aceptaTerminosComprador" name="aceptaTerminos" required />
@@ -1838,7 +1838,7 @@
         </div>
         <div class="input-icon-wrap">
           <i class="fa-solid fa-lock"></i>
-          <input type="password" name="contraseña" id="contraseñaV" placeholder="Crear contraseña" required/>
+          <input type="password" name="contraseña" id="contraseñaV" placeholder="Crear contraseña" autocomplete="new-password" required/>
         </div>
         <button type="button" id="btnSiguienteUsuario"><i class="fa-solid fa-arrow-right"></i> Siguiente</button>
         <button type="button" id="btnAtrasVendedor" class="volver-btn" style="margin-bottom:10px;"><i class="fa-solid fa-arrow-left"></i> Atrás</button>
@@ -5411,10 +5411,10 @@ async function cargarMisProductos(usuarioId) {
     <h3>Acceso a Mi Tienda</h3>
     <form id="miTiendaForm">
       <label for="miTiendaCedula">Cédula</label>
-      <input type="text" id="miTiendaCedula" name="cedula" required />
+      <input type="text" id="miTiendaCedula" name="cedula" autocomplete="username" required />
 
       <label for="miTiendaPassword">Contraseña</label>
-      <input type="password" id="miTiendaPassword" name="password" required />
+      <input type="password" id="miTiendaPassword" name="password" autocomplete="current-password" required />
 
       <button type="submit">Ingresar</button>
     </form>
@@ -5869,6 +5869,9 @@ function cerrarSesion() {
    const confirmar = confirm("¿Estás seguro que deseas cerrar sesión?");
   if (!confirmar) return; 
   localStorage.removeItem("sesionUsuario");
+  // 🆕 Tras cerrar sesión no se ofrece "Continuar como..." otra vez en esta pestaña.
+  sessionStorage.setItem("sinOneTap", "1");
+  try { google.accounts.id.disableAutoSelect(); } catch (e) {}
   // 🆕 Avisa al servidor: borra la sesión larga del comprador (cookie) y la sesión activa.
   fetch("CerrarSesionServlet", { method: "POST" }).catch(() => {});
   mostrarLogin("Tiempo de sesión agotado");
@@ -5992,6 +5995,8 @@ window.addEventListener("load", async () => {
     // sesión", ver más abajo) o al intentar entrar a "Mi tienda".
     document.querySelector(".role-btn.invitado")?.click();
     actualizarMiTienda("invitado"); // 🔹 Bloquear "Mi tienda" por defecto
+    // 🆕 "Continuar como tu-correo" de Google, solo para invitados.
+    window.mostrarOneTapGoogle?.();
   }
 });
 
