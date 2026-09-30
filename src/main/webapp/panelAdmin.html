@@ -421,6 +421,7 @@
     <span class="welcome" id="welcomeMsg"></span>
     <span class="stamp" id="clock"></span>
     <div class="divider"></div>
+    <button class="gear-btn" id="btnPedidos" onclick="abrirPedidos()" title="Pedidos">📋</button>
     <button class="gear-btn" onclick="abrirModalCJ()" title="Importar producto de CJ">📦</button>
     <button class="gear-btn" onclick="abrirModal()" title="Gestión de admins">⚙</button>
     <button class="gear-btn salir" onclick="cerrarSesion()" title="Cerrar sesión">⏻</button>
@@ -460,6 +461,45 @@
         <button type="submit" class="btn aprobar">Guardar</button>
       </div>
       <div class="modal-error" id="errorActualizar"></div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalPedidos">
+  <div class="modal" style="max-width:720px;max-height:90vh;overflow-y:auto;">
+    <h2>Pedidos</h2>
+    <div id="pedidosLista" style="margin-bottom:14px;"></div>
+    <form class="modal-form" id="formPedido">
+      <h2 id="pedTitulo" style="font-size:14px;"></h2>
+      <label>Estado</label>
+      <select id="pEstado" style="width:100%;padding:8px;background:var(--panel-alt);color:var(--text);border:1px solid var(--line);border-radius:6px;">
+        <option value="pago_pendiente">Pago pendiente de verificar</option><option value="pago_verificado">Pago verificado</option>
+        <option value="comprado">Comprado al proveedor</option><option value="en_camino">En camino</option>
+        <option value="en_cr">Llegó a Costa Rica</option><option value="entregado">Entregado</option>
+      </select>
+      <label>Plantilla de mensaje</label>
+      <select id="pPlantilla" onchange="document.getElementById('pMensaje').value=this.value" style="width:100%;padding:8px;background:var(--panel-alt);color:var(--text);border:1px solid var(--line);border-radius:6px;">
+        <option value="">— elegir —</option>
+        <option>Tu pago fue verificado. ¡Gracias! Ya estamos gestionando tu pedido.</option>
+        <option>Tu pedido ya fue comprado al proveedor. Te seguiremos informando.</option>
+        <option>Tu pedido salió de la bodega en China y va en camino.</option>
+        <option>Tu pedido ya llegó a Costa Rica. Pronto coordinaremos la entrega.</option>
+        <option>Tu pedido va en camino a tu dirección. Ten listo el saldo pendiente.</option>
+      </select>
+      <label>Mensaje para el cliente (vacío = no publica novedad)</label>
+      <textarea id="pMensaje" rows="3" maxlength="600" style="width:100%;background:var(--panel-alt);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:8px;"></textarea>
+      <label>Monto pagado (₡)</label><input type="number" id="pMonto" step="0.01">
+      <label>N.º SINPE</label><input type="text" id="pSinpe" maxlength="20">
+      <label>Llegada estimada: desde / hasta</label>
+      <div style="display:flex;gap:8px;"><input type="date" id="pDesde"><input type="date" id="pHasta"></div>
+      <label>N.º de guía</label><input type="text" id="pGuia" maxlength="60">
+      <label>Enlace de rastreo</label><input type="text" id="pRastreo" maxlength="400">
+      <label style="display:flex;gap:8px;align-items:center;"><input type="checkbox" id="pNotificar" checked style="width:auto;"> Avisar al cliente por correo</label>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" onclick="cerrarPedidos()">Cerrar</button>
+        <button type="submit" class="btn aprobar">Publicar novedad</button>
+      </div>
+      <div class="modal-error" id="errorPedido"></div>
     </form>
   </div>
 </div>
@@ -974,6 +1014,47 @@ document.getElementById('formImportarCJ').addEventListener('submit', async (e) =
 
 cargarPerfil();
 cargar();
+
+let PEDIDOS = [], PED_ACTUAL = null;
+const ETQ_PED = {pago_pendiente:'Pago pendiente',pago_verificado:'Pago verificado',comprado:'Comprado',en_camino:'En camino',en_cr:'En Costa Rica',entregado:'Entregado'};
+async function cargarPedidos(){
+  try{
+    const r = await fetch('/admin/pedidos');
+    if(r.status === 401){ window.location.href = 'adminLogin.html'; return; }
+    PEDIDOS = await r.json();
+    const viejos = PEDIDOS.filter(p => p.dias >= 7 && p.estado !== 'entregado').length;
+    document.getElementById('btnPedidos').textContent = viejos ? '📋 ' + viejos : '📋';
+    document.getElementById('pedidosLista').innerHTML = PEDIDOS.map(p =>
+      `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12px;">
+        <div>#${p.id} · ${esc(p.nombre)} · ₡${Math.round(p.total).toLocaleString('es-CR')} · ${p.origen}<br>
+        <span style="color:${p.dias >= 7 ? 'var(--danger)' : 'var(--muted)'}">${ETQ_PED[p.estado]} · sin novedad hace ${p.dias} d${p.dias >= 7 ? ' ⚠' : ''}</span></div>
+        <button class="btn nota" onclick="elegirPedido(${p.id})">Actualizar</button></div>`).join('') || '<div class="empty">Sin pedidos activos</div>';
+  }catch(e){ document.getElementById('pedidosLista').textContent = 'No se pudo cargar: ' + e.message; }
+}
+function abrirPedidos(){ document.getElementById('modalPedidos').classList.add('show'); cargarPedidos(); }
+function cerrarPedidos(){ document.getElementById('modalPedidos').classList.remove('show'); }
+function elegirPedido(id){
+  const p = PEDIDOS.find(x => x.id === id); PED_ACTUAL = id;
+  document.getElementById('formPedido').classList.add('active');
+  document.getElementById('pedTitulo').textContent = `Pedido #${id} — ${p.nombre} (${p.correo}) · ${p.metodo_pago}${p.referencia ? ' · comprobante ' + p.referencia : ''}`;
+  document.getElementById('pEstado').value = p.estado;
+  document.getElementById('pMensaje').value = '';
+  document.getElementById('pMonto').value = p.pagado > 0 ? p.pagado : Math.round(p.total / 2); // sugiere el 50%
+  document.getElementById('pSinpe').value = p.sinpe || '';
+  document.getElementById('pDesde').value = p.desde || ''; document.getElementById('pHasta').value = p.hasta || '';
+  document.getElementById('pGuia').value = p.guia || ''; document.getElementById('pRastreo').value = p.rastreo || '';
+}
+document.getElementById('formPedido').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const err = document.getElementById('errorPedido'); err.classList.remove('show');
+  const d = new URLSearchParams({accion:'novedad', pedido_id:PED_ACTUAL, estado:pEstado.value, mensaje:pMensaje.value, monto_pagado:pMonto.value,
+    sinpe_numero:pSinpe.value, fecha_est_desde:pDesde.value, fecha_est_hasta:pHasta.value, numero_guia:pGuia.value, url_rastreo:pRastreo.value,
+    notificar: pNotificar.checked ? '1' : '0'});
+  const r = await fetch('/admin/pedidos', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:d});
+  if(r.ok){ toast('Novedad publicada'); document.getElementById('formPedido').classList.remove('active'); cargarPedidos(); }
+  else { err.textContent = (await r.json()).error || 'Error'; err.classList.add('show'); }
+});
+cargarPedidos(); // deja el contador ⚠ del botón listo al abrir el panel
 </script>
 
 </body>

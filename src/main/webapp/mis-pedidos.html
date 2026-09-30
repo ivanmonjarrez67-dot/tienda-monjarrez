@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tienda Monjarrez — Mis pedidos</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<style>
+  :root { --rojo:#a13341; --border:#ececec; --text:#1a1a1a; --dim:#777; --ok:#1c7c3f; --oro:#D4AF37; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#f4f2ee; color:var(--text); font-family:"Poppins",sans-serif; }
+  header { display:flex; align-items:center; justify-content:space-between; padding:14px 24px; background:#fff; border-bottom:1px solid var(--border); }
+  .logo { font-size:1.3rem; font-weight:700; } .logo .rojo { color:var(--rojo); }
+  header a { color:var(--dim); text-decoration:none; font-size:.85rem; }
+  main { max-width:760px; margin:26px auto; padding:0 14px 60px; }
+  h1 { font-size:1.2rem; margin:0 0 16px; }
+  .msg { text-align:center; padding:70px 20px; color:var(--dim); }
+  .msg a { color:var(--rojo); }
+  .pedido { background:#fff; border-radius:14px; box-shadow:0 2px 14px rgba(0,0,0,.06); margin-bottom:16px; overflow:hidden; }
+  .p-head { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:16px 18px; cursor:pointer; flex-wrap:wrap; }
+  .p-head .num { font-weight:700; color:var(--rojo); } .p-head small { color:var(--dim); display:block; }
+  .badge { font-size:.75rem; font-weight:600; padding:5px 11px; border-radius:20px; background:#fdf1d8; color:#8a6d00; }
+  .badge.ok { background:#eafaf0; color:var(--ok); }
+  .p-body { display:none; padding:0 18px 18px; border-top:1px solid var(--border); }
+  .pedido.abierto .p-body { display:block; }
+  .sec { font-size:.75rem; text-transform:uppercase; letter-spacing:.04em; color:var(--dim); margin:18px 0 8px; }
+  .pasos { display:flex; gap:4px; margin-top:16px; }
+  .paso { flex:1; text-align:center; font-size:.68rem; color:#aaa; }
+  .paso i { display:block; height:6px; border-radius:3px; background:#e6e6e6; margin-bottom:6px; }
+  .paso.hecho { color:var(--ok); } .paso.hecho i { background:var(--ok); }
+  .paso.actual { color:var(--rojo); font-weight:600; } .paso.actual i { background:var(--rojo); }
+  .eta { background:#faf8f5; border:1px solid var(--border); border-radius:10px; padding:11px 14px; font-size:.85rem; margin-top:14px; }
+  .eta b { color:var(--rojo); } .nota { font-size:.78rem; color:var(--dim); margin:6px 0 0; line-height:1.5; }
+  .pago { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; text-align:center; }
+  .pago div { background:#faf8f5; border:1px solid var(--border); border-radius:10px; padding:9px 4px; font-size:.72rem; color:var(--dim); }
+  .pago b { display:block; font-size:.92rem; color:var(--text); }
+  .item { display:flex; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid #f4f4f4; font-size:.85rem; }
+  .item img { width:44px; height:44px; object-fit:cover; border-radius:6px; border:1px solid #eee; }
+  .item small { display:block; color:#555; white-space:pre-line; }
+  .nov { border-left:3px solid var(--oro); padding:2px 0 2px 12px; margin-bottom:12px; font-size:.85rem; line-height:1.45; }
+  .nov small { display:block; color:var(--dim); font-size:.72rem; }
+  .acciones { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+  .btn { flex:1 1 150px; text-align:center; padding:10px; border-radius:8px; border:none; font:600 .82rem "Poppins",sans-serif; cursor:pointer; text-decoration:none; }
+  .b-wa { background:#25D366; color:#fff; } .b-mail { background:#f0f0f0; color:#333; } .b-rojo { background:var(--rojo); color:#fff; }
+  .b-ok { background:var(--ok); color:#fff; } .b-lin { background:#fff; color:var(--dim); border:1px solid var(--border); }
+  .editar { display:none; margin-top:10px; } .editar.ver { display:block; }
+  .editar input, .editar textarea { width:100%; padding:9px; border:1.5px solid #ddd; border-radius:8px; font:inherit; font-size:.85rem; margin-bottom:8px; }
+  .err { color:var(--rojo); font-size:.8rem; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><span>Tienda</span> <span class="rojo">Monjarrez</span></div>
+  <a href="index.html">Volver al catálogo</a>
+</header>
+<main>
+  <h1><i class="fa-solid fa-box-open"></i> Mis pedidos</h1>
+  <div id="lista"><div class="msg">Cargando tus pedidos…</div></div>
+</main>
+<script>
+(function () {
+  const WA = "50664283281", MAIL = "soporte@tiendamonjarrez.com";
+  const ORDEN = ["pago_pendiente","pago_verificado","comprado","en_camino","en_cr","entregado"];
+  const ETQ = { pago_pendiente:"Pago pendiente de verificar", pago_verificado:"Pago verificado", comprado:"Comprado al proveedor",
+                en_camino:"En camino", en_cr:"Llegó a Costa Rica", entregado:"Entregado" };
+  const PASOS = { nacional:["pago_pendiente","pago_verificado","en_camino","entregado"], importado:ORDEN };
+  const abiertos = new Set(); let primera = true, editando = null;
+  const idUrl = new URLSearchParams(location.search).get("id");
+  const $l = document.getElementById("lista");
+
+  const esc = s => { if (s == null) return ""; const d = document.createElement("div"); d.textContent = s; return d.innerHTML; };
+  const crc = n => "₡" + Math.round(Number(n) || 0).toLocaleString("es-CR");
+  const dt = s => s ? new Date(String(s).replace(" ", "T")) : null;
+  const fecha = s => { const d = dt(s); return d ? d.toLocaleDateString("es-CR", { day:"numeric", month:"short", year:"numeric" }) : ""; };
+  const fechaHora = s => { const d = dt(s); return d ? d.toLocaleString("es-CR", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" }) : ""; };
+  const hace = s => { const d = Math.floor((Date.now() - dt(s)) / 864e5); return d <= 0 ? "hoy" : d === 1 ? "ayer" : "hace " + d + " días"; };
+  const wa = t => "https://wa.me/" + WA + "?text=" + encodeURIComponent(t);
+
+  function pedidoHtml(p) {
+    const idx = ORDEN.indexOf(p.estado), fin = p.estado === "entregado";
+    const pasos = (PASOS[p.origen] || PASOS.nacional).map(k => {
+      const i = ORDEN.indexOf(k), c = i < idx || fin ? "hecho" : i === idx ? "actual" : "";
+      return `<div class="paso ${c}"><i></i>${ETQ[k]}</div>`;
+    }).join("");
+    const eta = !fin && p.desde && p.hasta
+      ? `<div class="eta"><i class="fa-solid fa-calendar-check"></i> Llegada estimada: <b>${fecha(p.desde + "T00:00")} – ${fecha(p.hasta + "T00:00")}</b>
+         ${p.origen === "importado" ? '<p class="nota">Los pedidos importados tardan entre 3 y 5 semanas. Te avisaremos en cada avance.</p>' : ""}</div>` : "";
+    const verificado = idx >= 1;
+    const pendiente = Math.max(0, p.total - p.pagado);
+    const pago = `<div class="pago"><div>Total<b>${crc(p.total)}</b></div><div>Pagado<b>${verificado ? crc(p.pagado) : "—"}</b></div><div>Pendiente<b>${verificado ? crc(pendiente) : crc(p.total)}</b></div></div>`
+      + (verificado && p.sinpe ? `<p class="nota">SINPE verificado desde el número ${esc(p.sinpe)}.${pendiente > 0 ? " El saldo se paga al recibir tu pedido." : ""}</p>` : "")
+      + (!verificado ? '<p class="nota">Estamos verificando tu pago. Te avisaremos apenas quede confirmado.</p>' : "");
+    const items = p.items.map(i => `<div class="item"><img src="${esc(i.imagen)}" alt=""><div>${esc(i.nombre)} × ${i.cantidad}
+      ${i.especificaciones ? `<small>${esc(i.especificaciones)}</small>` : ""}</div></div>`).join("");
+    const nov = p.novedades.map(n => `<div class="nov">${esc(n.mensaje).replace(/\n/g, "<br>")}<small>${fechaHora(n.fecha)} · ${ETQ[n.estado] || ""}</small></div>`).join("")
+      || '<p class="nota">Aún no hay novedades.</p>';
+    const editable = ["pago_pendiente","pago_verificado","comprado"].includes(p.estado);
+    const msg = `Hola, quisiera una actualización de mi pedido #${p.id} (factura #${p.id}). Gracias.`;
+    const prob = `Hola, tengo un problema con mi pedido #${p.id} (factura #${p.id}): `;
+    return `<div class="pedido ${abiertos.has(p.id) ? "abierto" : ""}" data-id="${p.id}">
+      <div class="p-head" data-toggle><div><span class="num">Pedido #${p.id}</span><small>${fecha(p.fecha)} · ${crc(p.total)}</small></div>
+        <span class="badge ${fin ? "ok" : ""}">${ETQ[p.estado] || p.estado}</span></div>
+      <div class="p-body">
+        <div class="pasos">${pasos}</div>${eta}
+        <p class="nota">Última actualización: ${hace(p.ultima)}</p>
+        <div class="sec">Pago</div>${pago}
+        <div class="sec">Novedades de tu pedido</div>${nov}
+        <div class="sec">Productos</div>${items}
+        <div class="sec">Entrega</div>
+        <div class="nota" style="font-size:.85rem;color:#333">${esc(p.telefono)}<br>${esc(p.direccion)}</div>
+        ${editable ? `<button class="btn b-lin" style="margin-top:8px;flex:none" data-editar="${p.id}">Corregir datos de entrega</button>
+          <div class="editar ${editando === p.id ? "ver" : ""}"><input type="tel" maxlength="20" value="${esc(p.telefono)}" data-tel>
+            <textarea rows="3" maxlength="400" data-dir>${esc(p.direccion)}</textarea><button class="btn b-rojo" data-guardar="${p.id}">Guardar</button> <span class="err"></span></div>` : ""}
+        <div class="acciones">
+          ${!fin ? `<a class="btn b-wa" target="_blank" rel="noopener" href="${wa(msg)}"><i class="fa-brands fa-whatsapp"></i> Pedir actualización</a>
+            <a class="btn b-mail" href="mailto:${MAIL}?subject=${encodeURIComponent("Pedido #" + p.id)}&body=${encodeURIComponent(msg)}"><i class="fa-solid fa-envelope"></i> Por correo</a>` : ""}
+          <a class="btn b-lin" href="factura.html?id=${p.id}"><i class="fa-solid fa-file-invoice"></i> Ver factura</a>
+          ${p.rastreo ? `<a class="btn b-lin" target="_blank" rel="noopener" href="${esc(p.rastreo)}"><i class="fa-solid fa-location-dot"></i> Rastrear${p.guia ? " (" + esc(p.guia) + ")" : ""}</a>` : ""}
+          ${!fin && idx >= 3 ? `<button class="btn b-ok" data-recibido="${p.id}"><i class="fa-solid fa-check"></i> Ya recibí mi pedido</button>` : ""}
+          <a class="btn b-lin" target="_blank" rel="noopener" href="${wa(prob)}"><i class="fa-solid fa-triangle-exclamation"></i> Reportar un problema</a>
+        </div>
+      </div></div>`;
+  }
+
+  function post(datos) {
+    return fetch("/api/mis-pedidos", { method:"POST", headers:{ "Content-Type":"application/x-www-form-urlencoded" }, body:new URLSearchParams(datos) })
+      .then(r => r.json().then(d => { if (!r.ok) throw new Error(d.error || "Error"); return d; }));
+  }
+
+  function cargar() {
+    if (editando) return; // no pisar lo que el cliente está escribiendo
+    fetch("/api/mis-pedidos").then(r => {
+      if (r.status === 401) { $l.innerHTML = '<div class="msg">Inicia sesión para ver tus pedidos.<br><a href="index.html">Ir al inicio</a></div>'; throw 0; }
+      if (!r.ok) throw new Error();
+      return r.json();
+    }).then(lista => {
+      if (!lista.length) { $l.innerHTML = '<div class="msg">Aún no tienes pedidos.<br><a href="index.html">Ver catálogo</a></div>'; return; }
+      if (primera) { primera = false; lista.forEach((p, i) => { if (String(p.id) === idUrl || (!idUrl && i === 0)) abiertos.add(p.id); }); }
+      $l.innerHTML = lista.map(pedidoHtml).join("");
+    }).catch(e => { if (e !== 0 && primera) $l.innerHTML = '<div class="msg">No se pudieron cargar tus pedidos.</div>'; });
+  }
+
+  $l.addEventListener("click", e => {
+    const t = e.target.closest("[data-toggle],[data-editar],[data-guardar],[data-recibido]");
+    if (!t) return;
+    const ped = t.closest(".pedido"), id = Number(ped.dataset.id);
+    if (t.hasAttribute("data-toggle")) { ped.classList.toggle("abierto"); ped.classList.contains("abierto") ? abiertos.add(id) : abiertos.delete(id); }
+    else if (t.dataset.editar) { editando = id; ped.querySelector(".editar").classList.add("ver"); }
+    else if (t.dataset.guardar) {
+      post({ accion:"entrega", pedido_id:id, telefono_contacto:ped.querySelector("[data-tel]").value, direccion_entrega:ped.querySelector("[data-dir]").value })
+        .then(() => { editando = null; cargar(); }).catch(er => { ped.querySelector(".err").textContent = er.message; });
+    } else if (t.dataset.recibido && confirm("¿Confirmas que ya recibiste tu pedido completo?")) {
+      post({ accion:"recibido", pedido_id:id }).then(cargar).catch(er => alert(er.message));
+    }
+  });
+
+  cargar();
+  setInterval(() => { if (!document.hidden) cargar(); }, 45000); // "tiempo real": consulta cada 45 s mientras la página está abierta
+})();
+</script>
+</body>
+</html>

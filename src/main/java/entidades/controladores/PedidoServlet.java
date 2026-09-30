@@ -30,6 +30,11 @@ import jakarta.servlet.http.HttpSession;
 //         a Pedidos/DetallePedido, guarda teléfono/dirección en el perfil para
 //         el próximo pedido, vacía el carrito, envía los correos con el PDF
 //         y devuelve el id del pedido creado.
+//
+// 🆕 Seguimiento: al confirmar, también se crea la fila inicial en
+//    PedidoSeguimiento (origen nacional/importado + fechas estimadas) y la
+//    primera novedad en PedidoActualizaciones. Ver MisPedidosServlet y
+//    PedidosAdminServlet.
 @WebServlet("/api/pedido")
 public class PedidoServlet extends HttpServlet {
 
@@ -244,6 +249,28 @@ public class PedidoServlet extends HttpServlet {
                     copiar.setInt(1, pedidoId);
                     copiar.setInt(2, carritoId);
                     copiar.executeUpdate();
+                }
+
+                // 🆕 Seguimiento inicial del pedido: origen "importado" si algún
+                // producto está en ProductosExtranjeros (reventa Temu/CJ), si no
+                // "nacional". Las fechas estimadas son un rango por defecto
+                // (importado 25-35 días, nacional 2-5 días) que la tienda puede
+                // ajustar después desde panelAdmin.
+                try (PreparedStatement seg = conn.prepareStatement(
+                        "DECLARE @imp bit = CASE WHEN EXISTS (SELECT 1 FROM DetallePedido dp JOIN ProductosExtranjeros pe "
+                      + "ON pe.producto_id = dp.producto_id WHERE dp.pedido_id = ?) THEN 1 ELSE 0 END; "
+                      + "INSERT INTO PedidoSeguimiento (pedido_id, origen, fecha_est_desde, fecha_est_hasta) VALUES (?, "
+                      + "IIF(@imp=1,'importado','nacional'), DATEADD(day, IIF(@imp=1,25,2), CAST(SYSDATETIME() AS date)), "
+                      + "DATEADD(day, IIF(@imp=1,35,5), CAST(SYSDATETIME() AS date)));")) {
+                    seg.setInt(1, pedidoId);
+                    seg.setInt(2, pedidoId);
+                    seg.executeUpdate();
+                }
+                try (PreparedStatement nov = conn.prepareStatement(
+                        "INSERT INTO PedidoActualizaciones (pedido_id, estado, mensaje) VALUES (?, 'pago_pendiente', "
+                      + "N'Recibimos tu pedido. Estamos verificando tu pago; te avisaremos apenas quede confirmado.')")) {
+                    nov.setInt(1, pedidoId);
+                    nov.executeUpdate();
                 }
 
                 // 🆕 Recordar teléfono y dirección para el próximo pedido

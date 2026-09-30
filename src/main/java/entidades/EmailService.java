@@ -70,6 +70,11 @@ import config.Config;
  * SIGUEN a un emprendimiento cuando publica un producto nuevo. Envía uno
  * por uno (un solo hilo, con pausa corta) para no saturar a Brevo. Se
  * llama desde GuardarProductoServlet.
+ *
+ * 🆕 Se agregó enviarNovedadPedido(): aviso al comprador cada vez que la
+ * tienda publica una novedad de su pedido desde panelAdmin (cambio de
+ * estado, fechas estimadas, etc.). Se llama desde PedidosAdminServlet.
+ * El botón lleva a mis-pedidos.html?id=X, el seguimiento del pedido.
  */
 public class EmailService {
 
@@ -612,5 +617,26 @@ public class EmailService {
                 "Ir al panel", "https://tiendamonjarrez.com/panelAdmin.html");
         enviarConAdjuntoAsync(EMAIL_NOTIFICACIONES, NOMBRE_NOTIFICACIONES, EMAIL_ADMIN_PERSONAL, "Admin",
                 "🔔 Nuevo pedido #" + numeroPedido, html, pdfBytes, "factura-" + numeroPedido + ".pdf");
+    }
+
+    // ---------------------------------------------------------
+    // 🆕 Novedad de un pedido: COMPRADOR.
+    // Se llama desde PedidosAdminServlet cuando la tienda publica una
+    // novedad desde panelAdmin y marca "avisar al cliente por correo".
+    // El texto del mensaje lo escribe la tienda, así que se escapa antes
+    // de meterlo en el HTML. El botón abre el seguimiento del pedido.
+    // ---------------------------------------------------------
+    public static void enviarNovedadPedido(String email, String nombre, String numeroPedido,
+                                            String estadoTexto, String mensaje) {
+        String cuerpo =
+              "<p>Hola " + escapeHtml(nombre) + ", hay una novedad en tu pedido <strong>#" + numeroPedido + "</strong>.</p>"
+            + "<p><strong>Estado:</strong> " + escapeHtml(estadoTexto) + "</p>"
+            + "<p style=\"background:#f7f7f7;padding:10px;border-radius:8px;\">"
+            + escapeHtml(mensaje).replace("\n", "<br>") + "</p>";
+
+        String html = plantillaBase(ICON_PRODUCTO, "Novedad de tu pedido", cuerpo,
+                "Ver mi pedido", URL_TIENDA + "/mis-pedidos.html?id=" + numeroPedido);
+        enviarAsync(EMAIL_NOTIFICACIONES, NOMBRE_NOTIFICACIONES, email, nombre,
+                "Novedad de tu pedido #" + numeroPedido, html);
     }
 }
