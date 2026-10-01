@@ -66,8 +66,9 @@ public class EliminarProductoServlet extends HttpServlet {
                 return;
             }
 
-            // 3️⃣ Borrar las tablas hijas con NO ACTION (Descuentos, ImagenesAdicionalesProducto,
-            // ImagenesProducto y Resenas se borran solas por ON DELETE CASCADE).
+            // 3️⃣ Borrar las tablas hijas con NO ACTION (ToquesContacto, DetalleCarrito,
+            // ImagenElegidaCarrito, ProductosExtranjeros, ImagenesAdicionalesProducto, Descuentos).
+            // ImagenesProducto y Resenas se borran solas por ON DELETE CASCADE.
             // Todo en una transacción: si algo falla se revierte.
             boolean autoCommitOriginal = conn.getAutoCommit();
             boolean encontrado;
@@ -76,6 +77,7 @@ public class EliminarProductoServlet extends HttpServlet {
 
                 ejecutarDelete(conn, "DELETE FROM ToquesContacto WHERE producto_id = ?", id);
                 ejecutarDelete(conn, "DELETE FROM DetalleCarrito WHERE producto_id = ?", id);
+                ejecutarDelete(conn, "DELETE FROM ImagenElegidaCarrito WHERE producto_id = ?", id);
                 ejecutarDelete(conn, "DELETE FROM ProductosExtranjeros WHERE producto_id = ?", id);
                 ejecutarDelete(conn, "DELETE FROM ImagenesAdicionalesProducto WHERE producto_id = ?", id);
                 ejecutarDelete(conn, "DELETE FROM Descuentos WHERE producto_id = ?", id);
