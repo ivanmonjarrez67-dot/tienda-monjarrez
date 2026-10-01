@@ -367,7 +367,7 @@
       <div class="carrito-modal-confirmar">
         <h3>Agregar al carrito</h3>
         <div class="carrito-modal-confirmar-producto">
-          <img src="${esc(producto.imagen)}" alt="${esc(producto.nombre)}">
+          <img src="${esc(producto.imagen_elegida || producto.imagen)}" alt="${esc(producto.nombre)}">
           <div class="carrito-modal-confirmar-info">
             <p class="nombre">${esc(producto.nombre)}</p>
             <p class="precio">${fmtCrc(precioNum)}${tienePrecioAnterior ? `<span class="precio-anterior">${fmtCrc(precioAntNum)}</span>` : ""}</p>
@@ -412,7 +412,9 @@
     fetch("/api/carrito", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ accion: "agregar", producto_id: id, cantidad: cantidad }).toString(),
+      // 🆕 imagen_elegida: la foto que la persona dejó seleccionada en la galería
+      // (solo existe en detalle-nacional.html; en el catálogo va vacía = foto principal).
+      body: new URLSearchParams({ accion: "agregar", producto_id: id, cantidad: cantidad, imagen_elegida: producto.imagen_elegida || "" }).toString(),
     })
       .then((res) => {
         if (!res.ok) return res.json().then((d) => { throw new Error(d.error || "No se pudo agregar el producto."); });
@@ -438,7 +440,7 @@
       .map(
         (it) => `
         <div class="carrito-drawer-item">
-          <img src="${esc(it.imagen)}" alt="${esc(it.nombre)}">
+          <img src="${esc(it.imagen_elegida || it.imagen)}" alt="${esc(it.nombre)}">
           <div>
             <p class="nombre">${esc(it.nombre)}</p>
             <p class="precio">${fmtCrc(it.precio_unitario)} × ${it.cantidad}</p>
@@ -487,6 +489,11 @@
       categoria: btn.dataset.carritoCategoria,
     };
     if (!producto.id) return;
+    // 🆕 Solo el botón principal de detalle-nacional.html usa la foto elegida;
+    // las tarjetas de "productos relacionados" agregan con su foto normal.
+    if (btn.closest("#botonCarritoProducto") && typeof window.imagenElegidaDetalle === "function") {
+      producto.imagen_elegida = window.imagenElegidaDetalle() || "";
+    }
     abrirModalConfirmar(producto);
   });
 

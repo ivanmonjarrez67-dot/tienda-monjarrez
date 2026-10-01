@@ -14,7 +14,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
-/** Sesión larga (cookie HttpOnly de 90 días) solo para COMPRADORES. */
+/**
+ * Sesión larga (cookie HttpOnly de 90 días) para COMPRADORES y VENDEDORES.
+ *
+ * - Comprador: se restaura con los mismos atributos que el login normal.
+ * - Vendedor: se restaura una sesión LIMITADA (solo perfil): usuarioId, nombre y
+ *   correo. NO se restauran vendedorId ni cedulaVendedor, y la sesión queda marcada
+ *   con "sesionLimitada". "Mi tienda" siempre vuelve a pedir cédula y contraseña.
+ */
 public final class SesionPersistente {
 
     public static final String COOKIE = "rmt";
@@ -37,6 +44,16 @@ public final class SesionPersistente {
                     "DELETE FROM dbo.SesionPersistente WHERE expira_en < SYSUTCDATETIME()")) {
                 ps.executeUpdate(); // limpieza de vencidas
             }
+            // 🆕 Si este dispositivo ya tenía una sesión larga, se reemplaza (evita
+            // acumular filas cuando alguien vuelve a iniciar sesión en el mismo equipo).
+            String anterior = leerCookie(req);
+            if (anterior != null) {
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "DELETE FROM dbo.SesionPersistente WHERE token_hash = ?")) {
+                    ps.setString(1, sha256(anterior));
+                    ps.executeUpdate();
+                }
+            }
             try (PreparedStatement ps = conn.prepareStatement(
                     "INSERT INTO dbo.SesionPersistente (usuario_id, token_hash, expira_en, dispositivo) "
                   + "VALUES (?, ?, DATEADD(DAY, " + DIAS + ", SYSUTCDATETIME()), ?)")) {
@@ -51,17 +68,18 @@ public final class SesionPersistente {
         }
     }
 
-    /** Si la cookie es válida, deja la sesión iniciada con los mismos atributos del login. */
+    /** Si la cookie es válida, deja la sesión iniciada (completa para comprador, limitada para vendedor). */
     public static boolean restaurar(HttpServletRequest req, HttpServletResponse resp) {
         String token = leerCookie(req);
         if (token == null) return false;
 
         String sql = """
-            SELECT u.id, u.nombre, u.correo, ISNULL(g.solo_google, 0) AS solo_google
+            SELECT u.id, u.nombre, u.correo, u.tipo, ISNULL(g.solo_google, 0) AS solo_google
             FROM dbo.SesionPersistente s
             JOIN dbo.Usuarios u ON u.id = s.usuario_id
             LEFT JOIN dbo.UsuarioGoogle g ON g.usuario_id = u.id
-            WHERE s.token_hash = ? AND s.expira_en > SYSUTCDATETIME() AND u.tipo = 'Comprador'
+            WHERE s.token_hash = ? AND s.expira_en > SYSUTCDATETIME()
+              AND u.tipo IN ('Comprador', 'Vendedor')
         """;
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -71,9 +89,17 @@ public final class SesionPersistente {
                 if (rs.next()) {
                     HttpSession session = req.getSession();
                     session.setAttribute("usuarioId", rs.getInt("id"));
-                    session.setAttribute("nombreUsuario", rs.getString("nombre"));
-                    session.setAttribute("correoUsuario", rs.getString("correo"));
-                    if (rs.getBoolean("solo_google")) session.setAttribute("cuentaGoogle", true);
+
+                    if ("Vendedor".equalsIgnoreCase(rs.getString("tipo"))) {
+                        // 🆕 Sesión LIMITADA de vendedor: solo lo necesario para el perfil.
+                        session.setAttribute("nombreVendedor", rs.getString("nombre"));
+                        session.setAttribute("correoVendedor", rs.getString("correo"));
+                        session.setAttribute("sesionLimitada", true);
+                    } else {
+                        session.setAttribute("nombreUsuario", rs.getString("nombre"));
+                        session.setAttribute("correoUsuario", rs.getString("correo"));
+                        if (rs.getBoolean("solo_google")) session.setAttribute("cuentaGoogle", true);
+                    }
 
                     // Renovar 90 días desde hoy
                     try (PreparedStatement up = conn.prepareStatement(

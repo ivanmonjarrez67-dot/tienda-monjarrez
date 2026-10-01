@@ -9,9 +9,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 /**
- * Le dice al navegador si hay sesión de comprador en el servidor.
+ * Le dice al navegador si hay sesión en el servidor y de qué tipo.
  * SesionPersistenteFilter ya restauró la sesión desde la cookie (si existía)
  * antes de llegar aquí.
+ *
+ * Respuesta: {"logueado":true,"tipo":"comprador"|"vendedor","usuarioId":N}
  */
 @WebServlet("/SesionActualServlet")
 public class SesionActualServlet extends HttpServlet {
@@ -23,7 +25,10 @@ public class SesionActualServlet extends HttpServlet {
         response.setHeader("Cache-Control", "no-store");
         HttpSession s = request.getSession(false);
         if (s != null && s.getAttribute("usuarioId") != null) {
-            response.getWriter().write("{\"logueado\":true,\"usuarioId\":" + s.getAttribute("usuarioId") + "}");
+            // Los compradores guardan nombreUsuario; los vendedores solo nombreVendedor.
+            boolean esVendedor = s.getAttribute("nombreUsuario") == null && s.getAttribute("nombreVendedor") != null;
+            response.getWriter().write("{\"logueado\":true,\"tipo\":\"" + (esVendedor ? "vendedor" : "comprador")
+                    + "\",\"usuarioId\":" + s.getAttribute("usuarioId") + "}");
         } else {
             response.getWriter().write("{\"logueado\":false}");
         }

@@ -1000,6 +1000,9 @@
   // Pinta la foto principal + miniaturas con la lista de imágenes dada.
   // "activa" (opcional) es la URL que debe quedar seleccionada.
   let galeriaActiva = null;
+  // 🆕 La foto que la persona dejó seleccionada (color/variante). carrito.js la
+  // lee al agregar al carrito para que ESA foto sea la que salga en la factura.
+  window.imagenElegidaDetalle = () => galeriaActiva || "";
   function pintarGaleria(imagenes, nombre, activa) {
     const miniaturasWrap = document.getElementById("miniaturas");
     const imgPrincipal = document.getElementById("imagenPrincipal");
@@ -1572,7 +1575,7 @@
       fetch("/api/carrito", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ accion: "comprar_ahora", producto_id: producto.id }).toString(),
+        body: new URLSearchParams({ accion: "comprar_ahora", producto_id: producto.id, imagen_elegida: galeriaActiva || "" }).toString(),
       })
         .then((res) => {
           if (res.status === 401) { window.Carrito.pedirLogin(); throw new Error("sin sesión"); }
