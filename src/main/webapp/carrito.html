@@ -330,7 +330,7 @@
     div.className = "carrito-fila";
     const tienePrecioAnterior = item.precio_anterior && Number(item.precio_anterior) > item.precio_unitario;
     div.innerHTML = `
-      <img src="${esc(item.imagen)}" alt="${esc(item.nombre)}">
+      <img src="${esc(item.imagen_elegida || item.imagen)}" alt="${esc(item.nombre)}">
       <div class="carrito-fila-info">
         <p class="nombre">${esc(item.nombre)}</p>
         <p class="precio">${fmtCrc(item.precio_unitario)}${tienePrecioAnterior ? `<span class="precio-anterior">${fmtCrc(item.precio_anterior)}</span>` : ""}</p>

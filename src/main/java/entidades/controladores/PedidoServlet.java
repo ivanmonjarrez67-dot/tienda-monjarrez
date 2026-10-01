@@ -35,6 +35,10 @@ import jakarta.servlet.http.HttpSession;
 //    PedidoSeguimiento (origen nacional/importado + fechas estimadas) y la
 //    primera novedad en PedidoActualizaciones. Ver MisPedidosServlet y
 //    PedidosAdminServlet.
+//
+// 🆕 Foto elegida: si el comprador eligió una foto en detalle-nacional
+//    (tabla ImagenElegidaCarrito), esa URL se congela en
+//    DetallePedido.imagen_producto; si no, se usa la foto principal.
 @WebServlet("/api/pedido")
 public class PedidoServlet extends HttpServlet {
 
@@ -76,7 +80,7 @@ public class PedidoServlet extends HttpServlet {
         }
 
         try (Connection conn = DatabaseConnection.getConnection()) {
-            // 🆕 Se une con Usuarios para mostrar nombre/correo del cliente,
+            // Se une con Usuarios para mostrar nombre/correo del cliente,
             // y se traen telefono_contacto y direccion_entrega.
             String sqlPedido = "SELECT p.id, p.usuario_id, p.fecha, p.metodo_pago, p.referencia_pago, p.estado, p.total, "
                               + "p.telefono_contacto, p.direccion_entrega, u.nombre AS nombre_cliente, u.correo AS correo_cliente "
@@ -162,7 +166,7 @@ public class PedidoServlet extends HttpServlet {
             return;
         }
 
-        // 🆕 Teléfono y dirección de entrega: obligatorios.
+        // Teléfono y dirección de entrega: obligatorios.
         String telefono = limpiarTelefono(request.getParameter("telefono_contacto"));
         if (telefono == null) {
             response.setStatus(400);
@@ -240,18 +244,21 @@ public class PedidoServlet extends HttpServlet {
                 }
 
                 // Copiar cada línea del carrito a DetallePedido, "congelando"
-                // nombre/imagen/precio y 🆕 las especificaciones del cliente.
+                // nombre/imagen/precio y las especificaciones del cliente.
+                // 🆕 La imagen es la foto elegida (ImagenElegidaCarrito) o, si no
+                // eligió ninguna, la foto principal del producto.
                 try (PreparedStatement copiar = conn.prepareStatement(
                         "INSERT INTO DetallePedido (pedido_id, producto_id, nombre_producto, imagen_producto, cantidad, precio_unitario, usuario_id_vendedor, especificaciones) "
-                      + "SELECT ?, p.id, p.nombre, p.imagen, dc.cantidad, p.precio, p.usuario_id, dc.especificaciones "
+                      + "SELECT ?, p.id, p.nombre, COALESCE(ie.imagen, p.imagen), dc.cantidad, p.precio, p.usuario_id, dc.especificaciones "
                       + "FROM DetalleCarrito dc JOIN Productos p ON p.id = dc.producto_id "
+                      + "LEFT JOIN ImagenElegidaCarrito ie ON ie.carrito_id = dc.carrito_id AND ie.producto_id = dc.producto_id "
                       + "WHERE dc.carrito_id = ?")) {
                     copiar.setInt(1, pedidoId);
                     copiar.setInt(2, carritoId);
                     copiar.executeUpdate();
                 }
 
-                // 🆕 Seguimiento inicial del pedido: origen "importado" si algún
+                // Seguimiento inicial del pedido: origen "importado" si algún
                 // producto está en ProductosExtranjeros (reventa Temu/CJ), si no
                 // "nacional". Las fechas estimadas son un rango por defecto
                 // (importado 25-35 días, nacional 2-5 días) que la tienda puede
@@ -273,7 +280,7 @@ public class PedidoServlet extends HttpServlet {
                     nov.executeUpdate();
                 }
 
-                // 🆕 Recordar teléfono y dirección para el próximo pedido
+                // Recordar teléfono y dirección para el próximo pedido
                 // (y para "Mi Perfil"). Se pisa lo anterior con lo más reciente.
                 try (PreparedStatement guardarEnvio = conn.prepareStatement(
                         "MERGE DatosEnvioUsuario AS d "
@@ -287,6 +294,13 @@ public class PedidoServlet extends HttpServlet {
                     guardarEnvio.setString(5, telefono);
                     guardarEnvio.setString(6, direccion);
                     guardarEnvio.executeUpdate();
+                }
+
+                // 🆕 Las fotos elegidas ya quedaron congeladas en DetallePedido: se limpian.
+                try (PreparedStatement limpiarImg = conn.prepareStatement(
+                        "DELETE FROM ImagenElegidaCarrito WHERE carrito_id = ?")) {
+                    limpiarImg.setInt(1, carritoId);
+                    limpiarImg.executeUpdate();
                 }
 
                 try (PreparedStatement vaciar = conn.prepareStatement(

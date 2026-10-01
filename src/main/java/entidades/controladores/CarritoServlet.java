@@ -18,14 +18,17 @@ import jakarta.servlet.http.HttpSession;
 // La identidad se lee de la sesión del servidor, nunca del cliente.
 //
 // GET  /api/carrito                -> lista el carrito del usuario (crea uno vacío si no existe)
-// POST /api/carrito  accion=agregar          (producto_id, cantidad)
-// POST /api/carrito  accion=comprar_ahora    (producto_id)  🆕 botón "Comprar" de detalle-nacional:
+// POST /api/carrito  accion=agregar          (producto_id, cantidad, imagen_elegida opcional)
+// POST /api/carrito  accion=comprar_ahora    (producto_id, imagen_elegida)  botón "Comprar ahora" de detalle-nacional:
 //                                            deja el producto en el carrito con cantidad 1 SIN sumar
-//                                            si ya estaba (para no duplicar al tocar el botón dos veces)
+//                                            si ya estaba, y deja guardada la foto elegida
 // POST /api/carrito  accion=actualizar       (producto_id, cantidad)  -> si cantidad<=0, elimina la línea
-// POST /api/carrito  accion=especificaciones (producto_id, especificaciones)  🆕 color, talla, etc.
+// POST /api/carrito  accion=especificaciones (producto_id, especificaciones)  color, talla, etc.
 // POST /api/carrito  accion=eliminar         (producto_id)
 // POST /api/carrito  accion=vaciar
+//
+// 🆕 La foto elegida vive en la tabla ImagenElegidaCarrito (carrito_id, producto_id, imagen).
+//    Solo se acepta si es la foto principal del producto o una de sus fotos adicionales.
 @WebServlet("/api/carrito")
 public class CarritoServlet extends HttpServlet {
 
@@ -74,20 +77,77 @@ public class CarritoServlet extends HttpServlet {
         }
     }
 
+    // 🆕 Devuelve la URL si pertenece a este producto (principal o adicional); si no, null.
+    // Así nadie puede colar una URL cualquiera que luego salga en pedidos y correos.
+    private String validarImagenElegida(Connection conn, int productoId, String solicitada) throws Exception {
+        if (solicitada == null) return null;
+        solicitada = solicitada.trim();
+        if (solicitada.isEmpty() || solicitada.length() > 500) return null;
+        // Fotos válidas del producto: la principal (Productos.imagen), imagen2/imagen3
+        // (ImagenesAdicionalesProducto) y las de la galería (ImagenesProducto.url).
+        String sql = "SELECT TOP 1 1 FROM ("
+                   + "SELECT imagen AS url FROM Productos WHERE id = ? "
+                   + "UNION ALL SELECT imagen2 FROM ImagenesAdicionalesProducto WHERE producto_id = ? "
+                   + "UNION ALL SELECT imagen3 FROM ImagenesAdicionalesProducto WHERE producto_id = ? "
+                   + "UNION ALL SELECT url FROM ImagenesProducto WHERE producto_id = ?"
+                   + ") t WHERE t.url = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, productoId);
+            ps.setInt(2, productoId);
+            ps.setInt(3, productoId);
+            ps.setInt(4, productoId);
+            ps.setString(5, solicitada);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? solicitada : null;
+            }
+        }
+    }
+
+    // 🆕 Guarda (o reemplaza) la foto elegida de esta línea del carrito.
+    private void guardarImagenElegida(Connection conn, int carritoId, int productoId, String imagen) throws Exception {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "MERGE ImagenElegidaCarrito AS d "
+              + "USING (SELECT ? AS carrito_id, ? AS producto_id) AS o "
+              + "ON d.carrito_id = o.carrito_id AND d.producto_id = o.producto_id "
+              + "WHEN MATCHED THEN UPDATE SET imagen = ?, fecha_actualizacion = SYSDATETIME() "
+              + "WHEN NOT MATCHED THEN INSERT (carrito_id, producto_id, imagen) VALUES (?, ?, ?);")) {
+            ps.setInt(1, carritoId);
+            ps.setInt(2, productoId);
+            ps.setString(3, imagen);
+            ps.setInt(4, carritoId);
+            ps.setInt(5, productoId);
+            ps.setString(6, imagen);
+            ps.executeUpdate();
+        }
+    }
+
+    // 🆕 productoId <= 0 borra la de todo el carrito.
+    private void borrarImagenElegida(Connection conn, int carritoId, int productoId) throws Exception {
+        String sql = productoId > 0
+                ? "DELETE FROM ImagenElegidaCarrito WHERE carrito_id = ? AND producto_id = ?"
+                : "DELETE FROM ImagenElegidaCarrito WHERE carrito_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, carritoId);
+            if (productoId > 0) ps.setInt(2, productoId);
+            ps.executeUpdate();
+        }
+    }
+
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.setContentType("application/json;charset=UTF-8");
         Integer usuarioId = usuarioIdDeSesion(request);
         if (usuarioId == null) { responderSinSesion(response); return; }
 
-        // 🆕 Se agrega dc.especificaciones al SELECT.
+        // 🆕 LEFT JOIN con ImagenElegidaCarrito: ie.imagen es la foto elegida (o NULL = principal).
         String sql = "SELECT dc.producto_id, dc.cantidad, dc.precio_unitario AS precio_guardado, dc.especificaciones, "
                    + "p.nombre, p.imagen, p.precio AS precio_actual, p.categoria, p.usuario_id AS vendedor_id, "
                    + "p.telefono, p.correo, p.Nombre_Empresa AS empresa, "
-                   + "d.precio_anterior "
+                   + "d.precio_anterior, ie.imagen AS imagen_elegida "
                    + "FROM Carrito c "
                    + "JOIN DetalleCarrito dc ON dc.carrito_id = c.id "
                    + "JOIN Productos p ON p.id = dc.producto_id "
                    + "LEFT JOIN Descuentos d ON d.producto_id = p.id "
+                   + "LEFT JOIN ImagenElegidaCarrito ie ON ie.carrito_id = c.id AND ie.producto_id = dc.producto_id "
                    + "WHERE c.usuario_id = ? "
                    + "ORDER BY dc.fecha_agregado DESC";
 
@@ -107,6 +167,8 @@ public class CarritoServlet extends HttpServlet {
                     out.print("\"producto_id\":" + rs.getInt("producto_id") + ",");
                     out.print("\"nombre\":\"" + JsonUtils.escapar(rs.getString("nombre")) + "\",");
                     out.print("\"imagen\":\"" + JsonUtils.escapar(rs.getString("imagen")) + "\",");
+                    String imagenElegida = rs.getString("imagen_elegida");
+                    out.print("\"imagen_elegida\":" + (imagenElegida == null ? "null" : "\"" + JsonUtils.escapar(imagenElegida) + "\"") + ",");
                     out.print("\"categoria\":\"" + JsonUtils.escapar(rs.getString("categoria")) + "\",");
                     out.print("\"cantidad\":" + rs.getInt("cantidad") + ",");
                     out.print("\"precio_unitario\":" + precioActual + ",");
@@ -121,7 +183,7 @@ public class CarritoServlet extends HttpServlet {
                     String empresa = rs.getString("empresa");
                     out.print("\"empresa\":" + (empresa == null ? "null" : "\"" + JsonUtils.escapar(empresa) + "\"") + ",");
 
-                    // 🆕 Lo que el cliente pidió para ESTE producto (color, talla, etc.)
+                    // Lo que el cliente pidió para ESTE producto (color, talla, etc.)
                     String especificaciones = rs.getString("especificaciones");
                     out.print("\"especificaciones\":" + (especificaciones == null ? "null" : "\"" + JsonUtils.escapar(especificaciones) + "\""));
 
@@ -174,10 +236,13 @@ public class CarritoServlet extends HttpServlet {
                     upsert.setDouble(8, precioActual);
                     upsert.executeUpdate();
                 }
+                // 🆕 Desde el catálogo no viene foto: se respeta la que ya hubiera elegido.
+                String imagenValida = validarImagenElegida(conn, productoId, request.getParameter("imagen_elegida"));
+                if (imagenValida != null) guardarImagenElegida(conn, carritoId, productoId, imagenValida);
                 out.print("{\"ok\":true}");
 
             } else if ("comprar_ahora".equals(accion)) {
-                // 🆕 Igual que "agregar", pero si el producto ya estaba en el
+                // Igual que "agregar", pero si el producto ya estaba en el
                 // carrito NO suma cantidad (solo refresca el precio).
                 int productoId = Integer.parseInt(request.getParameter("producto_id"));
                 double precioActual = precioActualDe(conn, productoId);
@@ -201,6 +266,11 @@ public class CarritoServlet extends HttpServlet {
                     upsert.setDouble(6, precioActual);
                     upsert.executeUpdate();
                 }
+                // 🆕 La última foto seleccionada manda: reemplaza la anterior (aunque el
+                // producto ya estuviera en el carrito). Sin foto válida = foto principal.
+                String imagenValida = validarImagenElegida(conn, productoId, request.getParameter("imagen_elegida"));
+                if (imagenValida != null) guardarImagenElegida(conn, carritoId, productoId, imagenValida);
+                else borrarImagenElegida(conn, carritoId, productoId);
                 out.print("{\"ok\":true}");
 
             } else if ("actualizar".equals(accion)) {
@@ -213,6 +283,7 @@ public class CarritoServlet extends HttpServlet {
                         del.setInt(2, productoId);
                         del.executeUpdate();
                     }
+                    borrarImagenElegida(conn, carritoId, productoId);
                 } else {
                     try (PreparedStatement upd = conn.prepareStatement(
                             "UPDATE DetalleCarrito SET cantidad = ? WHERE carrito_id = ? AND producto_id = ?")) {
@@ -225,7 +296,7 @@ public class CarritoServlet extends HttpServlet {
                 out.print("{\"ok\":true}");
 
             } else if ("especificaciones".equals(accion)) {
-                // 🆕 Guarda lo que el cliente quiere de ESTE producto.
+                // Guarda lo que el cliente quiere de ESTE producto.
                 int productoId = Integer.parseInt(request.getParameter("producto_id"));
                 String texto = request.getParameter("especificaciones");
                 texto = (texto == null) ? "" : texto.trim();
@@ -252,6 +323,7 @@ public class CarritoServlet extends HttpServlet {
                     del.setInt(2, productoId);
                     del.executeUpdate();
                 }
+                borrarImagenElegida(conn, carritoId, productoId);
                 out.print("{\"ok\":true}");
 
             } else if ("vaciar".equals(accion)) {
@@ -260,6 +332,7 @@ public class CarritoServlet extends HttpServlet {
                     del.setInt(1, carritoId);
                     del.executeUpdate();
                 }
+                borrarImagenElegida(conn, carritoId, 0);
                 out.print("{\"ok\":true}");
 
             } else {
