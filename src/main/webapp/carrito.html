@@ -173,6 +173,8 @@
     <a href="index.html">Ver catálogo</a>
   </div>
   <div id="carritoContenido" style="display:none;">
+    <!-- 🎁 Aviso de la promo "producto adicional GRATIS" (lo pinta promo-aviso.js; se ve solo si la promo está vigente y hay cupos) -->
+    <div id="promoAviso"></div>
     <div class="carrito-layout">
       <div class="carrito-lista" id="carritoLista"></div>
       <div class="carrito-resumen">
@@ -519,5 +521,6 @@ fetch("/api/mis-pedidos").then(r => r.ok ? r.json() : []).then(lista => {
   bn.style.display = "flex";
 }).catch(() => {});
 </script>
+<script src="promo-aviso.js"></script>
 </body>
 </html>

@@ -422,6 +422,7 @@
     <span class="stamp" id="clock"></span>
     <div class="divider"></div>
     <button class="gear-btn" id="btnPedidos" onclick="abrirPedidos()" title="Pedidos">📋</button>
+    <button class="gear-btn" onclick="abrirModalPromo()" title="Cupón de promoción">🎁</button>
     <button class="gear-btn" onclick="abrirModalCJ()" title="Importar producto de CJ">📦</button>
     <button class="gear-btn" onclick="abrirModal()" title="Gestión de admins">⚙</button>
     <button class="gear-btn salir" onclick="cerrarSesion()" title="Cerrar sesión">⏻</button>
@@ -507,6 +508,39 @@
     <div class="modal-actions" id="pedidosCerrarWrap">
       <button type="button" class="btn secondary" onclick="cerrarPedidos()">Cerrar</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalPromoOverlay">
+  <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto;">
+    <h2>Cupón de promoción</h2>
+    <form class="modal-form active" id="formPromo">
+      <label style="display:flex;gap:8px;align-items:center;"><input type="checkbox" id="prActiva" style="width:auto;"> Mostrar el cupón en la tienda</label>
+      <label for="prEtiqueta">Etiqueta (texto rojo pequeño)</label>
+      <input type="text" id="prEtiqueta" maxlength="120" required>
+      <label for="prTitulo">Mensaje principal</label>
+      <textarea id="prTitulo" rows="3" maxlength="300" required style="width:100%;background:#0d1010;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:9px 11px;font-family:var(--sans);font-size:13.5px;"></textarea>
+      <label for="prCondiciones">Condiciones (una línea)</label>
+      <input type="text" id="prCondiciones" maxlength="300">
+      <label for="prCategoria">Categoría del producto gratis</label>
+      <select id="prCategoria" style="width:100%;background:#0d1010;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:9px 11px;font-family:var(--sans);font-size:13.5px;">
+        <option>Joyería y Accesorios</option><option>Damas</option><option>Caballeros</option><option>Niños</option>
+        <option>Hogar y Decoración</option><option>Tecnología y Electrónica</option><option>Alimentos</option><option>Deportes</option><option>Servicios</option>
+      </select>
+      <label for="prEntrega">¿Quién elige el regalo?</label>
+      <select id="prEntrega" style="width:100%;background:#0d1010;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:9px 11px;font-family:var(--sans);font-size:13.5px;"><option value="tienda">La tienda elige el regalo</option><option value="comprador">El comprador lo elige</option></select>
+      <label for="prCupos">Cupos (compradores que lo reciben)</label>
+      <input type="number" id="prCupos" min="1" max="1000" required>
+      <label for="prFin">Termina el (hora de Costa Rica)</label>
+      <input type="datetime-local" id="prFin" required>
+      <div class="hint" id="prEstado"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" onclick="cerrarModalPromo()">Cancelar</button>
+        <button type="button" class="btn nota" onclick="reiniciarPromo()" title="Pone el contador de cupos usados en cero (nueva promoción)">Reiniciar cupos</button>
+        <button type="submit" class="btn aprobar">Guardar</button>
+      </div>
+      <div class="modal-error" id="errorPromo"></div>
+    </form>
   </div>
 </div>
 
@@ -1017,6 +1051,45 @@ document.getElementById('formImportarCJ').addEventListener('submit', async (e) =
     btn.textContent = 'Importar';
   }
 });
+
+
+// --- Modal del cupón de promoción ---
+const PROMO_ENDPOINT = '/admin/promoCupon';
+function pintarPromo(c){
+  prActiva.checked = !!c.activa; prEtiqueta.value = c.etiqueta || ''; prTitulo.value = c.titulo || '';
+  prCondiciones.value = c.condiciones || ''; prCategoria.value = c.categoria || 'Joyería y Accesorios';
+  prEntrega.value = c.entrega || 'tienda'; prCupos.value = c.cupos || 7; prFin.value = (c.fechaFin || '').slice(0,16);
+  prEstado.textContent = `usados ${c.usados ?? 0} de ${c.cupos ?? 0} · restantes ${c.restantes ?? 0}`;
+}
+async function abrirModalPromo(){
+  errorPromo.classList.remove('show');
+  document.getElementById('modalPromoOverlay').classList.add('show');
+  try{
+    const r = await fetch(PROMO_ENDPOINT);
+    if(r.status === 401){ window.location.href = 'adminLogin.html'; return; }
+    pintarPromo(await r.json());
+  }catch(e){ errorPromo.textContent = 'No se pudo cargar: ' + e.message; errorPromo.classList.add('show'); }
+}
+function cerrarModalPromo(){ document.getElementById('modalPromoOverlay').classList.remove('show'); }
+async function enviarPromo(body, okMsg){
+  errorPromo.classList.remove('show');
+  try{
+    const r = await fetch(PROMO_ENDPOINT, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body});
+    if(r.status === 401){ window.location.href = 'adminLogin.html'; return; }
+    const d = await r.json();
+    if(!r.ok || d.error) throw new Error(d.error || 'error desconocido');
+    pintarPromo(d); toast(okMsg);
+  }catch(e){ errorPromo.textContent = e.message; errorPromo.classList.add('show'); }
+}
+document.getElementById('formPromo').addEventListener('submit', (e) => {
+  e.preventDefault();
+  enviarPromo(new URLSearchParams({accion:'guardar', activa: prActiva.checked ? '1' : '0', etiqueta: prEtiqueta.value, titulo: prTitulo.value,
+    condiciones: prCondiciones.value, categoria: prCategoria.value, entrega: prEntrega.value, cupos: prCupos.value, fechaFin: prFin.value}).toString(), 'Cupón actualizado');
+});
+function reiniciarPromo(){
+  if(confirm('¿Reiniciar el contador de cupos? Los pedidos que ya recibieron el regalo no se tocan, pero vuelven a estar todos los cupos disponibles.'))
+    enviarPromo('accion=reiniciar', 'Cupos reiniciados');
+}
 
 cargarPerfil();
 cargar();

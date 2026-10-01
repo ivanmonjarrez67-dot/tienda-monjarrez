@@ -659,6 +659,109 @@
         margin: 10px 0;
       }
 
+      /* 🆕 Cupón de promoción "Para los primeros 7 compradores" (el mismo
+         de la campaña por correo). Fondo rosado claro + borde rojo
+         punteado para que se vea igual que en el correo y resalte sobre
+         el fondo oscuro de la tienda. Se oculta solo al terminar la
+         promoción (ver PROMO_FIN en el script de abajo). */
+      .promo-cupon-wrap {
+        margin: 0 0 16px;
+        box-sizing: border-box;
+      }
+      /* En teléfono el contenedor de productos casi no tiene borde lateral,
+         así que el cupón lleva su propio margen. */
+      @media (max-width: 500px) {
+        .promo-cupon-wrap { margin: 8px 8px 12px; }
+      }
+      /* En "Mi tienda" se oculta la cuadrícula; el cupón también. */
+      #productGridWrapper:has(#productGrid[style*="display: none"]) .promo-cupon-wrap {
+        display: none !important;
+      }
+      .promo-cupon {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: #fdf0f2;
+        border: 2px dashed #c8102e;
+        border-left: 10px solid #c8102e;
+        border-radius: 12px;
+        padding: 14px 44px 14px 16px;
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+        color: #1a1a1a;
+        box-sizing: border-box;
+      }
+      .promo-cupon.promo-resaltar {
+        animation: promoPulso 1.1s ease-in-out 3;
+      }
+      @keyframes promoPulso {
+        0%, 100% { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35); }
+        50% { box-shadow: 0 0 0 6px rgba(200, 16, 46, 0.45), 0 8px 22px rgba(0, 0, 0, 0.35); }
+      }
+      .promo-cupon-icono {
+        flex: 0 0 auto;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: #c8102e;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+      }
+      .promo-cupon-texto { flex: 1 1 auto; min-width: 0; }
+      .promo-cupon-etiqueta {
+        display: block;
+        color: #c8102e;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 1.6px;
+        text-transform: uppercase;
+        margin-bottom: 3px;
+      }
+      .promo-cupon-titulo {
+        font-size: 16px;
+        line-height: 1.35;
+        color: #1a1a1a;
+      }
+      .promo-cupon-titulo strong { font-weight: 800; }
+      .promo-cupon-detalle {
+        margin-top: 4px;
+        font-size: 12.5px;
+        color: #555;
+        line-height: 1.4;
+      }
+      .promo-cupon-detalle i { color: #c8102e; margin-right: 4px; }
+      .promo-cupon-cerrar {
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        background: transparent;
+        border: 0;
+        color: #8a8a8a;
+        font-size: 18px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 4px 6px;
+      }
+      .promo-cupon-cerrar:hover { color: #c8102e; }
+      .promo-cupon-cupos { margin-top: 8px; font-size: 12.5px; font-weight: 700; color: #c8102e; }
+      .promo-cupon-barra { height: 7px; background: #f3c9d0; border-radius: 99px; overflow: hidden; margin-top: 4px; max-width: 320px; }
+      .promo-cupon-barra > div { height: 100%; width: 0; background: #c8102e; border-radius: 99px; transition: width .5s; }
+      .promo-cupon-cond { margin-top: 6px; font-size: 11.5px; color: #6b6b6b; }
+      .promo-cupon-ver {
+        margin-top: 10px; background: #c8102e; color: #fff; border: 0; border-radius: 8px;
+        padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer;
+      }
+      .promo-cupon-ver:hover { background: #a60d26; }
+      @media (max-width: 600px) {
+        .promo-cupon { gap: 10px; padding: 12px 34px 12px 12px; border-left-width: 8px; }
+        .promo-cupon-icono { width: 40px; height: 40px; font-size: 18px; }
+        .promo-cupon-titulo { font-size: 14px; }
+        .promo-cupon-detalle { font-size: 11.5px; }
+      }
+
       /* 🆕 Barra de confianza (hero) debajo del header — ancha y horizontal,
          estilo Temu, pero con el contenido que ya teníamos en la bolsa y
          una paleta profesional en vino/carbón en vez de rojo brillante. */
@@ -2657,6 +2760,33 @@ async function cargarMisProductos(usuarioId) {
              estrellado queda confinado exactamente al área de productos,
              sin filtrarse a otras partes de la página. -->
         <canvas id="starsCanvas"></canvas>
+        <!-- 🆕 Cupón de promoción (campaña por correo): "Para los primeros 7
+             compradores, un producto adicional GRATIS de Joyería y Accesorios".
+             Va dentro del contenedor de productos, justo encima de la
+             cuadrícula, bien visible al entrar desde el correo. Se oculta solo cuando termina la promoción. -->
+        <div class="promo-cupon-wrap" id="promoCuponWrap" style="display:none;">
+          <div class="promo-cupon" id="promoCupon" role="region" aria-label="Promoción para los próximos primeros 7 compradores">
+            <span class="promo-cupon-icono"><i class="fa-solid fa-gift"></i></span>
+            <div class="promo-cupon-texto">
+              <span class="promo-cupon-etiqueta" id="promoEtiqueta">Para los próximos primeros 7 compradores</span>
+              <div class="promo-cupon-titulo" id="promoTitulo">
+                Haz tu compra y recibe un <strong>producto adicional GRATIS</strong> de nuestra categoría de <strong>Joyería y Accesorios</strong>.
+              </div>
+              <div class="promo-cupon-detalle">
+                <i class="fa-regular fa-clock"></i>
+                Termina en <strong id="promoCuenta">…</strong> o hasta agotar los cupos.
+              </div>
+              <div class="promo-cupon-cupos" id="promoCuposBox" style="display:none;">
+                <span id="promoCuposTxt"></span>
+                <div class="promo-cupon-barra"><div id="promoCuposFill"></div></div>
+              </div>
+              <div class="promo-cupon-cond" id="promoCondiciones"></div>
+              <button type="button" class="promo-cupon-ver" id="promoVerCat">Ver Joyería y Accesorios <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+            <button type="button" class="promo-cupon-cerrar" id="promoCuponCerrar" aria-label="Cerrar aviso" title="Cerrar">&times;</button>
+          </div>
+        </div>
+
         <div id="productGrid" class="product-grid mosaic-grid">
           <!-- Aquí se cargarán las imágenes de los productos -->
         </div>
@@ -6638,6 +6768,70 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
           .catch((err) => { msg.textContent = err.message; });
       });
     })();
+    </script>
+    <!-- 🆕 Cupón de promoción: lo edita el admin desde panelAdmin.html (🎁).
+         Lee /promoCupon (texto, cupos restantes, fecha de fin). Si el servidor
+         no responde, usa los valores de respaldo de abajo. Se oculta si está
+         desactivada, vencida o sin cupos. Con ?promo=1 en el enlace del correo
+         baja hasta el cupón y lo resalta. -->
+    <script>
+      (function () {
+        var wrap = document.getElementById("promoCuponWrap");
+        var cupon = document.getElementById("promoCupon");
+        if (!wrap || !cupon) return;
+        var $ = function (id) { return document.getElementById(id); };
+        var RESPALDO = { activa: true, fechaFin: "2026-10-08T23:59:59-06:00", categoria: "Joyería y Accesorios", entrega: "tienda",
+                         condiciones: "Un producto gratis por pedido. Sujeto a disponibilidad." };
+
+        function iniciar(c) {
+          var fin = new Date(c.fechaFin).getTime();
+          if (!c.activa || !fin || fin <= Date.now()) return;
+          if (typeof c.restantes === "number" && c.restantes <= 0) return;
+          var cerrado = false;
+          try { cerrado = sessionStorage.getItem("promo7_cerrada") === "1"; } catch (e) {}
+          var vieneDelCorreo = /[?&](promo|utm_campaign)=/i.test(location.search);
+          if (cerrado && !vieneDelCorreo) return;
+
+          if (c.etiqueta) $("promoEtiqueta").textContent = c.etiqueta;
+          if (c.titulo) $("promoTitulo").textContent = c.titulo;
+          var cond = (c.condiciones || "") + (c.entrega === "comprador" ? " Tú eliges tu regalo." : " La tienda elige el regalo.");
+          $("promoCondiciones").textContent = cond.trim();
+          var cat = c.categoria || "Joyería y Accesorios";
+          $("promoVerCat").firstChild.nodeValue = "Ver " + cat + " ";
+          $("promoVerCat").onclick = function () {
+            var b = document.querySelector('.filter[data-category="' + cat + '"]');
+            if (b) { b.click(); }
+            var g = $("productGrid"); if (g) g.scrollIntoView({ behavior: "smooth", block: "start" });
+          };
+          if (typeof c.cupos === "number" && typeof c.restantes === "number") {
+            $("promoCuposTxt").textContent = "Quedan " + c.restantes + " de " + c.cupos;
+            $("promoCuposFill").style.width = Math.round((c.restantes / c.cupos) * 100) + "%";
+            $("promoCuposBox").style.display = "block";
+          }
+          function tick() {
+            var r = fin - Date.now();
+            if (r <= 0) { wrap.style.display = "none"; return; }
+            var d = Math.floor(r / 86400000), h = Math.floor(r / 3600000) % 24, m = Math.floor(r / 60000) % 60, sg = Math.floor(r / 1000) % 60;
+            $("promoCuenta").textContent = (d ? d + "d " : "") + String(h).padStart(2, "0") + "h " + String(m).padStart(2, "0") + "m " + String(sg).padStart(2, "0") + "s";
+          }
+          tick(); setInterval(tick, 1000);
+          wrap.style.display = "block";
+          var x = $("promoCuponCerrar");
+          if (x) x.onclick = function () {
+            wrap.style.display = "none";
+            try { sessionStorage.setItem("promo7_cerrada", "1"); } catch (e) {}
+          };
+          if (vieneDelCorreo) setTimeout(function () {
+            try { wrap.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) {}
+            cupon.classList.add("promo-resaltar");
+          }, 600);
+        }
+
+        fetch("/promoCupon", { cache: "no-store" })
+          .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+          .then(iniciar)
+          .catch(function () { iniciar(RESPALDO); });
+      })();
     </script>
   </body>
 </html>

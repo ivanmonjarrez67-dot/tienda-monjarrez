@@ -55,6 +55,9 @@
   .factura-producto-cell { display: flex; align-items: center; gap: 10px; }
   .factura-producto-cell img { width: 46px; height: 46px; object-fit: cover; border-radius: 6px; border: 1px solid #eee; }
 
+  .factura-regalo-ico { width: 46px; height: 46px; border-radius: 6px; background: #fdf0f2; border: 1px dashed #c8102e; color: #c8102e; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex: 0 0 auto; }
+  tr.factura-regalo td { background: #fffafb; }
+  tr.factura-regalo .gratis { color: #c8102e; font-weight: 700; }
   .factura-totales { margin-left: auto; width: 260px; }
   .factura-totales div { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.9rem; }
   .factura-totales .total { font-weight: 700; font-size: 1.05rem; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 6px; }
@@ -223,6 +226,32 @@
           `;
           tbody.appendChild(tr);
         });
+
+        // 🎁 Promo "producto adicional GRATIS": si este pedido ganó un cupo, se agrega una línea en ₡0
+        fetch(`/promoCupon?pedido=${encodeURIComponent(pedidoId)}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((c) => {
+            if (!c || c.tuPedidoGana !== true) return;
+            const quien = c.entrega === "comprador" ? "Elige tu regalo con la tienda." : "La tienda te indicará cuál producto recibes.";
+            const tr = document.createElement("tr");
+            tr.className = "factura-regalo";
+            tr.innerHTML = `
+              <td>
+                <div class="factura-producto-cell">
+                  <div class="factura-regalo-ico"><i class="fa-solid fa-gift"></i></div>
+                  <div>
+                    <span><b>Producto adicional GRATIS</b> — ${esc(c.categoria || "Joyería y Accesorios")}</span>
+                    <span class="factura-espec">${esc(quien)}</span>
+                  </div>
+                </div>
+              </td>
+              <td>1</td>
+              <td class="gratis">GRATIS</td>
+              <td>${fmtCrc(0)}</td>
+            `;
+            tbody.appendChild(tr);
+          })
+          .catch(() => {});
 
         elCarga.style.display = "none";
         elContenido.style.display = "block";
