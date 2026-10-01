@@ -1357,6 +1357,21 @@
       }
     </style>
     <link rel="stylesheet" href="mascota.css" />
+    <style>
+      /* 🆕 Fotos adicionales (selección múltiple con vista previa numerada) */
+      .fotos-extra-contador { margin-left: 10px; font-size: 0.85rem; color: #777; }
+      .fotos-extra-ayuda { font-size: 0.78rem; color: #888; margin: 6px 0 0; }
+      .fotos-extra-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; margin: 10px 0 14px; }
+      .foto-extra { position: relative; aspect-ratio: 1 / 1; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background: #f6f6f6; }
+      .foto-extra img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .foto-extra-num { position: absolute; top: 4px; left: 4px; background: rgba(0,0,0,.65); color: #fff; font-size: 11px; font-weight: 700; border-radius: 10px; padding: 1px 7px; }
+      .foto-extra-x { position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; border: none; border-radius: 50%; background: rgba(0,0,0,.65); color: #fff; font-size: 12px; line-height: 22px; cursor: pointer; padding: 0; }
+      .foto-extra-mover { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; padding: 2px 3px; background: linear-gradient(transparent, rgba(0,0,0,.6)); }
+      .foto-extra-mover button { border: none; background: transparent; color: #fff; font-size: 20px; line-height: 20px; cursor: pointer; padding: 0 8px; }
+      .foto-extra.subiendo::after { content: "Subiendo…"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.8); font-size: 11px; font-weight: 600; color: #333; }
+      .foto-extra.error { border-color: #c0392b; }
+      .foto-extra.error .foto-extra-num { background: #c0392b; }
+    </style>
     
     </head>
   <script src="mascota.js" defer></script>
@@ -2719,22 +2734,16 @@ async function cargarMisProductos(usuarioId) {
   <img id="previewImagen" class="preview-img" alt="Preview" />
 </div>
 
-<!-- 🆕 Fotos adicionales (opcionales, hasta 2 extra: ángulos, colores, diseños) -->
-<label for="imageUrl2">Foto adicional 1 (opcional):</label>
-<input type="text" id="imageUrl2" name="imagen2" placeholder="URL de otra foto (opcional)" />
+<!-- 🆕 Fotos adicionales (opcionales): selección múltiple, hasta 8. El número de cada
+     foto es el orden en que se mostrarán; con ‹ › se reordenan y con ✕ se quitan. -->
+<label>Fotos adicionales (opcional, hasta 8):</label>
 <div class="subir-preview">
-  <label for="imagenProducto2" class="btn-subir">Agregar desde mi dispositivo</label>
-  <input type="file" id="imagenProducto2" name="imagenProducto2" accept="image/*">
-  <img id="previewImagen2" class="preview-img" alt="Preview foto adicional 1" />
+  <label for="fotosExtraInputAgregar" class="btn-subir">Agregar fotos</label>
+  <input type="file" id="fotosExtraInputAgregar" accept="image/*" multiple style="display:none">
+  <span class="fotos-extra-contador" id="fotosExtraContadorAgregar">0/8</span>
 </div>
-
-<label for="imageUrl3">Foto adicional 2 (opcional):</label>
-<input type="text" id="imageUrl3" name="imagen3" placeholder="URL de otra foto (opcional)" />
-<div class="subir-preview">
-  <label for="imagenProducto3" class="btn-subir">Agregar desde mi dispositivo</label>
-  <input type="file" id="imagenProducto3" name="imagenProducto3" accept="image/*">
-  <img id="previewImagen3" class="preview-img" alt="Preview foto adicional 2" />
-</div>
+<p class="fotos-extra-ayuda">Puede elegir varias a la vez (colores, ángulos, diseños). Se muestran en el orden numerado.</p>
+<div class="fotos-extra-grid" id="fotosExtraGridAgregar"></div>
 
 <!-- 🆕 Precio anterior (opcional): si se llena y es mayor al precio real,
      se muestra tachado debajo del precio en el catálogo (estilo rebaja). -->
@@ -2865,22 +2874,16 @@ async function cargarMisProductos(usuarioId) {
               <img id="editPreviewImagen" class="preview-img" alt="Preview" />
             </div>
 
-            <!-- 🆕 Fotos adicionales (opcionales, hasta 2 extra) -->
-            <label for="editImageUrl2">Foto adicional 1 (opcional):</label>
-            <input type="text" id="editImageUrl2" name="imagen2" placeholder="URL de otra foto (opcional)" />
+            <!-- 🆕 Fotos adicionales (opcionales): selección múltiple, hasta 8. El número de cada
+                 foto es el orden en que se mostrarán; con ‹ › se reordenan y con ✕ se quitan. -->
+            <label>Fotos adicionales (opcional, hasta 8):</label>
             <div class="subir-preview">
-              <label for="editImagenProducto2" class="btn-subir">Cambiar desde mi dispositivo</label>
-              <input type="file" id="editImagenProducto2" name="imagenProducto2" accept="image/*">
-              <img id="editPreviewImagen2" class="preview-img" alt="Preview foto adicional 1" />
+              <label for="fotosExtraInputEditar" class="btn-subir">Agregar fotos</label>
+              <input type="file" id="fotosExtraInputEditar" accept="image/*" multiple style="display:none">
+              <span class="fotos-extra-contador" id="fotosExtraContadorEditar">0/8</span>
             </div>
-
-            <label for="editImageUrl3">Foto adicional 2 (opcional):</label>
-            <input type="text" id="editImageUrl3" name="imagen3" placeholder="URL de otra foto (opcional)" />
-            <div class="subir-preview">
-              <label for="editImagenProducto3" class="btn-subir">Cambiar desde mi dispositivo</label>
-              <input type="file" id="editImagenProducto3" name="imagenProducto3" accept="image/*">
-              <img id="editPreviewImagen3" class="preview-img" alt="Preview foto adicional 2" />
-            </div>
+            <p class="fotos-extra-ayuda">Puede elegir varias a la vez (colores, ángulos, diseños). Se muestran en el orden numerado.</p>
+            <div class="fotos-extra-grid" id="fotosExtraGridEditar"></div>
 
             <!-- 🆕 Precio anterior (opcional): dejarlo vacío quita la rebaja. -->
             <label for="editPrecioAnterior">Precio anterior / de referencia ₡ (opcional):</label>

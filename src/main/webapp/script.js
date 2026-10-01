@@ -46,9 +46,9 @@ function conectarSubidaImagen(inputFileId, inputUrlId, previewImgId) {
   const previewImg = document.getElementById(previewImgId);
   if (!inputFile || !inputUrl || !previewImg) return;
 
-  inputFile.addEventListener("change", () => {
+  inputFile.addEventListener("change", async () => {
     if (inputFile.files.length === 0) return;
-    const file = inputFile.files[0];
+    const file = await comprimirImagen(inputFile.files[0]);
     previewImg.src = URL.createObjectURL(file);
     previewImg.style.display = "inline-block";
     const formData = new FormData();
@@ -74,13 +74,150 @@ function conectarSubidaImagen(inputFileId, inputUrlId, previewImgId) {
 
 conectarSubidaImagen("imagenProducto", "imageUrl", "previewImagen");
 conectarSubidaImagen("editImagenProducto", "editImageUrl", "editPreviewImagen");
-// 🆕 Imágenes adicionales (opcionales, hasta 2 extra): mismo mecanismo de
-// subida, reutilizando conectarSubidaImagen con los ids de los nuevos
-// inputs del formulario.
-conectarSubidaImagen("imagenProducto2", "imageUrl2", "previewImagen2");
-conectarSubidaImagen("imagenProducto3", "imageUrl3", "previewImagen3");
-conectarSubidaImagen("editImagenProducto2", "editImageUrl2", "editPreviewImagen2");
-conectarSubidaImagen("editImagenProducto3", "editImageUrl3", "editPreviewImagen3");
+// 🆕 Fotos adicionales: selección múltiple, vista previa numerada y reordenable.
+// Reemplaza a los dos campos fijos (foto adicional 1 y 2). Máximo MAX_FOTOS_EXTRA;
+// mantener igual que ImagenesProductoServlet.MAX_EXTRA en el backend.
+const MAX_FOTOS_EXTRA = 8;
+
+// Reduce la foto antes de subirla (lado mayor 1600 px, JPEG calidad 0.82): ahorra
+// almacenamiento y ancho de banda de Cloudinary y sube más rápido desde el celular.
+// Si algo falla o no mejora el peso, se sube la foto original.
+async function comprimirImagen(file, maxLado = 1600, calidad = 0.82) {
+  try {
+    if (!file.type.startsWith("image/") || file.type === "image/gif") return file;
+    const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
+    const escala = Math.min(1, maxLado / Math.max(bmp.width, bmp.height));
+    if (escala === 1 && file.size < 400 * 1024) { bmp.close?.(); return file; }
+    const w = Math.round(bmp.width * escala);
+    const h = Math.round(bmp.height * escala);
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h); // PNG con transparencia -> fondo blanco
+    ctx.drawImage(bmp, 0, 0, w, h);
+    bmp.close?.();
+    const blob = await new Promise((ok) => canvas.toBlob(ok, "image/jpeg", calidad));
+    if (!blob || blob.size >= file.size) return file;
+    return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
+  } catch (e) {
+    return file;
+  }
+}
+
+// Crea el selector de fotos adicionales de un formulario (Agregar o Editar).
+// Devuelve { getUrls, hayPendientes, setUrls, reset }.
+function crearSelectorFotosExtra({ inputId, gridId, contadorId }) {
+  const input = document.getElementById(inputId);
+  const grid = document.getElementById(gridId);
+  const contador = document.getElementById(contadorId);
+  if (!input || !grid) return { getUrls: () => [], hayPendientes: () => false, setUrls() {}, reset() {} };
+
+  let items = []; // { id, url, preview, estado: "subiendo" | "ok" | "error" }
+  let seq = 0;
+  let cola = Promise.resolve(); // las fotos se suben de una en una
+
+  function pintar() {
+    grid.innerHTML = "";
+    items.forEach((it, i) => {
+      const caja = document.createElement("div");
+      caja.className = "foto-extra" + (it.estado === "subiendo" ? " subiendo" : "") + (it.estado === "error" ? " error" : "");
+      caja.dataset.id = it.id;
+      caja.title = it.estado === "error" ? "No se pudo subir esta foto. Quítala e inténtala de nuevo." : "";
+      const img = document.createElement("img");
+      img.src = it.preview || it.url;
+      img.alt = "Foto adicional " + (i + 1);
+      const num = document.createElement("span");
+      num.className = "foto-extra-num";
+      num.textContent = it.estado === "error" ? "!" : String(i + 1);
+      const quitar = document.createElement("button");
+      quitar.type = "button"; quitar.className = "foto-extra-x"; quitar.dataset.acc = "quitar";
+      quitar.setAttribute("aria-label", "Quitar foto"); quitar.textContent = "✕";
+      caja.append(img, num, quitar);
+      if (items.length > 1) {
+        const mover = document.createElement("div");
+        mover.className = "foto-extra-mover";
+        const izq = document.createElement("button");
+        izq.type = "button"; izq.dataset.acc = "izq"; izq.textContent = "‹"; izq.setAttribute("aria-label", "Mover antes");
+        izq.style.visibility = i === 0 ? "hidden" : "visible";
+        const der = document.createElement("button");
+        der.type = "button"; der.dataset.acc = "der"; der.textContent = "›"; der.setAttribute("aria-label", "Mover después");
+        der.style.visibility = i === items.length - 1 ? "hidden" : "visible";
+        mover.append(izq, der);
+        caja.append(mover);
+      }
+      grid.append(caja);
+    });
+    if (contador) contador.textContent = items.length + "/" + MAX_FOTOS_EXTRA;
+  }
+
+  async function subir(it, file) {
+    if (!items.includes(it)) return; // la quitaron antes de que le tocara subir
+    try {
+      const lista = await comprimirImagen(file);
+      const fd = new FormData();
+      fd.append("imagenProducto", lista);
+      const resp = await fetch("/GuardarProductoArchivo", { method: "POST", body: fd });
+      if (!resp.ok) throw new Error((await resp.text()) || "Error " + resp.status);
+      it.url = (await resp.text()).trim();
+      it.estado = it.url ? "ok" : "error";
+    } catch (err) {
+      it.estado = "error";
+    }
+    pintar();
+  }
+
+  input.addEventListener("change", () => {
+    const archivos = [...input.files].filter((f) => f.type.startsWith("image/"));
+    input.value = ""; // permite volver a elegir las mismas fotos
+    const libres = MAX_FOTOS_EXTRA - items.length;
+    if (archivos.length === 0) return;
+    if (libres <= 0) { alert("Ya tiene el máximo de " + MAX_FOTOS_EXTRA + " fotos adicionales."); return; }
+    if (archivos.length > libres) {
+      alert("Puede agregar hasta " + MAX_FOTOS_EXTRA + " fotos adicionales. Se agregarán solo las primeras " + libres + ".");
+    }
+    archivos.slice(0, libres).forEach((f) => {
+      const it = { id: ++seq, url: "", preview: URL.createObjectURL(f), estado: "subiendo" };
+      items.push(it);
+      cola = cola.then(() => subir(it, f));
+    });
+    pintar();
+  });
+
+  grid.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-acc]");
+    if (!btn) return;
+    const caja = btn.closest(".foto-extra");
+    const i = items.findIndex((x) => String(x.id) === caja.dataset.id);
+    if (i < 0) return;
+    if (btn.dataset.acc === "quitar") items.splice(i, 1);
+    else if (btn.dataset.acc === "izq" && i > 0) [items[i - 1], items[i]] = [items[i], items[i - 1]];
+    else if (btn.dataset.acc === "der" && i < items.length - 1) [items[i + 1], items[i]] = [items[i], items[i + 1]];
+    pintar();
+  });
+
+  return {
+    getUrls: () => items.filter((x) => x.estado === "ok" && x.url).map((x) => x.url),
+    hayPendientes: () => items.some((x) => x.estado !== "ok"),
+    setUrls: (lista) => {
+      items = (lista || []).filter(Boolean).slice(0, MAX_FOTOS_EXTRA).map((u) => ({ id: ++seq, url: u, preview: u, estado: "ok" }));
+      pintar();
+    },
+    reset: () => { items = []; pintar(); },
+  };
+}
+
+const fotosExtraAgregar = crearSelectorFotosExtra({
+  inputId: "fotosExtraInputAgregar", gridId: "fotosExtraGridAgregar", contadorId: "fotosExtraContadorAgregar",
+});
+const fotosExtraEditar = crearSelectorFotosExtra({
+  inputId: "fotosExtraInputEditar", gridId: "fotosExtraGridEditar", contadorId: "fotosExtraContadorEditar",
+});
+// Agrega cada foto adicional como parámetro repetido "imagen_extra" (el orden se conserva).
+function conFotosExtra(params, urls) {
+  urls.forEach((u) => params.append("imagen_extra", u));
+  return params;
+}
+const MSG_FOTOS_PENDIENTES = "Hay fotos adicionales que aún se están subiendo o que fallaron. Espere a que terminen o quite las que tienen error (!).";
 
 // 🆕 Icono de tienda (panel de Perfil, solo Vendedor): sube el archivo a
 // Cloudinary reutilizando /GuardarProductoArchivo (igual que las imágenes
@@ -324,10 +461,8 @@ document.getElementById("addProductForm").onsubmit = function (event) {
   // 🆕 Opcionales: precio anterior (rebaja) e imágenes adicionales 2 y 3.
   const precioAnteriorInput = document.getElementById("precioAnterior");
   const precioAnterior = precioAnteriorInput ? precioAnteriorInput.value.trim() : "";
-  const imageUrl2Input = document.getElementById("imageUrl2");
-  const imageUrl2 = imageUrl2Input ? imageUrl2Input.value.trim() : "";
-  const imageUrl3Input = document.getElementById("imageUrl3");
-  const imageUrl3 = imageUrl3Input ? imageUrl3Input.value.trim() : "";
+  if (fotosExtraAgregar.hayPendientes()) { alert(MSG_FOTOS_PENDIENTES); return; }
+  const fotosExtra = fotosExtraAgregar.getUrls();
 
   // 🆕 Producto de reventa internacional: checkbox opcional, se envía
   // como "1"/"0" (nunca vacío) para que el backend siempre reciba un
@@ -370,7 +505,7 @@ document.getElementById("addProductForm").onsubmit = function (event) {
   fetch("/GuardarProducto", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
+    body: conFotosExtra(new URLSearchParams({
       usuario_id: usuarioId,
       nombre: name,
       categoria: categoria,
@@ -383,10 +518,8 @@ document.getElementById("addProductForm").onsubmit = function (event) {
       provincia: provincia,
       ciudad: ciudad,
       precio_anterior: precioAnterior,
-      imagen2: imageUrl2,
-      imagen3: imageUrl3,
       es_extranjero: esExtranjero,
-    }),
+    }), fotosExtra),
   })
     .then((response) => {
       if (!response.ok) {
@@ -396,6 +529,7 @@ document.getElementById("addProductForm").onsubmit = function (event) {
       alert("Producto guardado con éxito.");
       document.getElementById("addProductModal").style.display = "none";
       document.getElementById("addProductForm").reset();
+      fotosExtraAgregar.reset();
       window.Monji?.exito("¡Tu producto ya está publicado! 🎉");
     })
     .catch((error) => {
@@ -1167,10 +1301,18 @@ function abrirModalEdicionProducto() {
   // dejan vacíos si el producto no tenía ninguno.
   const editPrecioAnteriorInput = document.getElementById("editPrecioAnterior");
   if (editPrecioAnteriorInput) editPrecioAnteriorInput.value = productoSeleccionado.precioAnterior || "";
-  const editImageUrl2Input = document.getElementById("editImageUrl2");
-  if (editImageUrl2Input) editImageUrl2Input.value = productoSeleccionado.imagen2 || "";
-  const editImageUrl3Input = document.getElementById("editImageUrl3");
-  if (editImageUrl3Input) editImageUrl3Input.value = productoSeleccionado.imagen3 || "";
+  // Fotos adicionales: se muestran de inmediato las 2 que ya trae la tarjeta y,
+  // en cuanto responde el servidor, la lista completa y ordenada.
+  fotosExtraEditar.setUrls([productoSeleccionado.imagen2, productoSeleccionado.imagen3].filter(Boolean));
+  const idFotosCargando = String(productoSeleccionado.id);
+  fetch("/api/imagenes-producto?id=" + encodeURIComponent(idFotosCargando))
+    .then((r) => (r.ok ? r.json() : null))
+    .then((lista) => {
+      if (Array.isArray(lista) && productoSeleccionado && String(productoSeleccionado.id) === idFotosCargando) {
+        fotosExtraEditar.setUrls(lista);
+      }
+    })
+    .catch(() => {});
 
   // 🆕 Producto de reventa internacional: precarga el checkbox con el
   // valor actual del producto (para no perderlo si el vendedor edita
@@ -1186,26 +1328,6 @@ function abrirModalEdicionProducto() {
     } else {
       preview.removeAttribute("src");
       preview.style.display = "none";
-    }
-  }
-  const preview2 = document.getElementById("editPreviewImagen2");
-  if (preview2) {
-    if (productoSeleccionado.imagen2) {
-      preview2.src = productoSeleccionado.imagen2;
-      preview2.style.display = "inline-block";
-    } else {
-      preview2.removeAttribute("src");
-      preview2.style.display = "none";
-    }
-  }
-  const preview3 = document.getElementById("editPreviewImagen3");
-  if (preview3) {
-    if (productoSeleccionado.imagen3) {
-      preview3.src = productoSeleccionado.imagen3;
-      preview3.style.display = "inline-block";
-    } else {
-      preview3.removeAttribute("src");
-      preview3.style.display = "none";
     }
   }
 
@@ -1235,10 +1357,8 @@ document.getElementById("editProductForm").addEventListener("submit", function (
   // Si el vendedor los deja vacíos, el backend borra lo que hubiera antes.
   const editPrecioAnteriorInput = document.getElementById("editPrecioAnterior");
   const precioAnterior = editPrecioAnteriorInput ? editPrecioAnteriorInput.value.trim() : "";
-  const editImageUrl2Input = document.getElementById("editImageUrl2");
-  const imageUrl2 = editImageUrl2Input ? editImageUrl2Input.value.trim() : "";
-  const editImageUrl3Input = document.getElementById("editImageUrl3");
-  const imageUrl3 = editImageUrl3Input ? editImageUrl3Input.value.trim() : "";
+  if (fotosExtraEditar.hayPendientes()) { alert(MSG_FOTOS_PENDIENTES); return; }
+  const fotosExtra = fotosExtraEditar.getUrls();
 
   // 🆕 Producto de reventa internacional: mismo criterio que en "Agregar
   // Producto", siempre se envía "1"/"0" explícito.
@@ -1284,7 +1404,7 @@ document.getElementById("editProductForm").addEventListener("submit", function (
   fetch("/EditarProducto", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
+    body: conFotosExtra(new URLSearchParams({
       id: id,
       usuario_id: usuarioIdEdit,
       nombre: name,
@@ -1298,10 +1418,8 @@ document.getElementById("editProductForm").addEventListener("submit", function (
       provincia: provincia,
       ciudad: ciudad,
       precio_anterior: precioAnterior,
-      imagen2: imageUrl2,
-      imagen3: imageUrl3,
       es_extranjero: esExtranjero,
-    }),
+    }), fotosExtra),
   })
     .then((response) => {
       if (!response.ok) {
@@ -1311,6 +1429,7 @@ document.getElementById("editProductForm").addEventListener("submit", function (
       alert("Producto actualizado con éxito.");
       document.getElementById("editProductModal").style.display = "none";
       document.getElementById("editProductForm").reset();
+      fotosExtraEditar.reset();
       productoSeleccionado = null;
     })
     .catch((error) => {

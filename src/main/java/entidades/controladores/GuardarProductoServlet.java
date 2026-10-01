@@ -45,9 +45,11 @@ public class GuardarProductoServlet extends HttpServlet {
         String provincia = request.getParameter("provincia");
         String ciudad = request.getParameter("ciudad");
 
-        // 🆕 Campos opcionales: precio anterior (rebaja) e imágenes
-        // adicionales (2 y 3). Si vienen vacíos, simplemente no se crea
-        // fila en las tablas Descuentos / ImagenesAdicionalesProducto.
+        // 🆕 Campos opcionales: precio anterior (rebaja) y fotos adicionales.
+        // Las fotos adicionales ahora llegan como una LISTA ordenada (parámetro
+        // repetido "imagen_extra", hasta ImagenesProductoServlet.MAX_EXTRA);
+        // si el formulario viejo manda imagen2/imagen3, también se aceptan.
+        // Si vienen vacías, simplemente no se crean filas.
         String precioAnteriorStr = request.getParameter("precio_anterior");
         String imagen2 = request.getParameter("imagen2");
         String imagen3 = request.getParameter("imagen3");
@@ -80,6 +82,15 @@ public class GuardarProductoServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST,
                     "Uno o más campos contienen caracteres no permitidos (HTML o código). "
                     + "Por favor usa solo texto normal.");
+            return;
+        }
+
+        // 🆕 Lista de fotos adicionales (validada: http/https, sin espacios ni
+        // comillas ni <>, máximo MAX_EXTRA, sin repetidas).
+        List<String> fotosExtra = ImagenesProductoServlet.leerDesdeRequest(request);
+        if (fotosExtra == null) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                    "Una de las fotos adicionales no tiene un enlace válido.");
             return;
         }
 
@@ -146,17 +157,12 @@ public class GuardarProductoServlet extends HttpServlet {
                 }
             }
 
-            // 🆕 Si viene al menos una imagen adicional, guardar la fila.
-            boolean hayImagen2 = imagen2 != null && !imagen2.trim().isEmpty();
-            boolean hayImagen3 = imagen3 != null && !imagen3.trim().isEmpty();
-            if (hayImagen2 || hayImagen3) {
-                try (PreparedStatement stmtImagenes = conn.prepareStatement(
-                        "INSERT INTO ImagenesAdicionalesProducto (producto_id, imagen2, imagen3) VALUES (?, ?, ?)")) {
-                    stmtImagenes.setInt(1, nuevoProductoId);
-                    if (hayImagen2) stmtImagenes.setString(2, imagen2.trim()); else stmtImagenes.setNull(2, Types.NVARCHAR);
-                    if (hayImagen3) stmtImagenes.setString(3, imagen3.trim()); else stmtImagenes.setNull(3, Types.NVARCHAR);
-                    stmtImagenes.executeUpdate();
-                }
+            // 🆕 Fotos adicionales (hasta MAX_EXTRA, en el orden elegido):
+            // se guardan en ImagenesProducto (lista completa) y las 2
+            // primeras también en ImagenesAdicionalesProducto (tabla anterior,
+            // que sigue usando el catálogo). Ver ImagenesProductoServlet.
+            if (!fotosExtra.isEmpty()) {
+                ImagenesProductoServlet.guardarLista(conn, nuevoProductoId, fotosExtra);
             }
 
             // 🆕 Si se marcó "producto de reventa internacional", crear la

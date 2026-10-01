@@ -102,7 +102,7 @@
     overflow-x: auto;
   }
   @media (min-width: 821px) {
-    .miniaturas { flex-direction: column; overflow-x: visible; }
+    .miniaturas { flex-direction: column; overflow-x: visible; overflow-y: auto; max-height: 80vh; align-self: start; }
   }
   .miniatura {
     width: 64px;
@@ -997,23 +997,26 @@
   }
   // 🆕 ========= Fin de "Artículo más vendido #N" =========
 
-  function construirGaleria(producto) {
-    const imagenes = [producto.imagen, producto.imagen2, producto.imagen3].filter(Boolean);
+  // Pinta la foto principal + miniaturas con la lista de imágenes dada.
+  // "activa" (opcional) es la URL que debe quedar seleccionada.
+  let galeriaActiva = null;
+  function pintarGaleria(imagenes, nombre, activa) {
     const miniaturasWrap = document.getElementById("miniaturas");
     const imgPrincipal = document.getElementById("imagenPrincipal");
     miniaturasWrap.innerHTML = "";
-
     if (imagenes.length === 0) return;
 
-    imgPrincipal.src = imagenes[0];
-    imgPrincipal.alt = producto.nombre || "";
+    galeriaActiva = imagenes.includes(activa) ? activa : imagenes[0];
+    imgPrincipal.src = galeriaActiva;
+    imgPrincipal.alt = nombre || "";
 
     if (imagenes.length > 1) {
-      imagenes.forEach((img, i) => {
+      imagenes.forEach((img) => {
         const div = document.createElement("div");
-        div.className = "miniatura" + (i === 0 ? " activa" : "");
-        div.innerHTML = `<img src="${esc(img)}" alt="">`;
+        div.className = "miniatura" + (img === galeriaActiva ? " activa" : "");
+        div.innerHTML = `<img src="${esc(img)}" alt="" loading="lazy">`;
         div.addEventListener("click", () => {
+          galeriaActiva = img;
           imgPrincipal.src = img;
           miniaturasWrap.querySelectorAll(".miniatura").forEach((m) => m.classList.remove("activa"));
           div.classList.add("activa");
@@ -1021,6 +1024,32 @@
         miniaturasWrap.appendChild(div);
       });
     }
+  }
+
+  function construirGaleria(producto) {
+    const principal = producto.imagen;
+    // 1) Pintado inmediato con lo que ya trae /api/productos (principal + 2),
+    //    así la página no espera por las fotos adicionales.
+    const iniciales = [producto.imagen, producto.imagen2, producto.imagen3].filter(Boolean);
+    pintarGaleria(iniciales, producto.nombre);
+
+    // 2) Se piden todas las fotos adicionales del producto (hasta 8) y,
+    //    si hay, se repinta la galería completa. Si falla, queda la de arriba.
+    if (!principal || producto.id === undefined || producto.id === null || producto.id === "") return;
+    fetch("/api/imagenes-producto?id=" + encodeURIComponent(producto.id))
+      .then((res) => {
+        if (!res.ok) throw new Error("respuesta " + res.status);
+        return res.json();
+      })
+      .then((extras) => {
+        if (!Array.isArray(extras) || extras.length === 0) return;
+        const todas = [principal];
+        extras.forEach((u) => { if (u && !todas.includes(u)) todas.push(u); });
+        const igual = todas.length === iniciales.length && todas.every((u, i) => u === iniciales[i]);
+        if (igual) return;
+        pintarGaleria(todas, producto.nombre, galeriaActiva);
+      })
+      .catch((err) => console.warn("No se pudieron cargar las fotos adicionales:", err));
   }
 
   function construirPrecio(producto, puestoBestseller) {

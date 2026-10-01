@@ -6,6 +6,7 @@ import jakarta.servlet.http.*;
 import java.io.File;
 import java.io.IOException;
 import java.sql.*;
+import java.util.List;
 import java.util.regex.Pattern;
 
 import entidades.DatabaseConnection;
@@ -43,9 +44,11 @@ public class EditarProductoServlet extends HttpServlet {
         String ciudad = request.getParameter("ciudad");
 
         // 🆕 Igual que en GuardarProductoServlet: precio anterior (rebaja)
-        // e imágenes adicionales (2 y 3), todos opcionales. Si el vendedor
-        // los deja vacíos en el formulario, se borra lo que hubiera antes
-        // (así puede "quitar" una rebaja o una foto extra editando).
+        // y fotos adicionales (lista ordenada en el parámetro repetido
+        // "imagen_extra"; si no viene, se aceptan imagen2/imagen3 del
+        // formulario anterior), todos opcionales. Si el vendedor los deja
+        // vacíos en el formulario, se borra lo que hubiera antes (así puede
+        // "quitar" una rebaja o las fotos extra editando).
         String precioAnteriorStr = request.getParameter("precio_anterior");
         String imagen2 = request.getParameter("imagen2");
         String imagen3 = request.getParameter("imagen3");
@@ -74,6 +77,15 @@ public class EditarProductoServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST,
                     "Uno o más campos contienen caracteres no permitidos (HTML o código). "
                     + "Por favor usa solo texto normal.");
+            return;
+        }
+
+        // 🆕 Lista de fotos adicionales (validada: http/https, sin espacios ni
+        // comillas ni <>, máximo MAX_EXTRA, sin repetidas).
+        List<String> fotosExtra = ImagenesProductoServlet.leerDesdeRequest(request);
+        if (fotosExtra == null) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                    "Una de las fotos adicionales no tiene un enlace válido.");
             return;
         }
 
@@ -180,35 +192,12 @@ public class EditarProductoServlet extends HttpServlet {
                 }
             }
 
-            // 4️⃣ Imágenes adicionales: mismo patrón UPSERT/DELETE. Si no
-            // viene ni imagen2 ni imagen3, se borra la fila (el vendedor
-            // quitó ambas fotos extra al editar).
-            boolean hayImagen2 = imagen2 != null && !imagen2.trim().isEmpty();
-            boolean hayImagen3 = imagen3 != null && !imagen3.trim().isEmpty();
-            if (hayImagen2 || hayImagen3) {
-                try (PreparedStatement psUpdate = conn.prepareStatement(
-                        "UPDATE ImagenesAdicionalesProducto SET imagen2 = ?, imagen3 = ? WHERE producto_id = ?")) {
-                    if (hayImagen2) psUpdate.setString(1, imagen2.trim()); else psUpdate.setNull(1, Types.NVARCHAR);
-                    if (hayImagen3) psUpdate.setString(2, imagen3.trim()); else psUpdate.setNull(2, Types.NVARCHAR);
-                    psUpdate.setInt(3, id);
-                    int filas = psUpdate.executeUpdate();
-                    if (filas == 0) {
-                        try (PreparedStatement psInsert = conn.prepareStatement(
-                                "INSERT INTO ImagenesAdicionalesProducto (producto_id, imagen2, imagen3) VALUES (?, ?, ?)")) {
-                            psInsert.setInt(1, id);
-                            if (hayImagen2) psInsert.setString(2, imagen2.trim()); else psInsert.setNull(2, Types.NVARCHAR);
-                            if (hayImagen3) psInsert.setString(3, imagen3.trim()); else psInsert.setNull(3, Types.NVARCHAR);
-                            psInsert.executeUpdate();
-                        }
-                    }
-                }
-            } else {
-                try (PreparedStatement psDelete = conn.prepareStatement(
-                        "DELETE FROM ImagenesAdicionalesProducto WHERE producto_id = ?")) {
-                    psDelete.setInt(1, id);
-                    psDelete.executeUpdate();
-                }
-            }
+            // 4️⃣ Fotos adicionales: se reemplaza TODA la lista por la que
+            // mandó el formulario, en su orden (lista vacía = el vendedor
+            // quitó todas las fotos extra). Guarda la lista completa en
+            // ImagenesProducto y las 2 primeras también en
+            // ImagenesAdicionalesProducto (ver ImagenesProductoServlet).
+            ImagenesProductoServlet.guardarLista(conn, id, fotosExtra);
 
             // 5️⃣ Producto de reventa internacional (ProductosExtranjeros):
             // mismo patrón que Descuentos pero sin columna de valor, solo
