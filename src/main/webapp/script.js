@@ -1457,6 +1457,9 @@ function eliminarProductoSeleccionado() {
       const cedula = document.getElementById("miTiendaCedula").value;
       cargarProductosMiTienda(cedula);
       productoSeleccionado = null;
+    } else if (response.status === 409) {
+      // El servidor explica por qué (ej. el producto ya tiene pedidos).
+      response.text().then(msg => alert(msg || "No se pudo eliminar el producto."));
     } else {
       alert("No se pudo eliminar el producto.");
     }

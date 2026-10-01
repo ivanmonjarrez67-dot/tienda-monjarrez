@@ -10,7 +10,7 @@ import java.sql.*;
 import entidades.DatabaseConnection;
 
 @WebServlet("/EliminarProducto")
-public class EliminarProductoServlet extends HttpServlet {  
+public class EliminarProductoServlet extends HttpServlet {
 
     // 📂 Ruta de imágenes
     private static final String UPLOAD_DIR = "C:/Monjarrez_Mi_Tienda_En_Linea/uploads/productos";
@@ -54,30 +54,36 @@ public class EliminarProductoServlet extends HttpServlet {
                 }
             }
 
-            // 🆕 2️⃣ Borrar primero las tablas hijas que apuntan a
-            // Productos.id (misma causa del error "FK_ProductosExtranjeros_Productos"
-            // que ya se había resuelto en EliminarPerfilServlet, pero acá
-            // faltaba aplicarlo). Todo dentro de una transacción: si algo
-            // falla, se revierte y el producto no queda a medio borrar.
+            // 🆕 2️⃣ Si el producto ya fue vendido (aparece en DetallePedido) NO se
+            // borra: ese registro es el historial de compras/facturas de los
+            // clientes y la llave foránea no lo permite. Se avisa con un 409.
+            if (existe(conn, "SELECT 1 FROM DetallePedido WHERE producto_id = ?", id)) {
+                response.setStatus(HttpServletResponse.SC_CONFLICT);
+                response.setContentType("text/plain;charset=UTF-8");
+                response.getWriter().write(
+                    "Este producto ya tiene pedidos registrados, por eso no se puede eliminar " +
+                    "sin perder el historial de compras de los clientes.");
+                return;
+            }
+
+            // 3️⃣ Borrar las tablas hijas con NO ACTION (Descuentos, ImagenesAdicionalesProducto,
+            // ImagenesProducto y Resenas se borran solas por ON DELETE CASCADE).
+            // Todo en una transacción: si algo falla se revierte.
             boolean autoCommitOriginal = conn.getAutoCommit();
-            int filas;
+            boolean encontrado;
             try {
                 conn.setAutoCommit(false);
 
+                ejecutarDelete(conn, "DELETE FROM ToquesContacto WHERE producto_id = ?", id);
+                ejecutarDelete(conn, "DELETE FROM DetalleCarrito WHERE producto_id = ?", id);
+                ejecutarDelete(conn, "DELETE FROM ProductosExtranjeros WHERE producto_id = ?", id);
                 ejecutarDelete(conn, "DELETE FROM ImagenesAdicionalesProducto WHERE producto_id = ?", id);
                 ejecutarDelete(conn, "DELETE FROM Descuentos WHERE producto_id = ?", id);
-                ejecutarDelete(conn, "DELETE FROM ProductosExtranjeros WHERE producto_id = ?", id);
 
-                filas = ejecutarDelete(conn, "DELETE FROM Productos WHERE id = ?", id);
+                int filas = ejecutarDelete(conn, "DELETE FROM Productos WHERE id = ?", id);
+                encontrado = filas > 0;
 
-                if (filas == 0) {
-                    conn.rollback();
-                    conn.setAutoCommit(autoCommitOriginal);
-                    response.sendError(HttpServletResponse.SC_NOT_FOUND, "No se encontró un producto con ese ID.");
-                    return;
-                }
-
-                conn.commit();
+                if (encontrado) conn.commit(); else conn.rollback();
             } catch (SQLException ex) {
                 conn.rollback();
                 throw ex;
@@ -85,7 +91,12 @@ public class EliminarProductoServlet extends HttpServlet {
                 conn.setAutoCommit(autoCommitOriginal);
             }
 
-            // 3️⃣ Si el producto tenía imagen → borrarla del servidor
+            if (!encontrado) {
+                response.sendError(HttpServletResponse.SC_NOT_FOUND, "No se encontró un producto con ese ID.");
+                return;
+            }
+
+            // 4️⃣ Si el producto tenía imagen → borrarla del servidor
             if (nombreImagen != null && !nombreImagen.isEmpty()) {
                 // ⚠️ nombreImagen viene con la URL completa (http://...) → extraemos solo el nombre real
                 String fileName = nombreImagen.substring(nombreImagen.lastIndexOf("=") + 1);
@@ -106,6 +117,16 @@ public class EliminarProductoServlet extends HttpServlet {
         } catch (SQLException e) {
             e.printStackTrace();
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error en base de datos.");
+        }
+    }
+
+    /** Devuelve true si la consulta (con un parámetro id) trae al menos una fila. */
+    private boolean existe(Connection conn, String sql, int id) throws SQLException {
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
         }
     }
 
