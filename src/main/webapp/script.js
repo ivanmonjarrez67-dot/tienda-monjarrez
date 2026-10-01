@@ -2031,7 +2031,9 @@ window.addEventListener("DOMContentLoaded", () => {
   const usuarioIdVisible = document.getElementById("usuarioIdVisible");
   const texto = usuarioIdVisible?.textContent?.trim() || "";
   const tieneId = /\d+/.test(texto);
-  if (!tieneId && loginModal) {
+  // 🆕 Con sesión activa (o sesión larga) no se muestra "Ingresar como".
+  const conSesion = typeof window.haySesionActiva === "function" && window.haySesionActiva();
+  if (!tieneId && !conSesion && loginModal) {
     loginModal.style.display = "flex";
   }
 });

@@ -5877,7 +5877,7 @@ function cerrarSesion() {
   try { google.accounts.id.disableAutoSelect(); } catch (e) {}
   // 🆕 Avisa al servidor: borra la sesión larga del comprador (cookie) y la sesión activa.
   fetch("CerrarSesionServlet", { method: "POST" }).catch(() => {});
-  mostrarLogin("Tiempo de sesión agotado");
+  mostrarLogin("Tiempo de sesión agotado", true); // 🆕 al cerrar sesión sí se muestra
   actualizarMiTienda("invitado"); // 🆕 vuelve a mostrar el hero y bloquea "Mi tienda"
 }
 
@@ -5911,7 +5911,21 @@ function actualizarActividad() {
 }
 
 /* --------- FUNCIONES DE LOGIN Y CONTENIDO --------- */
-function mostrarLogin(mensaje) {
+// 🆕 ¿Hay una cuenta con sesión activa en este dispositivo? (sin efectos
+// secundarios: a diferencia de comprobarSesion(), no cierra nada).
+function haySesionActiva() {
+  try {
+    const s = JSON.parse(localStorage.getItem("sesionUsuario"));
+    if (s && Date.now() <= s.expiracion) return true;
+  } catch (e) {}
+  return document.cookie.includes("rmt_ok=1"); // sesión larga de comprador
+}
+window.haySesionActiva = haySesionActiva;
+
+// 🆕 El modal "Ingresar como" ya NO se muestra a quien tiene sesión: solo
+// aparece al cerrar sesión (forzar = true) o a invitados.
+function mostrarLogin(mensaje, forzar = false) {
+  if (!forzar && haySesionActiva()) return;
   document.getElementById("loginModal").style.display = "flex";
   if(mensaje) document.getElementById("loginMensaje").innerText = mensaje;
 
@@ -6286,6 +6300,7 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
 
       function abrirLogin() {
         ocultarAviso(true);
+        if (window.haySesionActiva && window.haySesionActiva()) return; // 🆕 con sesión no se muestra
         const registro = document.getElementById("registroModal");
         if (registro) registro.style.display = "none";
         const login = document.getElementById("loginModal");
@@ -6382,6 +6397,10 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
       const url = new URL(window.location);
       url.searchParams.delete("accion");
       window.history.replaceState({}, "", url);
+
+      // 🆕 Con sesión activa no se abre "Ingresar como" desde los enlaces de correo.
+      if ((accion === "login-vendedor" || accion === "login-comprador") &&
+          window.haySesionActiva && window.haySesionActiva()) return;
 
       if (accion === "login-vendedor") {
         // Mismo flujo que "Ingresar como" → Vendedor/a: abre el login y
