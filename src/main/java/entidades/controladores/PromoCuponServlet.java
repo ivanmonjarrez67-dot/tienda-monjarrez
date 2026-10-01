@@ -45,7 +45,7 @@ public class PromoCuponServlet extends HttpServlet {
         if (!esAdmin(req)) { res.setStatus(401); res.getWriter().write("{\"error\":\"No autorizado\"}"); return; }
         try (Connection c = conexion()) {
             if ("reiniciar".equals(req.getParameter("accion"))) {
-                try (PreparedStatement ps = c.prepareStatement("UPDATE PromoCupon SET campania = campania + 1 WHERE id = 1")) { ps.executeUpdate(); }
+                try (PreparedStatement ps = c.prepareStatement("UPDATE PromoCupon SET campania = campania + 1, ajuste = 0 WHERE id = 1")) { ps.executeUpdate(); }
             } else {
                 int cupos = Math.max(1, Math.min(1000, Integer.parseInt(req.getParameter("cupos"))));
                 String entrega = "comprador".equals(req.getParameter("entrega")) ? "comprador" : "tienda";
@@ -63,6 +63,13 @@ public class PromoCuponServlet extends HttpServlet {
                     ps.setTimestamp(8, Timestamp.valueOf(f));
                     ps.executeUpdate();
                 }
+                // Cupos disponibles puestos a mano por el admin: se guarda como ajuste = cupos - restantes - ganadores registrados
+                String rest = req.getParameter("restantes");
+                if (rest != null && !rest.trim().isEmpty()) {
+                    int r = Math.max(0, Math.min(cupos, Integer.parseInt(rest.trim())));
+                    String adj = "UPDATE PromoCupon SET ajuste = ? - ? - (SELECT COUNT(*) FROM PromoCuponGanadores g WHERE g.campania = PromoCupon.campania) WHERE id = 1";
+                    try (PreparedStatement ps = c.prepareStatement(adj)) { ps.setInt(1, cupos); ps.setInt(2, r); ps.executeUpdate(); }
+                }
             }
             res.getWriter().write(json(c, null));
         } catch (Exception e) {
@@ -78,9 +85,9 @@ public class PromoCuponServlet extends HttpServlet {
      */
     public static boolean registrarPedido(Connection c, int pedidoId) throws SQLException {
         String sql =
-            "SET NOCOUNT ON; DECLARE @camp INT, @cupos INT, @activa BIT, @fin DATETIME2; " +
-            "SELECT @camp=campania, @cupos=cupos, @activa=activa, @fin=fecha_fin FROM PromoCupon WITH (UPDLOCK, HOLDLOCK) WHERE id=1; " +
-            "IF @activa=1 AND @fin > SYSDATETIME() AND (SELECT COUNT(*) FROM PromoCuponGanadores WHERE campania=@camp) < @cupos " +
+            "SET NOCOUNT ON; DECLARE @camp INT, @cupos INT, @activa BIT, @fin DATETIME2, @ajuste INT; " +
+            "SELECT @camp=campania, @cupos=cupos, @activa=activa, @fin=fecha_fin, @ajuste=ISNULL(ajuste,0) FROM PromoCupon WITH (UPDLOCK, HOLDLOCK) WHERE id=1; " +
+            "IF @activa=1 AND @fin > SYSDATETIME() AND (SELECT COUNT(*) FROM PromoCuponGanadores WHERE campania=@camp) + @ajuste < @cupos " +
             "AND NOT EXISTS (SELECT 1 FROM PromoCuponGanadores WHERE campania=@camp AND pedido_id=?) " +
             "BEGIN INSERT INTO PromoCuponGanadores(campania, pedido_id) VALUES (@camp, ?); END " +
             "SELECT CASE WHEN EXISTS (SELECT 1 FROM PromoCuponGanadores WHERE campania=@camp AND pedido_id=?) THEN 1 ELSE 0 END;";
@@ -96,13 +103,14 @@ public class PromoCuponServlet extends HttpServlet {
     }
 
     private static String json(Connection c, String pedido) throws SQLException {
-        String sql = "SELECT p.activa,p.etiqueta,p.titulo,p.condiciones,p.categoria,p.entrega,p.cupos,p.campania," +
+        String sql = "SELECT p.activa,p.etiqueta,p.titulo,p.condiciones,p.categoria,p.entrega,p.cupos,p.campania,ISNULL(p.ajuste,0) AS ajuste," +
                      "CONVERT(VARCHAR(16), p.fecha_fin, 126) AS fin, " +
                      "(SELECT COUNT(*) FROM PromoCuponGanadores g WHERE g.campania=p.campania) AS usados " +
                      "FROM PromoCupon p WHERE p.id=1";
         try (Statement st = c.createStatement(); ResultSet rs = st.executeQuery(sql)) {
             if (!rs.next()) return "{\"activa\":false}";
-            int cupos = rs.getInt("cupos"), usados = rs.getInt("usados"), camp = rs.getInt("campania");
+            int cupos = rs.getInt("cupos"), camp = rs.getInt("campania");
+            int usados = Math.max(0, rs.getInt("usados") + rs.getInt("ajuste"));
             StringBuilder sb = new StringBuilder("{");
             sb.append("\"activa\":").append(rs.getBoolean("activa"));
             sb.append(",\"etiqueta\":").append(q(rs.getString("etiqueta")));

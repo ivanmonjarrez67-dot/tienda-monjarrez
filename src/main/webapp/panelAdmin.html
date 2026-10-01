@@ -531,6 +531,9 @@
       <select id="prEntrega" style="width:100%;background:#0d1010;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:9px 11px;font-family:var(--sans);font-size:13.5px;"><option value="tienda">La tienda elige el regalo</option><option value="comprador">El comprador lo elige</option></select>
       <label for="prCupos">Cupos (compradores que lo reciben)</label>
       <input type="number" id="prCupos" min="1" max="1000" required>
+      <label for="prRestantes">Quedan disponibles ahora</label>
+      <input type="number" id="prRestantes" min="0" max="1000">
+      <div class="hint">Si ya hubo pedidos que no se contaron, pon aquí cuántos cupos quedan. Lo que se vea en la tienda será este número.</div>
       <label for="prFin">Termina el (hora de Costa Rica)</label>
       <input type="datetime-local" id="prFin" required>
       <div class="hint" id="prEstado"></div>
@@ -1058,7 +1061,7 @@ const PROMO_ENDPOINT = '/admin/promoCupon';
 function pintarPromo(c){
   prActiva.checked = !!c.activa; prEtiqueta.value = c.etiqueta || ''; prTitulo.value = c.titulo || '';
   prCondiciones.value = c.condiciones || ''; prCategoria.value = c.categoria || 'Joyería y Accesorios';
-  prEntrega.value = c.entrega || 'tienda'; prCupos.value = c.cupos || 7; prFin.value = (c.fechaFin || '').slice(0,16);
+  prEntrega.value = c.entrega || 'tienda'; prCupos.value = c.cupos || 7; prRestantes.value = c.restantes ?? ''; prFin.value = (c.fechaFin || '').slice(0,16);
   prEstado.textContent = `usados ${c.usados ?? 0} de ${c.cupos ?? 0} · restantes ${c.restantes ?? 0}`;
 }
 async function abrirModalPromo(){
@@ -1084,7 +1087,7 @@ async function enviarPromo(body, okMsg){
 document.getElementById('formPromo').addEventListener('submit', (e) => {
   e.preventDefault();
   enviarPromo(new URLSearchParams({accion:'guardar', activa: prActiva.checked ? '1' : '0', etiqueta: prEtiqueta.value, titulo: prTitulo.value,
-    condiciones: prCondiciones.value, categoria: prCategoria.value, entrega: prEntrega.value, cupos: prCupos.value, fechaFin: prFin.value}).toString(), 'Cupón actualizado');
+    condiciones: prCondiciones.value, categoria: prCategoria.value, entrega: prEntrega.value, cupos: prCupos.value, restantes: prRestantes.value, fechaFin: prFin.value}).toString(), 'Cupón actualizado');
 });
 function reiniciarPromo(){
   if(confirm('¿Reiniciar el contador de cupos? Los pedidos que ya recibieron el regalo no se tocan, pero vuelven a estar todos los cupos disponibles.'))
