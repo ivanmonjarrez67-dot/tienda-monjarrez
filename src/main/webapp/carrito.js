@@ -119,19 +119,15 @@
         color: #fff !important;
         font-size: 18px !important;
         line-height: 1 !important;
-        text-decoration: none;
+        text-decoration: none !important;
         flex-shrink: 0;
         transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
       }
-      header #cartHeaderBtn {
+      header #cartHeaderBtn,
+      header #pedidosHeaderBtn {
         background: linear-gradient(145deg, #b83b4a 0%, #8a2b37 100%) !important;
         border: 1px solid rgba(255, 255, 255, 0.18) !important;
         box-shadow: 0 3px 10px rgba(161, 51, 65, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
-      }
-      header #pedidosHeaderBtn {
-        background: rgba(255, 255, 255, 0.07) !important;
-        border: 1px solid rgba(232, 80, 95, 0.55) !important;
-        color: #ff6b79 !important;
       }
       header #pedidosHeaderBtn[hidden] { display: none !important; }
       header #cartHeaderBtn:hover,
@@ -159,7 +155,7 @@
         box-sizing: border-box;
       }
       header #cartHeaderBtn .cart-badge { background: #fff !important; color: #a13341 !important; }
-      header #pedidosHeaderBtn .pedidos-badge { background: #f5a623 !important; color: #1a1a1a !important; }
+      header #pedidosHeaderBtn .pedidos-badge { background: #fff !important; color: #a13341 !important; }
       header #cartHeaderBtn .cart-badge.visible,
       header #pedidosHeaderBtn .pedidos-badge.visible { display: flex !important; }
 
@@ -558,6 +554,10 @@
   // Se recarga el carrito (y el badge) apenas carga cualquier página que
   // incluya este script, y cada vez que la sesión cambie (login/logout
   // disparan estos mismos eventos de actividad en index.html).
+  // Los estilos del header deben existir desde el primer pintado, no solo
+  // cuando aparece la primera tarjeta de producto (si no, al refrescar
+  // los botones se ven sin estilo hasta que cargan los productos).
+  inyectarEstilos();
   document.addEventListener("DOMContentLoaded", cargarCarrito);
 
   window.Carrito = {
