@@ -101,36 +101,67 @@
         justify-content: center;
       }
 
-      #cartHeaderBtn {
-        position: relative;
-        background: none;
-        border: none;
-        color: #fff;
-        font-size: 20px;
+      /* Botones del header: carrito + pedidos en proceso. Se usa
+         "header" + !important porque styles.css también toca estos
+         botones y antes ganaba su estilo plano (caja blanca con "0"). */
+      header #cartHeaderBtn,
+      header #pedidosHeaderBtn {
+        position: relative !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 42px !important;
+        height: 42px !important;
+        padding: 0 !important;
+        margin-left: 10px !important;
+        border-radius: 13px !important;
         cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 38px;
-        height: 38px;
+        color: #fff !important;
+        font-size: 18px !important;
+        line-height: 1 !important;
+        text-decoration: none;
+        flex-shrink: 0;
+        transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
       }
-      #cartHeaderBtn .cart-badge {
-        position: absolute;
-        top: 0;
-        right: 0;
-        background: #a13341;
-        color: #fff;
-        font-size: 10px;
+      header #cartHeaderBtn {
+        background: linear-gradient(145deg, #b83b4a 0%, #8a2b37 100%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.18) !important;
+        box-shadow: 0 3px 10px rgba(161, 51, 65, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+      }
+      header #pedidosHeaderBtn {
+        background: rgba(255, 255, 255, 0.07) !important;
+        border: 1px solid rgba(232, 80, 95, 0.55) !important;
+        color: #ff6b79 !important;
+      }
+      header #pedidosHeaderBtn[hidden] { display: none !important; }
+      header #cartHeaderBtn:hover,
+      header #pedidosHeaderBtn:hover { transform: translateY(-1px); filter: brightness(1.12); }
+      header #cartHeaderBtn:active,
+      header #pedidosHeaderBtn:active { transform: scale(0.93); }
+
+      /* Globito de notificación (solo se ve si el número es mayor a 0) */
+      header #cartHeaderBtn .cart-badge,
+      header #pedidosHeaderBtn .pedidos-badge {
+        position: absolute !important;
+        top: -7px !important;
+        right: -7px !important;
+        min-width: 19px;
+        height: 19px;
+        padding: 0 5px;
+        border-radius: 10px;
+        font-size: 11px;
         font-weight: 700;
-        min-width: 16px;
-        height: 16px;
-        border-radius: 8px;
-        display: none;
+        line-height: 1;
+        display: none !important;
         align-items: center;
         justify-content: center;
-        padding: 0 3px;
+        border: 2px solid #0a0a0a;
+        box-sizing: border-box;
       }
-      #cartHeaderBtn .cart-badge.visible { display: flex; }
+      header #cartHeaderBtn .cart-badge { background: #fff !important; color: #a13341 !important; }
+      header #pedidosHeaderBtn .pedidos-badge { background: #f5a623 !important; color: #1a1a1a !important; }
+      header #cartHeaderBtn .cart-badge.visible,
+      header #pedidosHeaderBtn .pedidos-badge.visible { display: flex !important; }
 
       .carrito-overlay {
         position: fixed;
@@ -322,7 +353,34 @@
     });
   }
 
+  // ---- Pedidos en proceso (ícono de camión en el header) --------------
+  // Mismo criterio que carrito.html: todo pedido que no esté "entregado".
+  function actualizarBadgePedidos(n) {
+    const btn = document.getElementById("pedidosHeaderBtn");
+    if (!btn) return;
+    const badge = btn.querySelector(".pedidos-badge");
+    btn.hidden = !(n > 0);
+    if (badge) {
+      badge.textContent = n > 99 ? "99+" : String(n);
+      badge.classList.toggle("visible", n > 0);
+    }
+    btn.title = n === 1 ? "1 pedido en proceso" : n + " pedidos en proceso";
+  }
+
+  function cargarPedidosEnProceso() {
+    if (!haySesion()) { actualizarBadgePedidos(0); return Promise.resolve(0); }
+    return fetch("/api/mis-pedidos")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((lista) => {
+        const n = (lista || []).filter((p) => p.estado !== "entregado").length;
+        actualizarBadgePedidos(n);
+        return n;
+      })
+      .catch(() => 0);
+  }
+
   function cargarCarrito() {
+    cargarPedidosEnProceso();
     if (!haySesion()) { carritoItems = []; actualizarBadge(); return Promise.resolve([]); }
     return fetch("/api/carrito")
       .then((res) => (res.ok ? res.json() : []))
@@ -505,6 +563,7 @@
   window.Carrito = {
     botonHTML: botonHTML,
     cargar: cargarCarrito,
+    cargarPedidos: cargarPedidosEnProceso,
     haySesion: haySesion,
     pedirLogin: pedirLogin,
     fmtCrc: fmtCrc,

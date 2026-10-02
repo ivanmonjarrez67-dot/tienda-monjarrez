@@ -2210,6 +2210,12 @@
       <i class="fa-solid fa-cart-shopping"></i>
       <span class="cart-badge">0</span>
     </button>
+    <!-- 🆕 Pedidos en proceso: solo aparece si hay pedidos sin entregar.
+         El número lo maneja carrito.js (cargarPedidosEnProceso). -->
+    <a id="pedidosHeaderBtn" href="mis-pedidos.html" target="_blank" rel="noopener" hidden title="Pedidos en proceso" aria-label="Pedidos en proceso">
+      <i class="fa-solid fa-truck-fast"></i>
+      <span class="pedidos-badge">0</span>
+    </a>
   </div>
 </header>
 
