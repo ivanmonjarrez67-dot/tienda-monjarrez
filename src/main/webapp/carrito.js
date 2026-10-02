@@ -103,19 +103,16 @@
 
       /* Botón 🛒+ reubicado en la zona de información de la tarjeta
          (estilo Temu): contorno oscuro, NO rojo, para no competir con el
-         descuento. Lo mueve reubicarBotones() desde la foto hasta la
-         fila del precio. */
-      .producto-precio.con-btn-carrito {
-        position: relative;
-        padding-right: 44px !important;
-        min-height: 34px;
-      }
+         descuento. reubicarBotones() lo mueve desde la foto hasta la
+         tarjeta y queda fijo en la esquina inferior derecha, sin quitarle
+         espacio al precio ni al descuento (así siempre van juntos). */
+      .producto.con-btn-carrito { position: relative; }
       .btn-agregar-carrito.en-info {
         position: absolute !important;
-        right: 0 !important;
-        bottom: auto !important;
-        top: 50% !important;
-        transform: translateY(-50%);
+        right: 12px !important;
+        bottom: 10px !important;
+        top: auto !important;
+        transform: none;
         width: 34px;
         height: 34px;
         background: #fff !important;
@@ -123,10 +120,11 @@
         border: 1.5px solid #2b2b2b !important;
         box-shadow: none !important;
         font-size: 15px;
+        z-index: 3;
         transition: background 0.15s ease, transform 0.12s ease;
       }
-      .btn-agregar-carrito.en-info:hover { background: #f1f1f1 !important; transform: translateY(-50%) scale(1.06); }
-      .btn-agregar-carrito.en-info:active { transform: translateY(-50%) scale(0.92); }
+      .btn-agregar-carrito.en-info:hover { background: #f1f1f1 !important; transform: scale(1.06); }
+      .btn-agregar-carrito.en-info:active { transform: scale(0.92); }
       .btn-agregar-carrito.en-info .fa-plus {
         background: #fff;
         color: #2b2b2b;
@@ -134,8 +132,7 @@
         right: 5px;
       }
       @media (max-width: 500px) {
-        .producto-precio.con-btn-carrito { padding-right: 36px !important; min-height: 30px; }
-        .btn-agregar-carrito.en-info { width: 30px; height: 30px; font-size: 13px; }
+        .btn-agregar-carrito.en-info { width: 30px; height: 30px; font-size: 13px; right: 8px !important; bottom: 8px !important; }
         .btn-agregar-carrito.en-info .fa-plus { bottom: 4px; right: 3px; }
       }
 
@@ -623,7 +620,7 @@
 
   // ---- Reubicar el botón 🛒+ de la foto a la info de la tarjeta -------
   // El catálogo (script.js) pinta el botón encima de la imagen; aquí se
-  // mueve, ya pintado, a la fila del precio. Solo toca tarjetas
+  // mueve, ya pintado, a la esquina inferior de la tarjeta. Solo toca tarjetas
   // ".producto" que tengan ".producto-precio"; las demás (carrito.html,
   // detalle) quedan como estaban.
   function reubicarBotones() {
@@ -631,9 +628,9 @@
       const card = btn.closest(".producto");
       const precio = card && card.querySelector(".producto-precio");
       if (!precio) return;
-      precio.classList.add("con-btn-carrito");
+      card.classList.add("con-btn-carrito");
       btn.classList.add("en-info");
-      precio.appendChild(btn);
+      card.appendChild(btn);
     });
   }
   let reubicarPendiente = false;
