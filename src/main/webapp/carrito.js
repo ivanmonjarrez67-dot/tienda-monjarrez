@@ -159,6 +159,30 @@
       header #cartHeaderBtn .cart-badge.visible,
       header #pedidosHeaderBtn .pedidos-badge.visible { display: flex !important; }
 
+      /* Teléfono: botones del tamaño de la lupa de búsqueda. Va AQUÍ,
+         después de las reglas base, porque este <style> se inyecta al
+         final del <head> y gana sobre cualquier regla igual de
+         específica que esté en index.html. */
+      @media (max-width: 600px) {
+        header #cartHeaderBtn,
+        header #pedidosHeaderBtn {
+          width: 30px !important;
+          height: 30px !important;
+          margin-left: 0 !important;
+          font-size: 13px !important;
+          border-radius: 9px !important;
+        }
+        header #cartHeaderBtn .cart-badge,
+        header #pedidosHeaderBtn .pedidos-badge {
+          top: -6px !important;
+          right: -6px !important;
+          min-width: 16px;
+          height: 16px;
+          font-size: 10px;
+          padding: 0 4px;
+        }
+      }
+
       .carrito-overlay {
         position: fixed;
         inset: 0;

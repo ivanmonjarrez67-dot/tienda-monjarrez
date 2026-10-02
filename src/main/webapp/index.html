@@ -664,25 +664,8 @@
           max-width: none !important;
           margin: 0 !important;
         }
-        /* Carrito y pedidos: del mismo tamaño que el botón de la lupa,
-           así la barra de búsqueda gana todo el espacio que sobra. */
-        header #cartHeaderBtn,
-        header #pedidosHeaderBtn {
-          width: 34px !important;
-          height: 34px !important;
-          margin-left: 0 !important;
-          font-size: 14px !important;
-          border-radius: 10px !important;
-        }
-        header #cartHeaderBtn .cart-badge,
-        header #pedidosHeaderBtn .pedidos-badge {
-          top: -6px !important;
-          right: -6px !important;
-          min-width: 16px;
-          height: 16px;
-          font-size: 10px;
-          padding: 0 4px;
-        }
+        /* El tamaño de los botones de carrito/pedidos en teléfono vive
+           en carrito.js (se inyecta después y ganaría sobre esto). */
       }
 
       .filters {
@@ -4317,7 +4300,7 @@ async function cargarMisProductos(usuarioId) {
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="script.js"></script>
-<script src="carrito.js?v=3"></script>
+<script src="carrito.js?v=4"></script>
 
 <script>
 /* ================================================================
