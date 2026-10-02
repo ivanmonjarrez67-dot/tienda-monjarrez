@@ -645,8 +645,17 @@
         header .header-content {
           flex-wrap: wrap !important;
           align-items: center !important;
-          gap: 8px !important;
-          padding-right: 12px !important;
+          gap: 6px !important;
+          /* Margen parejo y pequeño a ambos lados: la fila de búsqueda
+             llega casi hasta la izquierda (sin pegarse al borde). */
+          padding-left: 10px !important;
+          padding-right: 10px !important;
+        }
+        /* El título conserva su desplazamiento para no quedar encima del
+           logo, ahora con padding propio en vez del de .header-content. */
+        header .store-title {
+          box-sizing: border-box;
+          padding-left: 50px;
         }
         header .search-group {
           flex: 1 1 0 !important;
@@ -655,18 +664,24 @@
           max-width: none !important;
           margin: 0 !important;
         }
+        /* Carrito y pedidos: del mismo tamaño que el botón de la lupa,
+           así la barra de búsqueda gana todo el espacio que sobra. */
         header #cartHeaderBtn,
         header #pedidosHeaderBtn {
-          width: 38px !important;
-          height: 38px !important;
+          width: 34px !important;
+          height: 34px !important;
           margin-left: 0 !important;
-          font-size: 16px !important;
-          border-radius: 11px !important;
+          font-size: 14px !important;
+          border-radius: 10px !important;
         }
         header #cartHeaderBtn .cart-badge,
         header #pedidosHeaderBtn .pedidos-badge {
           top: -6px !important;
           right: -6px !important;
+          min-width: 16px;
+          height: 16px;
+          font-size: 10px;
+          padding: 0 4px;
         }
       }
 
