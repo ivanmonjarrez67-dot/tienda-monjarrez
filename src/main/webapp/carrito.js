@@ -101,6 +101,44 @@
         justify-content: center;
       }
 
+      /* Botón 🛒+ reubicado en la zona de información de la tarjeta
+         (estilo Temu): contorno oscuro, NO rojo, para no competir con el
+         descuento. Lo mueve reubicarBotones() desde la foto hasta la
+         fila del precio. */
+      .producto-precio.con-btn-carrito {
+        position: relative;
+        padding-right: 44px !important;
+        min-height: 34px;
+      }
+      .btn-agregar-carrito.en-info {
+        position: absolute !important;
+        right: 0 !important;
+        bottom: auto !important;
+        top: 50% !important;
+        transform: translateY(-50%);
+        width: 34px;
+        height: 34px;
+        background: #fff !important;
+        color: #2b2b2b !important;
+        border: 1.5px solid #2b2b2b !important;
+        box-shadow: none !important;
+        font-size: 15px;
+        transition: background 0.15s ease, transform 0.12s ease;
+      }
+      .btn-agregar-carrito.en-info:hover { background: #f1f1f1 !important; transform: translateY(-50%) scale(1.06); }
+      .btn-agregar-carrito.en-info:active { transform: translateY(-50%) scale(0.92); }
+      .btn-agregar-carrito.en-info .fa-plus {
+        background: #fff;
+        color: #2b2b2b;
+        bottom: 6px;
+        right: 5px;
+      }
+      @media (max-width: 500px) {
+        .producto-precio.con-btn-carrito { padding-right: 36px !important; min-height: 30px; }
+        .btn-agregar-carrito.en-info { width: 30px; height: 30px; font-size: 13px; }
+        .btn-agregar-carrito.en-info .fa-plus { bottom: 4px; right: 3px; }
+      }
+
       /* Botones del header: carrito + pedidos en proceso. Se usa
          "header" + !important porque styles.css también toca estos
          botones y antes ganaba su estilo plano (caja blanca con "0"). */
@@ -582,6 +620,30 @@
   // cuando aparece la primera tarjeta de producto (si no, al refrescar
   // los botones se ven sin estilo hasta que cargan los productos).
   inyectarEstilos();
+
+  // ---- Reubicar el botón 🛒+ de la foto a la info de la tarjeta -------
+  // El catálogo (script.js) pinta el botón encima de la imagen; aquí se
+  // mueve, ya pintado, a la fila del precio. Solo toca tarjetas
+  // ".producto" que tengan ".producto-precio"; las demás (carrito.html,
+  // detalle) quedan como estaban.
+  function reubicarBotones() {
+    document.querySelectorAll(".producto .btn-agregar-carrito:not(.en-info)").forEach((btn) => {
+      const card = btn.closest(".producto");
+      const precio = card && card.querySelector(".producto-precio");
+      if (!precio) return;
+      precio.classList.add("con-btn-carrito");
+      btn.classList.add("en-info");
+      precio.appendChild(btn);
+    });
+  }
+  let reubicarPendiente = false;
+  new MutationObserver(() => {
+    if (reubicarPendiente) return;
+    reubicarPendiente = true;
+    requestAnimationFrame(() => { reubicarPendiente = false; reubicarBotones(); });
+  }).observe(document.documentElement, { childList: true, subtree: true });
+  reubicarBotones();
+
   document.addEventListener("DOMContentLoaded", cargarCarrito);
 
   window.Carrito = {
