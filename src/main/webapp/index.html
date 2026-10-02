@@ -638,6 +638,36 @@
         #search {
           font-size: 15px !important;
         }
+
+        /* 🆕 Fila 2 del header en teléfono: la búsqueda se estira y se
+           achica según haga falta, y el carrito + pedidos quedan a su
+           lado en la misma fila (antes el de pedidos saltaba abajo). */
+        header .header-content {
+          flex-wrap: wrap !important;
+          align-items: center !important;
+          gap: 8px !important;
+          padding-right: 12px !important;
+        }
+        header .search-group {
+          flex: 1 1 0 !important;
+          min-width: 0 !important;
+          width: auto !important;
+          max-width: none !important;
+          margin: 0 !important;
+        }
+        header #cartHeaderBtn,
+        header #pedidosHeaderBtn {
+          width: 38px !important;
+          height: 38px !important;
+          margin-left: 0 !important;
+          font-size: 16px !important;
+          border-radius: 11px !important;
+        }
+        header #cartHeaderBtn .cart-badge,
+        header #pedidosHeaderBtn .pedidos-badge {
+          top: -6px !important;
+          right: -6px !important;
+        }
       }
 
       .filters {
