@@ -1148,8 +1148,8 @@ function volverListaPedidos(){
 }
 function abrirPedidos(){ document.getElementById('modalPedidos').classList.add('show'); volverListaPedidos(); }
 function cerrarPedidos(){ document.getElementById('modalPedidos').classList.remove('show'); }
-// Enlace de rastreo automático (LMEXPRESS / LM Parcel). Si el pedido viene con otro transportista, se edita el campo a mano.
-const RASTREO_BASE = 'https://www.lmparcel.com/search?nums=';
+// Enlace de rastreo automático (Parcels, en español; detecta LMEXPRESS / LM Parcel). Si el pedido viene con otro transportista, se edita el campo a mano.
+const RASTREO_BASE = 'https://parcelsapp.com/es/tracking/';
 function rastreoAuto(){
   const g = document.getElementById('pGuia').value.trim();
   return g ? RASTREO_BASE + encodeURIComponent(g) : '';
