@@ -1148,6 +1148,12 @@ function volverListaPedidos(){
 }
 function abrirPedidos(){ document.getElementById('modalPedidos').classList.add('show'); volverListaPedidos(); }
 function cerrarPedidos(){ document.getElementById('modalPedidos').classList.remove('show'); }
+// Enlace de rastreo automático (LMEXPRESS / LM Parcel). Si el pedido viene con otro transportista, se edita el campo a mano.
+const RASTREO_BASE = 'https://www.lmparcel.com/search?nums=';
+function rastreoAuto(){
+  const g = document.getElementById('pGuia').value.trim();
+  return g ? RASTREO_BASE + encodeURIComponent(g) : '';
+}
 function elegirPedido(id){
   const p = PEDIDOS.find(x => x.id === id); PED_ACTUAL = id; PED_TOTAL = p.total;
   document.getElementById('formPedido').classList.add('active');
@@ -1163,10 +1169,16 @@ function elegirPedido(id){
   document.getElementById('pSinpe').value = p.sinpe || '';
   document.getElementById('pDesde').value = p.desde || ''; document.getElementById('pHasta').value = p.hasta || '';
   document.getElementById('pGuia').value = p.guia || ''; document.getElementById('pRastreo').value = p.rastreo || '';
+  if(!pRastreo.value) pRastreo.value = rastreoAuto();
 }
+document.getElementById('pGuia').addEventListener('input', () => {
+  const r = document.getElementById('pRastreo');
+  if(!r.value || r.value.startsWith(RASTREO_BASE)) r.value = rastreoAuto();   // si ya lo editaste a otro transportista, no lo pisa
+});
 document.getElementById('formPedido').addEventListener('submit', async (e) => {
   e.preventDefault();
   const err = document.getElementById('errorPedido'); err.classList.remove('show');
+  if(!pRastreo.value.trim() && pGuia.value.trim()) pRastreo.value = rastreoAuto();
   const d = new URLSearchParams({accion:'novedad', pedido_id:PED_ACTUAL, estado:pEstado.value, mensaje:pMensaje.value, monto_pagado:pMonto.value,
     sinpe_numero:pSinpe.value, fecha_est_desde:pDesde.value, fecha_est_hasta:pHasta.value, numero_guia:pGuia.value, url_rastreo:pRastreo.value,
     notificar: pNotificar.checked ? '1' : '0'});
