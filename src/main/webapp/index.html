@@ -7005,12 +7005,118 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         overlay.addEventListener("click", function (e) { if (e.target === overlay) cerrar(); });
         document.addEventListener("keydown", function (e) { if (e.key === "Escape") cerrar(); });
 
+        // Arma la imagen completa de la tarjeta (logo + título + QR + textos)
+        // para que lo descargado se vea igual que el modal, no solo el QR.
+        function cargarLogo() {
+          return new Promise(function (res) {
+            var im = new Image();
+            var t = setTimeout(function () { res(null); }, 3000);
+            im.onload = function () { clearTimeout(t); res(im); };
+            im.onerror = function () { clearTimeout(t); res(null); };
+            im.src = "icon-512.png";
+          });
+        }
+        function cargarFuentes() {
+          try {
+            return Promise.all([
+              document.fonts.load('700 76px Poppins'),
+              document.fonts.load('600 52px Poppins'),
+              document.fonts.load('400 40px Poppins')
+            ]).catch(function () {});
+          } catch (e) { return Promise.resolve(); }
+        }
+        function rectRedondo(ctx, x, y, w, h, r) {
+          ctx.beginPath();
+          ctx.moveTo(x + r, y);
+          ctx.arcTo(x + w, y, x + w, y + h, r);
+          ctx.arcTo(x + w, y + h, x, y + h, r);
+          ctx.arcTo(x, y + h, x, y, r);
+          ctx.arcTo(x, y, x + w, y, r);
+          ctx.closePath();
+        }
+        function partirLineas(ctx, texto, maxAncho) {
+          var palabras = texto.split(" "), lineas = [], actual = "";
+          palabras.forEach(function (p) {
+            var prueba = actual ? actual + " " + p : p;
+            if (ctx.measureText(prueba).width > maxAncho && actual) { lineas.push(actual); actual = p; }
+            else actual = prueba;
+          });
+          if (actual) lineas.push(actual);
+          return lineas;
+        }
+        function armarTarjeta(sinLogo) {
+          return Promise.all([sinLogo ? null : cargarLogo(), cargarFuentes()]).then(function (r) {
+            var logo = r[0];
+            var W = 1080, H = 1420, cx = W / 2;
+            var c = document.createElement("canvas");
+            c.width = W; c.height = H;
+            var ctx = c.getContext("2d");
+            var fam = '"Poppins", Arial, sans-serif';
+            ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H);
+
+            // Tarjeta con borde suave y franja roja arriba
+            ctx.save();
+            rectRedondo(ctx, 30, 30, W - 60, H - 60, 44);
+            ctx.clip();
+            ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H);
+            ctx.fillStyle = "#a8323e"; ctx.fillRect(0, 0, W, 40);
+            ctx.restore();
+            rectRedondo(ctx, 30, 30, W - 60, H - 60, 44);
+            ctx.lineWidth = 3; ctx.strokeStyle = "#ececec"; ctx.stroke();
+
+            // Logo
+            if (logo && logo.naturalWidth) {
+              var lh = 190, lw = lh * (logo.naturalWidth / logo.naturalHeight);
+              ctx.drawImage(logo, cx - lw / 2, 85, lw, lh);
+            }
+
+            // "Tienda" oscuro + "Monjarrez" rojo, centrado
+            ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
+            ctx.font = "700 76px " + fam;
+            var t1 = "Tienda ", t2 = "Monjarrez";
+            var w1 = ctx.measureText(t1).width, w2 = ctx.measureText(t2).width;
+            var x0 = cx - (w1 + w2) / 2, yT = 395;
+            ctx.fillStyle = "#1a1a1a"; ctx.fillText(t1, x0, yT);
+            ctx.fillStyle = "#a8323e"; ctx.fillText(t2, x0 + w1, yT);
+
+            // Caja del QR
+            var bx = 220, by = 450, bs = 640;
+            rectRedondo(ctx, bx, by, bs, bs, 30);
+            ctx.fillStyle = "#ffffff"; ctx.fill();
+            ctx.lineWidth = 3; ctx.strokeStyle = "#e5e5e5"; ctx.stroke();
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(canvas, bx + 25, by + 25, bs - 50, bs - 50);
+
+            // Textos de abajo
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#1a1a1a"; ctx.font = "600 52px " + fam;
+            var lineas = partirLineas(ctx, "Escanea el código para entrar a la tienda", 860);
+            var y = 1180;
+            lineas.forEach(function (l) { ctx.fillText(l, cx, y); y += 68; });
+            ctx.fillStyle = "#777777"; ctx.font = "400 42px " + fam;
+            ctx.fillText("tiendamonjarrez.com", cx, y + 12);
+            return c;
+          });
+        }
+
         document.getElementById("qrDescargar").addEventListener("click", function () {
           if (!dibujado) return;
-          var a = document.createElement("a");
-          a.download = "qr-tienda-monjarrez.png";
-          a.href = canvas.toDataURL("image/png");
-          document.body.appendChild(a); a.click(); a.remove();
+          function bajar(c) {
+            var a = document.createElement("a");
+            a.download = "qr-tienda-monjarrez.png";
+            a.href = c.toDataURL("image/png");
+            document.body.appendChild(a); a.click(); a.remove();
+          }
+          armarTarjeta().then(bajar).catch(function () {
+            // Si el logo da problemas, intenta la misma tarjeta sin logo
+            return armarTarjeta(true).then(bajar);
+          }).catch(function () {
+            // Si algo falla armando la tarjeta, al menos baja el QR solo
+            var a = document.createElement("a");
+            a.download = "qr-tienda-monjarrez.png";
+            a.href = canvas.toDataURL("image/png");
+            document.body.appendChild(a); a.click(); a.remove();
+          });
         });
 
         // Imprimir: abre el diálogo de impresión con una hoja limpia (logo + QR + enlace)
