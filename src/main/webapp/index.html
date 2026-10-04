@@ -396,6 +396,43 @@
         100% { transform: scale(1); }
       }
 
+      /* 🆕 Botón de QR de la tienda: va justo después de la campana */
+      .qr-btn { margin-left: 4px; }
+      .qr-btn:active { transform: scale(0.9); background-color: rgba(255, 255, 255, 0.08); }
+      .qr-overlay {
+        position: fixed; inset: 0; z-index: 10001;
+        background: rgba(0, 0, 0, 0.65);
+        display: none; align-items: center; justify-content: center;
+        padding: 16px;
+      }
+      .qr-overlay.abierto { display: flex; }
+      .qr-card {
+        position: relative; width: 100%; max-width: 340px;
+        background: #ffffff; color: #1a1a1a;
+        border-radius: 16px; padding: 22px 20px 18px;
+        text-align: center; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+        border-top: 4px solid #b33a3a;
+      }
+      .qr-cerrar {
+        position: absolute; top: 8px; right: 10px;
+        background: transparent; border: none; font-size: 24px; line-height: 1;
+        color: #666; cursor: pointer; padding: 4px 8px;
+      }
+      .qr-titulo { margin: 0 0 4px; font-size: 18px; font-weight: 700; color: #b33a3a; }
+      .qr-sub { margin: 0 0 14px; font-size: 13px; color: #555; }
+      .qr-canvas {
+        width: 240px; height: 240px; max-width: 100%;
+        border: 1px solid #e5e5e5; border-radius: 10px; background: #fff;
+      }
+      .qr-url { margin: 10px 0 14px; font-size: 13px; color: #333; word-break: break-all; }
+      .qr-acciones { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+      .qr-acciones button {
+        flex: 1 1 120px; padding: 10px 12px; border-radius: 10px; cursor: pointer;
+        font-size: 14px; font-weight: 600; border: 1px solid #b33a3a;
+        background: #b33a3a; color: #fff;
+      }
+      .qr-acciones button.qr-sec { background: #fff; color: #b33a3a; }
+
       /* 🆕 Transición profesional al auto-ocultarse: fade + deslizamiento
          suave hacia arriba, sin giros ni blur. Se aplica por separado a
          la parte roja (.info-bar-main) y al aviso de envío
@@ -2333,6 +2370,16 @@
             <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
           </svg>
           <span class="notif-dot"></span>
+        </button>
+
+        <!-- Botón de QR de la tienda: de último en la fila, después de la campana -->
+        <button id="qrBtn" class="notif-bell-btn qr-btn" title="QR de Tienda Monjarrez" aria-label="Ver QR de la tienda">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+            <path d="M14 14h3v3h-3zM20 14v2M14 20h3M20 19v2"></path>
+          </svg>
         </button>
       </div>
     </div>
@@ -6865,6 +6912,72 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
           .then(function (r) { if (!r.ok) throw 0; return r.json(); })
           .then(iniciar)
           .catch(function () { iniciar(RESPALDO); });
+      })();
+    </script>
+    <!-- 🆕 QR de la página principal (tiendamonjarrez.com) -->
+    <div class="qr-overlay" id="qrOverlay" role="dialog" aria-modal="true" aria-labelledby="qrTitulo">
+      <div class="qr-card">
+        <button class="qr-cerrar" id="qrCerrar" aria-label="Cerrar">&times;</button>
+        <h3 class="qr-titulo" id="qrTitulo">Tienda Monjarrez</h3>
+        <p class="qr-sub">Escanea el código para entrar a la tienda</p>
+        <canvas class="qr-canvas" id="qrCanvas" width="1024" height="1024"></canvas>
+        <p class="qr-url">tiendamonjarrez.com</p>
+        <div class="qr-acciones">
+          <button type="button" id="qrDescargar">Descargar</button>
+          <button type="button" class="qr-sec" id="qrCopiar">Copiar enlace</button>
+        </div>
+      </div>
+    </div>
+    <script src="qrcode-generator_min.js"></script>
+    <script>
+      (function () {
+        var URL_TIENDA = "https://tiendamonjarrez.com/";
+        var btn = document.getElementById("qrBtn");
+        var overlay = document.getElementById("qrOverlay");
+        var canvas = document.getElementById("qrCanvas");
+        var dibujado = false;
+
+        function dibujar() {
+          if (dibujado || typeof qrcode !== "function") return;
+          var qr = qrcode(0, "M");
+          qr.addData(URL_TIENDA);
+          qr.make();
+          var n = qr.getModuleCount(), margen = 4, total = n + margen * 2;
+          var celda = Math.floor(canvas.width / total);
+          var tam = celda * total;
+          canvas.width = canvas.height = tam;
+          var ctx = canvas.getContext("2d");
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, tam, tam);
+          ctx.fillStyle = "#111111";
+          for (var r = 0; r < n; r++) {
+            for (var c = 0; c < n; c++) {
+              if (qr.isDark(r, c)) ctx.fillRect((c + margen) * celda, (r + margen) * celda, celda, celda);
+            }
+          }
+          dibujado = true;
+        }
+        function abrir() { dibujar(); overlay.classList.add("abierto"); }
+        function cerrar() { overlay.classList.remove("abierto"); }
+
+        if (btn) btn.addEventListener("click", abrir);
+        document.getElementById("qrCerrar").addEventListener("click", cerrar);
+        overlay.addEventListener("click", function (e) { if (e.target === overlay) cerrar(); });
+        document.addEventListener("keydown", function (e) { if (e.key === "Escape") cerrar(); });
+
+        document.getElementById("qrDescargar").addEventListener("click", function () {
+          var a = document.createElement("a");
+          a.download = "qr-tienda-monjarrez.png";
+          a.href = canvas.toDataURL("image/png");
+          document.body.appendChild(a); a.click(); a.remove();
+        });
+        document.getElementById("qrCopiar").addEventListener("click", function () {
+          var b = this;
+          function ok() { b.textContent = "¡Copiado!"; setTimeout(function () { b.textContent = "Copiar enlace"; }, 1800); }
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(URL_TIENDA).then(ok, function () { prompt("Copia el enlace:", URL_TIENDA); });
+          } else { prompt("Copia el enlace:", URL_TIENDA); }
+        });
       })();
     </script>
   </body>
