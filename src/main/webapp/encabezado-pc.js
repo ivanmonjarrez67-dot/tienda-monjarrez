@@ -392,7 +392,7 @@
   function pintarMenuInvitado() {
     perfilMenu.appendChild(crear("div", "pc-pm-titulo", "Estás navegando como invitado/a"));
     perfilMenu.appendChild(fila("fa-right-to-bracket", "Iniciar sesión o registrarme", function () {
-      if (typeof window.mostrarLogin === "function") window.mostrarLogin();
+      var abrir = window.mostrarLoginDirecto || window.mostrarLogin; if (typeof abrir === "function") abrir();
     }, "principal"));
     perfilMenu.appendChild(bloqueGoogle());
     perfilMenu.appendChild(crear("div", "pc-pm-sep"));

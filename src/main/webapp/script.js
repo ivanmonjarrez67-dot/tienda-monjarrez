@@ -1959,7 +1959,11 @@ function onGoogleCredential(resp) {
   const enRegistro = formularioComprador.offsetParent !== null;
   // 🆕 select_by empieza con "btn" cuando tocó el botón de Google; cualquier
   // otro valor ("user", "user_1tap", "fedcm"...) viene del "Continuar como...".
-  const esOneTap = !!resp.select_by && !/^btn/.test(resp.select_by);
+  // 🆕 Si el botón de Google se tocó fuera del formulario de login (por ejemplo en el
+  // diálogo para invitados o en el menú de cuenta), tampoco hay dónde mostrar el aviso
+  // "no tiene cuenta": se abre directo el registro, igual que con "Continuar como...".
+  const loginComprador = typeof modalComprador !== "undefined" && modalComprador && modalComprador.offsetParent !== null;
+  const esOneTap = (!!resp.select_by && !/^btn/.test(resp.select_by)) || !loginComprador;
   if (!enRegistro) {
     enviarLoginCompradorGoogle(resp.credential, esOneTap);
     return;

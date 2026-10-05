@@ -747,7 +747,7 @@
          carrito.js). -->
     <button id="cartHeaderBtn" type="button" title="Ver carrito" aria-label="Ver carrito"
       style="color:#1a1a1a;"
-      onclick="if (window.Carrito.haySesion()) { window.open('carrito.html','_blank','noopener'); } else { window.Carrito.pedirLogin(); }">
+      onclick="if (window.Carrito.haySesion()) { window.open('carrito.html','_blank','noopener'); } else { window.Carrito.pedirLogin(null, 'Inicia sesión para ver tu carrito.'); }">
       <i class="fa-solid fa-cart-shopping"></i>
       <span class="cart-badge">0</span>
     </button>
@@ -1507,7 +1507,7 @@
 
     btnAbrir.addEventListener("click", () => {
       if (!window.Carrito || !window.Carrito.haySesion()) {
-        window.Carrito.pedirLogin();
+        window.Carrito.pedirLogin(null, "Inicia sesión para dejar tu reseña.");
         return;
       }
       form.classList.toggle("abierto");
@@ -1533,7 +1533,7 @@
       })
         .then((res) => {
           if (res.status === 401) {
-            window.Carrito.pedirLogin();
+            window.Carrito.pedirLogin(null, "Inicia sesión para dejar tu reseña.");
             throw new Error("sin sesión");
           }
           if (!res.ok) throw new Error("respuesta " + res.status);

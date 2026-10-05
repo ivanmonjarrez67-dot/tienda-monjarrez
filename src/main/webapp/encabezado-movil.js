@@ -276,7 +276,7 @@
 
     if (!conSesion) {
       cuerpoTu.appendChild(fila("fa-right-to-bracket", "Iniciar sesión o registrarme", function () {
-        if (typeof window.mostrarLogin === "function") window.mostrarLogin();
+        var abrir = window.mostrarLoginDirecto || window.mostrarLogin; if (typeof abrir === "function") abrir();
       }, "principal"));
       cuerpoTu.appendChild(bloqueGoogle());
     } else {

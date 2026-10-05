@@ -166,7 +166,7 @@
   </a>
   <div id="estadoInvitado" class="carrito-invitado" style="display:none;">
     <p>Debes iniciar sesión para ver y guardar tu carrito.</p>
-    <button type="button" onclick="window.location.href='index.html'">Iniciar sesión</button>
+    <button type="button" onclick="pedirLoginCarrito()">Iniciar sesión o registrarme</button>
   </div>
   <div id="estadoVacio" class="carrito-vacio" style="display:none;">
     <p>Tu carrito está vacío.</p>
@@ -232,6 +232,19 @@
 </div>
 
 <script src="carrito.js?v=8"></script>
+<script src="login-invitado.js?v=1"></script>
+<script>
+  // Invitado: mismo cuadro de siempre (Iniciar sesión o registrarme + Continuar con Google).
+  var pidioLoginCarrito = false;
+  function pedirLoginCarrito() {
+    if (window.MTLoginInvitado) {
+      window.MTLoginInvitado.mostrar({
+        mensaje: "Inicia sesión para ver y guardar tu carrito.",
+        alIniciar: function () { window.location.reload(); }
+      });
+    } else window.location.href = "index.html?accion=login-comprador";
+  }
+</script>
 <script>
 (function () {
   function fmtCrc(n) { return window.Carrito.fmtCrc(n); }
@@ -396,6 +409,7 @@
 
   function render() {
     if (!window.Carrito.haySesion()) {
+      if (!pidioLoginCarrito) { pidioLoginCarrito = true; pedirLoginCarrito(); } // se abre solo la primera vez
       elInvitado.style.display = "block";
       elVacio.style.display = "none";
       elContenido.style.display = "none";

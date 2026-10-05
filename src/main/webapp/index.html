@@ -2290,7 +2290,7 @@
          al carrito" siempre abre carrito.html en pestaña nueva, tal
          como se pidió. Si la persona es Invitada, carrito.js le pide
          iniciar sesión antes de dejarla entrar. -->
-    <button id="cartHeaderBtn" type="button" title="Ver carrito" aria-label="Ver carrito" onclick="if (window.Carrito.haySesion()) { window.open('carrito.html','_blank','noopener'); } else { window.Carrito.pedirLogin(); }">
+    <button id="cartHeaderBtn" type="button" title="Ver carrito" aria-label="Ver carrito" onclick="if (window.Carrito.haySesion()) { window.open('carrito.html','_blank','noopener'); } else { window.Carrito.pedirLogin(null, 'Inicia sesión para ver tu carrito.'); }">
       <i class="fa-solid fa-cart-shopping"></i>
       <span class="cart-badge">0</span>
     </button>
@@ -6552,6 +6552,8 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
         if (window.haySesionActiva && window.haySesionActiva()) return; // 🆕 con sesión no se muestra
         const registro = document.getElementById("registroModal");
         if (registro) registro.style.display = "none";
+        // 🆕 Ahora abre el diálogo común: "Iniciar sesión o registrarme" + "Continuar con Google".
+        if (typeof window.mostrarLogin === "function") { window.mostrarLogin(); return; }
         const login = document.getElementById("loginModal");
         if (login) login.style.display = "flex";
       }
@@ -7187,6 +7189,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         });
       })();
     </script>
+    <script src="login-invitado.js?v=1"></script>
     <script src="encabezado-config.js?v=1"></script>
     <script src="encabezado-movil.js?v=2"></script>
     <script src="encabezado-pc.js?v=3"></script>

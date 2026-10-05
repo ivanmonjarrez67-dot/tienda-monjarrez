@@ -82,17 +82,30 @@
   // ese login), se ofrece ir a la página principal a iniciar sesión.
   // `producto` es opcional: si viene, queda pendiente para agregarlo
   // apenas la persona inicie sesión.
-  function pedirLogin(producto) {
+  function pedirLogin(producto, mensaje) {
     if (producto && producto.id) guardarPendiente(producto);
-    if (typeof window.mostrarLogin === "function") {
-      window.mostrarLogin("Inicia sesión para agregar productos al carrito");
-      return;
+    var msg = mensaje || "Inicia sesión para agregar productos al carrito";
+    function abrir() {
+      if (window.MTLoginInvitado) {
+        // Diálogo común: "Iniciar sesión o registrarme" + "Continuar con Google".
+        window.MTLoginInvitado.mostrar({ mensaje: msg, alCerrar: borrarPendiente });
+        return true;
+      }
+      if (typeof window.mostrarLogin === "function") { window.mostrarLogin(msg); return true; }
+      return false;
     }
+    if (abrir()) return;
+    // Página que aún no tiene el diálogo (carrito.html, factura.html...): se carga solo.
+    var s = document.createElement("script");
+    s.src = "login-invitado.js?v=1";
+    s.onload = function () { if (!abrir()) irAIndex(); };
+    s.onerror = irAIndex;
+    document.head.appendChild(s);
+  }
+
+  // Último recurso (si no se pudo cargar el diálogo): ofrecer ir a la página principal.
+  function irAIndex() {
     if (confirm("Debes iniciar sesión para agregar productos al carrito.\n\n¿Quieres ir a la página principal para iniciar sesión?")) {
-      // "login-comprador" reutiliza el mismo mecanismo de deep-link que
-      // ya usan los correos de EmailService (?accion=login-vendedor,
-      // etc., ver el <script> al final de index.html): abre el login y
-      // hace clic en "Comprador/a" automáticamente al cargar.
       window.location.href = "index.html?accion=login-comprador";
     } else {
       borrarPendiente();

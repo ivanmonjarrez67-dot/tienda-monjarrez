@@ -60,6 +60,7 @@
   <h1><i class="fa-solid fa-box-open"></i> Mis pedidos</h1>
   <div id="lista"><div class="msg">Cargando tus pedidos…</div></div>
 </main>
+<script src="login-invitado.js?v=1"></script>
 <script>
 (function () {
   const WA = "50664283281", MAIL = "soporte@tiendamonjarrez.com";
@@ -131,6 +132,13 @@
       .then(r => r.json().then(d => { if (!r.ok) throw new Error(d.error || "Error"); return d; }));
   }
 
+  // Diálogo común para invitados: "Iniciar sesión o registrarme" + "Continuar con Google".
+  let pidioLogin = false;
+  function pedirLogin() {
+    if (window.MTLoginInvitado) window.MTLoginInvitado.mostrar({ mensaje: "Inicia sesión para ver tus pedidos.", alIniciar: cargar });
+    else window.location.href = "index.html?accion=login-comprador";
+  }
+
   function cargar() {
     if (PREVIEW) {
       const d = window.opener && window.opener.__previewPedido;
@@ -141,7 +149,11 @@
     }
     if (editando) return; // no pisar lo que el cliente está escribiendo
     fetch("/api/mis-pedidos").then(r => {
-      if (r.status === 401) { $l.innerHTML = '<div class="msg">Inicia sesión para ver tus pedidos.<br><a href="index.html">Ir al inicio</a></div>'; throw 0; }
+      if (r.status === 401) {
+        $l.innerHTML = '<div class="msg">Inicia sesión para ver tus pedidos.<br><button class="btn b-rojo" data-login style="margin-top:14px;flex:none;padding:10px 22px">Iniciar sesión o registrarme</button></div>';
+        if (!pidioLogin) { pidioLogin = true; pedirLogin(); } // se abre solo la primera vez
+        throw 0;
+      }
       if (!r.ok) throw new Error();
       return r.json();
     }).then(lista => {
@@ -152,6 +164,7 @@
   }
 
   $l.addEventListener("click", e => {
+    if (e.target.closest("[data-login]")) { pedirLogin(); return; }
     const t = e.target.closest("[data-toggle],[data-editar],[data-guardar],[data-recibido]");
     if (!t) return;
     const ped = t.closest(".pedido"), id = Number(ped.dataset.id);

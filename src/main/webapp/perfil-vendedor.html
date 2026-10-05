@@ -527,6 +527,7 @@
 
 <script src="qrcode-generator.min.js"></script>
 <script src="carrito.js?v=2"></script>
+<script src="login-invitado.js?v=1"></script>
 <script>
 (function () {
   const params = new URLSearchParams(window.location.search);
@@ -603,6 +604,15 @@
   }
 
   function pedirLogin() {
+    // Diálogo común para invitados: "Iniciar sesión o registrarme" + "Continuar con Google".
+    if (window.MTLoginInvitado) {
+      window.MTLoginInvitado.mostrar({
+        titulo: "Inicia sesión para seguir",
+        mensaje: "Para seguir a un emprendimiento necesitas iniciar sesión o registrarte como comprador.",
+        alIniciar: function () { window.location.reload(); }
+      });
+      return;
+    }
     elLoginOverlay.classList.add("visible");
   }
   document.getElementById("btnLoginCerrar").addEventListener("click", () => elLoginOverlay.classList.remove("visible"));
