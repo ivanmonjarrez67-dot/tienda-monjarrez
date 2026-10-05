@@ -247,6 +247,20 @@
     return e;
   }
 
+  // Botón de Google que no se oculta (por si cerraron el "Continuar como…" por
+  // accidente). Solo se muestra si Google lo dibujó de verdad.
+  function bloqueGoogle() {
+    var wrap = crear("div", "mt-google");
+    wrap.style.display = "none";
+    wrap.appendChild(crear("div", "mt-google-o", "<span>o</span>"));
+    var cont = crear("div", "mt-google-btn");
+    wrap.appendChild(cont);
+    if (typeof window.renderBotonGoogle === "function") {
+      window.renderBotonGoogle(cont, 260, function () { wrap.style.display = ""; });
+    }
+    return wrap;
+  }
+
   function llenarTu() {
     var conSesion = haySesion();
     var esVendedor = false;
@@ -264,6 +278,7 @@
       cuerpoTu.appendChild(fila("fa-right-to-bracket", "Iniciar sesión o registrarme", function () {
         if (typeof window.mostrarLogin === "function") window.mostrarLogin();
       }, "principal"));
+      cuerpoTu.appendChild(bloqueGoogle());
     } else {
       cuerpoTu.appendChild(fila("fa-user", "Perfil", function () { clic(q("#btnAbrirPerfil")); }));
       cuerpoTu.appendChild(fila("fa-truck-fast", "Mis pedidos", null, "", "mis-pedidos.html"));

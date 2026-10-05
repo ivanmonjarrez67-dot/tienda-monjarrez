@@ -404,3 +404,9 @@ body.mt-on .mt-full.on { transform: translateY(0); }
 .mt-prod-sk .sk-l.corto { width: 55%; }
 @keyframes mtSk { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 .mt-prod-grid { gap: 12px 8px; }
+
+/* ---- Continuar con Google, siempre disponible para invitados ---- */
+.mt-google { margin: -2px 0 10px; }
+.mt-google-o { display: flex; align-items: center; gap: 8px; margin: 4px 0 8px; font-size: 13px; color: var(--mt-gris); }
+.mt-google-o::before, .mt-google-o::after { content: ""; flex: 1; height: 1px; background: var(--mt-linea); }
+.mt-google-btn { display: flex; justify-content: center; min-height: 44px; }

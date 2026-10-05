@@ -443,3 +443,12 @@ body.mt-pc #pcAvisosOv.on { display: flex; }
 .pc-prod-sk .sk-l.corto { width: 55%; }
 @keyframes mtSk { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 .pc-prod-grid { grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 16px 14px; }
+
+/* ---- Menú de cuenta para invitados: Google siempre disponible ---- */
+.pc-pm-fila.principal { justify-content: center; background: linear-gradient(135deg, var(--pc-rojo), var(--pc-rojo-oscuro)); color: #fff; font-weight: 700; }
+.pc-pm-fila.principal:hover { background: linear-gradient(135deg, #f03a3a, #b81414); }
+.pc-pm-fila.principal i { color: #fff; width: auto; }
+.pc-pm-google { margin-top: 6px; }
+.pc-pm-o { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 12.5px; color: var(--pc-gris); }
+.pc-pm-o::before, .pc-pm-o::after { content: ""; flex: 1; height: 1px; background: var(--pc-linea); }
+.pc-pm-google-btn { display: flex; justify-content: center; min-height: 44px; }

@@ -139,7 +139,6 @@
     btnPerfil.appendChild(avatar); btnPerfil.appendChild(perfilTxt);
     btnPerfil.addEventListener("click", function (e) {
       e.stopPropagation();
-      if (!haySesion()) { cerrarTodo(); if (typeof window.mostrarLogin === "function") window.mostrarLogin(); return; }
       if (perfilMenu.classList.contains("on")) cerrarPerfilMenu(); else abrirPerfilMenu();
     });
     var btnAyuda = crear("button", "pc-accion", '<i class="fa-regular fa-circle-question"></i><span class="pc-ayuda-txt">Ayuda</span>');
@@ -376,8 +375,41 @@
     return e;
   }
 
+  // Botón de Google del menú. Solo se muestra cuando Google lo dibujó de verdad
+  // (si no carga, no queda un hueco vacío).
+  function bloqueGoogle() {
+    var wrap = crear("div", "pc-pm-google");
+    wrap.style.display = "none";
+    wrap.appendChild(crear("div", "pc-pm-o", "<span>o</span>"));
+    var cont = crear("div", "pc-pm-google-btn");
+    wrap.appendChild(cont);
+    if (typeof window.renderBotonGoogle === "function") {
+      window.renderBotonGoogle(cont, 230, function () { wrap.style.display = ""; });
+    }
+    return wrap;
+  }
+
+  function pintarMenuInvitado() {
+    perfilMenu.appendChild(crear("div", "pc-pm-titulo", "Estás navegando como invitado/a"));
+    perfilMenu.appendChild(fila("fa-right-to-bracket", "Iniciar sesión o registrarme", function () {
+      if (typeof window.mostrarLogin === "function") window.mostrarLogin();
+    }, "principal"));
+    perfilMenu.appendChild(bloqueGoogle());
+    perfilMenu.appendChild(crear("div", "pc-pm-sep"));
+    var temas = crear("div", "pc-pm-temas");
+    [["fa-circle-half-stroke", "Tema", "themeToggle"], ["fa-meteor", "Estrellado", "starThemeBtn"], ["fa-heart", "Rosado", "pinkThemeBtn"]]
+      .forEach(function (t) {
+        var b = crear("button", null, '<i class="fa-solid ' + t[0] + '"></i><span>' + t[1] + "</span>");
+        b.type = "button";
+        b.addEventListener("click", function () { clic(document.getElementById(t[2])); });
+        temas.appendChild(b);
+      });
+    perfilMenu.appendChild(temas);
+  }
+
   function pintarPerfilMenu() {
     perfilMenu.innerHTML = "";
+    if (!haySesion()) { pintarMenuInvitado(); return; }
     var saludo = crear("div", "pc-pm-titulo", "Tu cuenta");
     perfilMenu.appendChild(saludo);
     if (MT.nombre) MT.nombre().then(function (n) { if (n) saludo.textContent = "Hola, " + MT.primerNombre(n); });
@@ -419,6 +451,7 @@
     var ses = haySesion();
     var vend = esVendedor();
     var estado = ses + "|" + vend;
+    if (perfilMenu && perfilMenu.classList.contains("on") && estado !== ultimoEstado && ultimoEstado) cerrarPerfilMenu();
     var b = botonFiltro("Mi tienda");
     lockTienda.style.display = (!b || b.getAttribute("data-bloqueado") === "true") ? "" : "none";
     venderBtn.innerHTML = vend

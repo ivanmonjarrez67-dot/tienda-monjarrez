@@ -1986,6 +1986,24 @@ document.getElementById("aceptaTerminosComprador")?.addEventListener("change", (
   }
 });
 
+// 🆕 Botón "Continuar con Google" que NO se puede ocultar: lo usa el menú de
+// cuenta del encabezado (invitados). A diferencia del "Continuar como..."
+// (One Tap), que Google deja de mostrar un rato si se cierra con la X, este
+// botón siempre se puede dibujar. Si Google aún no carga, queda en cola.
+const botonesGooglePendientes = [];
+function dibujarBotonGoogle(cont, ancho, alListo) {
+  google.accounts.id.renderButton(cont, {
+    theme: "outline", size: "large", text: "continue_with",
+    shape: "pill", width: ancho || 240, locale: "es"
+  });
+  if (alListo) alListo();
+}
+window.renderBotonGoogle = function (cont, ancho, alListo) {
+  if (!cont || GOOGLE_CLIENT_ID.startsWith("TU_CLIENT_ID")) return;
+  if (googleInicializado) dibujarBotonGoogle(cont, ancho, alListo);
+  else botonesGooglePendientes.push([cont, ancho, alListo]);
+};
+
 function iniciarGoogleRegistro() {
   const bloques = document.querySelectorAll(".google-registro");
   if (!bloques.length) return;
@@ -2011,6 +2029,10 @@ function iniciarGoogleRegistro() {
       });
       googleInicializado = true;
       if (oneTapPendiente) { oneTapPendiente = false; lanzarOneTap(); }
+      while (botonesGooglePendientes.length) {
+        const [c, a, f] = botonesGooglePendientes.shift();
+        dibujarBotonGoogle(c, a, f);
+      }
       ["googleBtnComprador", "googleBtnLoginComprador"].forEach(id => {
         const cont = document.getElementById(id);
         if (cont) {
