@@ -76,13 +76,19 @@
     qa(".filter").forEach(function (b) { b.classList.remove("active"); });
   }
 
+  function catalogoVisible() {
+    try { if (typeof window.mostrarCatalogoPublico === "function") window.mostrarCatalogoPublico(); } catch (e) {}
+  }
+
   function aplicarFiltro(tipo, valor) {
+    catalogoVisible();
     limpiarFiltros();
     clic(tipo === "main" ? botonMain(valor) : botonFiltro(valor));
     subirInicio();
   }
 
   function buscarTexto(texto) {
+    catalogoVisible();
     limpiarFiltros();
     var inp = q("#search");
     if (inp) inp.value = texto;
@@ -449,6 +455,86 @@
     navCarrito.addEventListener("click", function () { cerrarHojas(); clic(q("#cartHeaderBtn")); });
   }
 
+  /* ------------------- LOGO PEQUEÑO DELANTE DEL BUSCADOR ------------------- */
+
+  var logoMini = null;
+  // Logo pequeño (favicon 32x32). Si tus imágenes están en otra carpeta, cambia esta ruta.
+  var LOGO_MINI = "/favicon-32x32.png";
+  var LOGO_RESPALDO = "/icon-512.png";
+  function buscarFuenteLogo() {
+    var sel = ['img[class*="logo" i]', 'img[alt*="logo" i]', 'img[src*="logo" i]'];
+    var base = header || document;
+    for (var i = 0; i < sel.length; i++) {
+      var im = q(sel[i], base) || q(sel[i]);
+      if (im && im.getAttribute("src") && !im.closest("#mtTop .search-group")) return im.getAttribute("src");
+    }
+    var im2 = q(".header-content img", base);
+    if (im2 && im2.getAttribute("src")) return im2.getAttribute("src");
+    var ic = q('link[rel~="icon"]');
+    return ic ? ic.getAttribute("href") : "";
+  }
+  function ponerLogoMini() {
+    if (logoMini || !header) return;
+    var grupo = q(".search-group", header);
+    if (!grupo) return;
+    logoMini = crear("img", "mt-logo-mini");
+    logoMini.src = LOGO_MINI;
+    logoMini.addEventListener("error", function onErr() {
+      logoMini.removeEventListener("error", onErr);
+      var otra = (logoMini.getAttribute("src") === LOGO_MINI) ? LOGO_RESPALDO : "";
+      var auto = buscarFuenteLogo();
+      if (otra) {
+        logoMini.addEventListener("error", function () {
+          if (auto) logoMini.src = auto; else logoMini.style.display = "none";
+        }, { once: true });
+        logoMini.src = otra;
+      } else if (auto) logoMini.src = auto;
+      else logoMini.style.display = "none";
+    });
+    logoMini.alt = "Tienda Monjarrez";
+    logoMini.addEventListener("click", function () { cerrarHojas(); aplicarFiltro("filter", "Todo"); });
+    grupo.parentNode.insertBefore(logoMini, grupo);
+  }
+
+  function inyectarEstilos() {
+    if (document.getElementById("mtExtraCss")) return;
+    var st = crear("style");
+    st.id = "mtExtraCss";
+    st.textContent =
+      "img.mt-logo-mini{display:none}" +
+      "body.mt-on img.mt-logo-mini{display:block;width:22px;height:22px;object-fit:contain;flex:0 0 22px;margin:0 4px 0 6px;cursor:pointer}" +
+      ".mt-flota{transition:opacity .25s ease,visibility .25s ease}" +
+      "body.mt-on.mt-hide .mt-flota{opacity:0!important;visibility:hidden!important;pointer-events:none!important}";
+    document.head.appendChild(st);
+  }
+
+  /* ---------- MONJI Y REDES SOCIALES: se ocultan igual que el encabezado ---------- */
+
+  // Si conoces los selectores exactos de Monji y de las redes, ponlos aquí.
+  var SELECTORES_FLOTANTES = [
+    '[id*="monji" i]', '[class*="monji" i]',
+    '[id*="redes" i]', '[class*="redes" i]',
+    '[id*="social" i]', '[class*="social" i]'
+  ];
+  var NO_TOCAR = "#mtTop, #mtNav, .mt-overlay, .mt-sheet, .mt-full, #cartHeaderBtn, [id*='modal' i], [class*='modal' i], [class*='perfil' i], [id*='perfil' i]";
+
+  function marcarFlotantes() {
+    var cand = [];
+    SELECTORES_FLOTANTES.forEach(function (s) { cand = cand.concat(qa(s)); });
+    // Además, cualquier elemento pequeño con position:fixed pegado al borde (burbujas, botones sueltos).
+    qa("body > *, body > * > *").forEach(function (e) { cand.push(e); });
+    cand.forEach(function (e) {
+      if (e.classList.contains("mt-flota") || e.closest(NO_TOCAR)) return;
+      var cs = getComputedStyle(e);
+      if (cs.position !== "fixed" || cs.display === "none") return;
+      var r = e.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) return;
+      // Descarta lo grande (modales, pantallas completas) y lo que no es flotante lateral.
+      if (r.width > window.innerWidth * 0.5 || r.height > window.innerHeight * 0.4) return;
+      e.classList.add("mt-flota");
+    });
+  }
+
   /* --------------------- OCULTAR / MOSTRAR AL HACER SCROLL --------------------- */
 
   var ultimoY = 0;
@@ -459,7 +545,10 @@
     if (Math.abs(d) < 6) return;
     var buscando = document.activeElement && document.activeElement.id === "search";
     if (y < 80 || d < 0) document.body.classList.remove("mt-hide");
-    else if (!hojaAbierta && !buscando) document.body.classList.add("mt-hide");
+    else if (!hojaAbierta && !buscando) {
+      if (!document.body.classList.contains("mt-hide")) marcarFlotantes();
+      document.body.classList.add("mt-hide");
+    }
     ultimoY = y;
   }
 
@@ -472,12 +561,14 @@
   function activar() {
     if (document.body.classList.contains("mt-on")) return;
     document.body.classList.add("mt-on");
+    inyectarEstilos();
     // El <header> original (con la búsqueda y el camioncito) se mueve a la barra fija.
     if (header && header.parentNode !== top) {
       marcadorHeader = document.createComment("mt-header");
       header.parentNode.insertBefore(marcadorHeader, header);
       top.insertBefore(header, top.firstChild);
     }
+    ponerLogoMini();
     medirAlto();
     sincronizarTabs();
     actualizarBadgeCarrito();

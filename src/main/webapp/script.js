@@ -1072,6 +1072,7 @@ const searchInput = document.getElementById("search");
 // manda "q". Los #provincia/#ciudad son del form "Agregar Producto",
 // no se tocan desde aquí.
 function buscarProductos() {
+  mostrarCatalogoPublico();
   const query = searchInput.value.trim();
   const url = query
     ? `/api/busqueda-productos?q=${encodeURIComponent(query)}`
@@ -1105,9 +1106,20 @@ document.querySelectorAll(".main").forEach((btn) => {
     filtroPrincipal = btn.dataset.main;
     document.querySelectorAll(".main").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
+    mostrarCatalogoPublico();
     cargarProductos();
   });
 });
+
+// 🆕 El catálogo es público: solo "Mi tienda" (vendedor con sesión) lo reemplaza.
+// Cualquier filtro, pestaña o búsqueda lo vuelve a mostrar y cierra "Mi tienda".
+function mostrarCatalogoPublico() {
+  const wrapper = document.getElementById("productGridWrapper");
+  if (wrapper) wrapper.style.display = "";
+  const miTienda = document.getElementById("miTiendaContainer");
+  if (miTienda) miTienda.style.display = "none";
+}
+window.mostrarCatalogoPublico = mostrarCatalogoPublico;
 
 document.querySelectorAll(".filter").forEach((btn) => {
   btn.addEventListener("click", (e) => {
@@ -1126,6 +1138,11 @@ document.querySelectorAll(".filter").forEach((btn) => {
       // fuerza el login al cargar la página), aprovechamos este clic
       // para abrirle el login directamente y que pueda registrarse o
       // iniciar sesión como vendedor/a sin tener que buscarlo aparte.
+      // 🔧 Comprador con sesión: al aceptar el aviso se recarga la página para
+      // que el catálogo nunca quede oculto. Invitado: se le abre el login.
+      var conSesion = false;
+      try { conSesion = typeof window.haySesionActiva === "function" && !!window.haySesionActiva(); } catch (err) {}
+      if (conSesion) { window.location.reload(); return; }
       if (typeof window.mostrarLogin === "function") window.mostrarLogin();
       return;
     }
