@@ -6491,6 +6491,14 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
       // guardada en localStorage (mismo formato que usa comprobarSesion()
       // más abajo en el archivo: { tipo, expiracion }).
       function esInvitado() {
+        // 🆕 Se usa la misma regla que el resto del sitio (haySesionActiva):
+        // cuenta tanto la sesión guardada en el navegador como la sesión
+        // larga del comprador (cookie). Antes solo se miraba localStorage,
+        // así que una persona con sesión larga, o recién entrada con Google,
+        // seguía viendo "Regístrate ahora o inicia sesión" estando logueada.
+        if (typeof window.haySesionActiva === "function") {
+          return !window.haySesionActiva();
+        }
         try {
           const raw = localStorage.getItem(CLAVE_SESION);
           if (!raw) return true;
@@ -6501,6 +6509,14 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
         } catch (e) {
           return true;
         }
+      }
+
+      // 🆕 Solo uno de los dos: si Google ya está ofreciendo "Continuar como…"
+      // (o ya lo ofreció en esta visita), el aviso rojo no se muestra.
+      function googleOfreceEntrar() {
+        if (window.oneTapMostrado) return true;
+        return !!(document.getElementById("credential_picker_container") ||
+                  document.querySelector('iframe[src*="accounts.google.com/gsi/"]'));
       }
 
       // Aviso flotante
@@ -6544,6 +6560,7 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
 
       function intentarMostrarAviso() {
         if (!esInvitado()) return;
+        if (googleOfreceEntrar()) return;
         if (sessionStorage.getItem(CLAVE_CIERRE)) return;
         if (!document.body.classList.contains("menu-flotando")) return;
         posicionarAviso();
@@ -6562,6 +6579,13 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
         }
       });
       observador.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+
+      // 🆕 Si el aviso ya estaba a la vista y la persona inicia sesión (con
+      // contraseña, con Google o recién registrada), se esconde solo. Antes
+      // solo se decidía si mostrarlo al aparecer, y luego no se volvía a revisar.
+      setInterval(function () {
+        if (aviso.classList.contains("visible") && (!esInvitado() || googleOfreceEntrar())) ocultarAviso(false);
+      }, 500);
 
       window.addEventListener(
         "scroll",

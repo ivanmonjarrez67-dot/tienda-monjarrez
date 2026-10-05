@@ -1803,7 +1803,16 @@ function lanzarOneTap() {
     return el && getComputedStyle(el).display !== "none";
   });
   if (hayModal) return;
-  google.accounts.id.prompt();
+  // 🆕 Se anota si Google realmente mostró el "Continuar como…". El aviso rojo
+  // de "Regístrate ahora o inicia sesión" lo consulta (window.oneTapMostrado)
+  // para no aparecer cuando ya se le ofreció entrar con Google: solo uno de los dos.
+  google.accounts.id.prompt(function (n) {
+    try {
+      const mostrado = (n.isDisplayed && n.isDisplayed()) ||
+                       (n.getMomentType && n.getMomentType() === "display");
+      if (mostrado) window.oneTapMostrado = true;
+    } catch (e) { /* métodos no disponibles en algunos navegadores */ }
+  });
 }
 
 // Se llama desde index.html SOLO cuando la persona entra como invitado
