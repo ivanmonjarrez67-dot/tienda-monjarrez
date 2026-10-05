@@ -1,0 +1,432 @@
+/* ==========================================================================
+   encabezado-pc.css — Encabezado para computador (pantallas de más de 768px)
+   --------------------------------------------------------------------------
+   Se activa solo cuando encabezado-pc.js agrega "mt-pc" al <body>.
+   Cargar DESPUÉS de styles.css y de los <style> de index.html.
+   ========================================================================== */
+:root {
+  --pc-rojo: #e02424;
+  --pc-rojo-oscuro: #a31212;
+  --pc-dorado: #f6c445;
+  --pc-hoja: #ffffff;
+  --pc-fondo: #f4f4f6;
+  --pc-texto: #1a1a1a;
+  --pc-gris: #6b6b76;
+  --pc-linea: #e4e4e8;
+}
+
+/* Elementos nuevos: ocultos salvo en computador */
+.pc-only, #pcStrip, #pcMega, #pcVeil, #pcPerfilMenu, #pcAvisosOv { display: none; }
+
+/* ---- Lo viejo que ya no se ve (sigue en la página; se toca por detrás) ---- */
+body.mt-pc .container > .toolbar,
+body.mt-pc .container > .separator,
+body.mt-pc #heroBanner,
+body.mt-pc #heroBannerVendedor,
+body.mt-pc .aviso-registro-menu {
+  display: none !important;
+}
+
+/* ======================= FRANJA NEGRA DE ARRIBA ======================= */
+body.mt-pc #pcStrip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 34px;
+  padding: 0 18px;
+  box-sizing: border-box;
+  background: #000;
+  color: #f1f1f1;
+  font-size: 13px;
+}
+.pc-strip-aviso {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.pc-strip-aviso i.ico { color: var(--pc-rojo); }
+#pcAvisoTxt {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: opacity 0.25s ease;
+}
+#pcAvisoTxt.out { opacity: 0; }
+.pc-link {
+  background: none;
+  border: 0;
+  padding: 4px 6px;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pc-link:hover { color: #ff7b7b; }
+.pc-link i { margin-left: 4px; font-size: 11px; }
+.pc-strip-der { display: flex; align-items: center; gap: 6px; }
+.pc-strip-der .pc-link i { margin: 0 6px 0 0; font-size: 13px; }
+
+/* ======================= BARRA PRINCIPAL ======================= */
+body.mt-pc header {
+  display: flex;
+  align-items: center;
+  padding: 8px 18px;
+}
+body.mt-pc header .icon {
+  position: static;
+  flex: 0 0 auto;
+  width: 46px; height: 46px;
+  margin-right: 10px;
+}
+body.mt-pc header .header-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-left: 0;
+  gap: 14px;
+}
+body.mt-pc header .store-title {
+  font-size: 1.55rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+body.mt-pc header .white-text { margin-right: 7px; }
+/* Búsqueda: mismo tamaño que la de Temu (unos 680px de ancho y 48px de alto) */
+body.mt-pc .search-group {
+  flex: 0 1 680px;
+  width: 680px;
+  min-width: 220px;
+}
+body.mt-pc #search {
+  height: 48px;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-right: 56px;
+  font-size: 16px;
+}
+body.mt-pc #searchButton {
+  width: 38px; height: 38px;
+  right: 5px;
+  background: linear-gradient(135deg, var(--pc-rojo), var(--pc-rojo-oscuro));
+}
+body.mt-pc #searchButton:hover { background: linear-gradient(135deg, #f03a3a, #b81414); }
+
+/* Enlaces: Mi tienda, Novedades, Categorías */
+body.mt-pc .pc-nav { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+.pc-nav-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 13px;
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.pc-nav-btn:hover { background: rgba(255, 255, 255, 0.12); }
+.pc-nav-btn.on { background: linear-gradient(135deg, var(--pc-rojo), var(--pc-rojo-oscuro)); }
+.pc-nav-btn .chev { font-size: 11px; transition: transform 0.2s ease; }
+.pc-nav-btn.abierto .chev { transform: rotate(180deg); }
+.pc-nav-btn.abierto { background: linear-gradient(135deg, var(--pc-rojo), var(--pc-rojo-oscuro)); }
+/* "Mi tienda" ya no es dorado: es un enlace más, igual que los demás */
+.pc-nav-btn.tienda .lock { font-size: 11px; opacity: 0.7; }
+
+/* Perfil y Ayuda */
+body.mt-pc .pc-acciones { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; margin-left: auto; }
+.pc-accion {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  color: #fff;
+  font-size: 14px;
+  text-align: left;
+  line-height: 1.15;
+  cursor: pointer;
+}
+.pc-accion:hover { background: rgba(255, 255, 255, 0.12); }
+.pc-avatar {
+  flex: 0 0 auto;
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--pc-rojo), var(--pc-rojo-oscuro));
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+.pc-perfil-txt small { display: block; font-size: 11.5px; opacity: 0.75; }
+.pc-perfil-txt b { display: block; font-size: 13.5px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-accion .fa-regular, .pc-accion .fa-solid { font-size: 18px; }
+
+/* Carrito y camioncito (conservan su estilo de siempre) */
+body.mt-pc #pedidosHeaderBtn[hidden] { display: none !important; }
+
+/* Pantallas más angostas: se compacta para que siempre quepan carrito y camioncito */
+@media (max-width: 1500px) {
+  body.mt-pc header .store-title { font-size: 1.3rem; }
+}
+@media (max-width: 1320px) {
+  body.mt-pc .pc-ayuda-txt { display: none; }
+  body.mt-pc .pc-perfil-txt small { display: none; }
+}
+@media (max-width: 1160px) {
+  body.mt-pc header .store-title { display: none; }
+}
+
+/* ======================= FILTROS ENCIMA DE LOS PRODUCTOS ======================= */
+#pcChipsWrap { display: none; }
+body.mt-pc #pcChipsWrap {
+  display: block;
+  position: relative;
+  margin: 0 0 20px;
+}
+.pc-chips {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 56px 4px 2px;   /* espacio a la derecha para la flecha */
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+}
+.pc-chips::-webkit-scrollbar { display: none; }
+.pc-chip {
+  flex: 0 0 auto;
+  padding: 13px 24px;
+  border: 1px solid #d6d6dc;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--pc-texto);
+  font-size: 15.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.pc-chip:hover { border-color: #8a8a94; }
+.pc-chip.on {
+  padding: 12px 23px;           /* compensa el borde más grueso */
+  border: 2px solid var(--pc-rojo);
+  color: var(--pc-rojo-oscuro);
+  font-weight: 700;
+}
+.pc-chip-flecha {
+  position: absolute;
+  top: 50%;
+  width: 38px; height: 38px;
+  margin-top: -19px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d6d6dc;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--pc-texto);
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  z-index: 2;
+}
+.pc-chip-flecha:hover { border-color: var(--pc-rojo); color: var(--pc-rojo); }
+.pc-chip-flecha.der { right: 4px; }
+.pc-chip-flecha.izq { left: 4px; }
+.pc-chip-flecha.ver { display: flex; }
+
+/* ======================= PANEL DE CATEGORÍAS ======================= */
+body.mt-pc #pcVeil {
+  display: block;
+  position: fixed; inset: 0;
+  z-index: 999;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+body.mt-pc #pcVeil.on { opacity: 1; pointer-events: auto; }
+
+body.mt-pc #pcMega {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 18px;
+  width: min(1000px, calc(100% - 36px));
+  height: min(520px, 72vh);
+  box-sizing: border-box;
+  background: var(--pc-hoja);
+  color: var(--pc-texto);
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  z-index: 1001;
+}
+body.mt-pc #pcMega.on { display: flex; }
+.pc-mega-lista {
+  flex: 0 0 270px;
+  overflow-y: auto;
+  padding: 10px 8px;
+  background: #fafafc;
+  border-right: 1px solid var(--pc-linea);
+}
+.pc-mega-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--pc-texto);
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+.pc-mega-item i.ic { width: 20px; text-align: center; color: var(--pc-rojo); }
+.pc-mega-item span { flex: 1 1 auto; }
+.pc-mega-item i.fl { font-size: 11px; color: #999; }
+.pc-mega-item.on { background: #fdecec; font-weight: 700; }
+.pc-mega-item.on i.fl { color: var(--pc-rojo); }
+.pc-mega-panel { flex: 1 1 auto; overflow-y: auto; padding: 22px 26px; background: var(--pc-hoja); }
+.pc-mega-panel h3 { margin: 0 0 14px; font-size: 18px; color: var(--pc-texto); }
+.pc-mega-todo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 22px;
+  background: linear-gradient(135deg, var(--pc-rojo), var(--pc-rojo-oscuro));
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pc-mega-todo:hover { filter: brightness(1.08); }
+.pc-mega-sub { margin: 0 0 12px; font-size: 13px; color: var(--pc-gris); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+.pc-mega-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.pc-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 8px 14px;
+  border: 1px solid var(--pc-linea);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--pc-texto);
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+.pc-tile .circ {
+  width: 54px; height: 54px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: #fdecec;
+  color: var(--pc-rojo);
+  font-size: 22px;
+}
+.pc-tile:hover { border-color: var(--pc-rojo); box-shadow: 0 4px 14px rgba(224, 36, 36, 0.18); transform: translateY(-2px); }
+
+/* ======================= MENÚ DE PERFIL ======================= */
+body.mt-pc #pcPerfilMenu {
+  display: none;
+  position: absolute;
+  top: calc(100% - 4px);
+  right: 18px;
+  width: 270px;
+  box-sizing: border-box;
+  padding: 10px;
+  background: var(--pc-hoja);
+  color: var(--pc-texto);
+  border-radius: 14px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+  z-index: 1002;
+}
+body.mt-pc #pcPerfilMenu.on { display: block; }
+.pc-pm-fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--pc-texto);
+  font-size: 14.5px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.pc-pm-fila:hover { background: #f4f4f6; }
+.pc-pm-fila i { width: 20px; text-align: center; color: var(--pc-rojo); }
+.pc-pm-fila.peligro { color: var(--pc-rojo-oscuro); }
+.pc-pm-sep { height: 1px; margin: 6px 0; background: var(--pc-linea); }
+.pc-pm-temas { display: flex; gap: 6px; padding: 4px 2px; }
+.pc-pm-temas button {
+  flex: 1 1 0;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 9px 4px;
+  border: 1px solid var(--pc-linea);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--pc-texto);
+  font-size: 12px;
+  cursor: pointer;
+}
+.pc-pm-temas button:hover { border-color: var(--pc-rojo); }
+.pc-pm-temas i { color: var(--pc-rojo); font-size: 16px; }
+.pc-pm-titulo { margin: 2px 12px 8px; font-size: 12.5px; color: var(--pc-gris); }
+
+/* ======================= VENTANA DE AVISOS ======================= */
+body.mt-pc #pcAvisosOv {
+  display: none;
+  position: fixed; inset: 0;
+  z-index: 3000;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+}
+body.mt-pc #pcAvisosOv.on { display: flex; }
+.pc-avisos-caja {
+  width: min(760px, 92vw);
+  max-height: 84vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 0 20px 20px;
+  background: var(--pc-fondo);
+  color: var(--pc-texto);
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+.pc-avisos-top {
+  position: sticky; top: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 0 12px;
+  background: var(--pc-fondo);
+  z-index: 1;
+}
+.pc-avisos-top h2 { margin: 0; font-size: 20px; color: var(--pc-texto); }
+.pc-x {
+  width: 34px; height: 34px;
+  border: 0; border-radius: 50%;
+  background: #e6e6ea; color: #333;
+  font-size: 18px; cursor: pointer;
+}
+.pc-avisos-cuerpo .hero-banner { margin: 0; padding: 0; }
+.pc-avisos-cuerpo .info-bar-row { margin-bottom: 10px; }
