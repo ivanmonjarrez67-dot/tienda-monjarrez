@@ -318,10 +318,26 @@
       todo.type = "button";
       todo.addEventListener("click", function () { cerrarTodo(); aplicarFiltro("filter", cat.nombre); });
       megaPanel.appendChild(todo);
-      megaPanel.appendChild(crear("p", "pc-mega-sub", "Ejemplos"));
-      cat.ejemplos.forEach(function (ej) {
-        grid.appendChild(tile(cat.icono, ej, function () { buscarTexto(ej); }));
-      });
+      megaPanel.appendChild(crear("p", "pc-mega-sub", "Productos de ejemplo"));
+      // Mientras cargan: cuadros grises. Si no hay productos, vuelven las palabras clave.
+      grid.className = "pc-mega-grid pc-prod-grid";
+      for (var k = 0; k < 8; k++) grid.appendChild(crear("div", "pc-prod pc-prod-sk", '<span class="sk-img"></span><span class="sk-l"></span><span class="sk-l corto"></span>'));
+      var pedida = cat.nombre;
+      var respaldo = function () {
+        grid.className = "pc-mega-grid";
+        grid.innerHTML = "";
+        cat.ejemplos.forEach(function (ej) {
+          grid.appendChild(tile(cat.icono, ej, function () { buscarTexto(ej); }));
+        });
+      };
+      if (MT.productosDeCategoria) {
+        MT.productosDeCategoria(pedida, 10).then(function (lista) {
+          if (catActual !== pedida) return; // ya cambió de categoría
+          if (!lista.length) { respaldo(); return; }
+          grid.innerHTML = "";
+          lista.forEach(function (p) { grid.appendChild(MT.tarjetaProducto(p, "pc-prod", cerrarTodo)); });
+        });
+      } else respaldo();
     }
     megaPanel.appendChild(grid);
   }

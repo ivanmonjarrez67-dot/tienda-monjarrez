@@ -336,13 +336,28 @@
       ver.type = "button";
       ver.addEventListener("click", function () { cerrarHojas(); aplicarFiltro("filter", cat.nombre); });
       panelCat.appendChild(ver);
-      panelCat.appendChild(crear("h3", null, "Ejemplos"));
-      cat.ejemplos.forEach(function (ej) {
-        var b = crear("button", "mt-chip", esc(ej));
-        b.type = "button";
-        b.addEventListener("click", function () { cerrarHojas(); buscarTexto(ej); });
-        chips.appendChild(b);
-      });
+      panelCat.appendChild(crear("h3", null, "Productos de ejemplo"));
+      chips.className = "mt-chips mt-prod-grid";
+      for (var k = 0; k < 6; k++) chips.appendChild(crear("div", "mt-prod mt-prod-sk", '<span class="sk-img"></span><span class="sk-l"></span><span class="sk-l corto"></span>'));
+      var pedida = cat.nombre;
+      var respaldo = function () {
+        chips.className = "mt-chips";
+        chips.innerHTML = "";
+        cat.ejemplos.forEach(function (ej) {
+          var b = crear("button", "mt-chip", esc(ej));
+          b.type = "button";
+          b.addEventListener("click", function () { cerrarHojas(); buscarTexto(ej); });
+          chips.appendChild(b);
+        });
+      };
+      if (MT.productosDeCategoria) {
+        MT.productosDeCategoria(pedida, 8).then(function (lista) {
+          if (catActual !== pedida) return; // ya cambió de categoría
+          if (!lista.length) { respaldo(); return; }
+          chips.innerHTML = "";
+          lista.forEach(function (p) { chips.appendChild(MT.tarjetaProducto(p, "mt-prod", function () { cerrarHojas(); })); });
+        });
+      } else respaldo();
     }
     panelCat.appendChild(chips);
   }

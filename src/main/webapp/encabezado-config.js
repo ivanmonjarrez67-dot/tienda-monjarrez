@@ -76,4 +76,58 @@
     try { document.dispatchEvent(new CustomEvent("mt:perfil-actualizado")); } catch (e) {}
   };
   MT.primerNombre = function (n) { return (n || "").trim().split(/\s+/)[0] || ""; };
+
+  /* ---------------- Productos de ejemplo por categoría ----------------
+     Se piden a /api/productos-filtrados (el mismo que usa la página de
+     detalle) UNA sola vez por categoría y se guardan en memoria. */
+  var cacheProd = {};
+  function escH(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; });
+  }
+  function normalizarProducto(p) {
+    p = p || {};
+    var precio = parseFloat(p.precio);
+    var anterior = parseFloat(p.precioAnterior != null ? p.precioAnterior : p.precio_anterior);
+    return {
+      id: p.id,
+      nombre: String(p.nombre || p.titulo || "").trim(),
+      imagen: String(p.imagen || p.imagen1 || p.imagenUrl || p.imagen_url || "").trim(),
+      precio: isNaN(precio) ? null : precio,
+      anterior: isNaN(anterior) ? null : anterior
+    };
+  }
+  function crc(n) { return "\u20A1" + Number(n).toLocaleString("es-CR", { maximumFractionDigits: 0 }); }
+
+  // Promesa con hasta "max" productos de la categoría (con foto). [] si no hay o falla.
+  MT.productosDeCategoria = function (categoria, max) {
+    max = max || 10;
+    if (!cacheProd[categoria]) {
+      cacheProd[categoria] = fetch("/api/productos-filtrados?categoria=" + encodeURIComponent(categoria))
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (arr) {
+          return (Array.isArray(arr) ? arr : []).map(normalizarProducto)
+            .filter(function (p) { return p.id != null && p.nombre && p.imagen; });
+        })
+        .catch(function () { delete cacheProd[categoria]; return []; });
+    }
+    return cacheProd[categoria].then(function (l) { return l.slice(0, max); });
+  };
+
+  // Tarjeta de producto (foto, nombre, precio). Al tocarla abre el detalle del producto.
+  MT.tarjetaProducto = function (p, clase, alTocar) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = clase;
+    var rebaja = (p.anterior && p.precio && p.anterior > p.precio)
+      ? '<s>' + crc(p.anterior) + '</s>' : "";
+    b.innerHTML =
+      '<img src="' + escH(p.imagen) + '" alt="' + escH(p.nombre) + '" loading="lazy">' +
+      '<span class="nom">' + escH(p.nombre) + '</span>' +
+      (p.precio != null ? '<span class="pre">' + crc(p.precio) + rebaja + '</span>' : "");
+    b.addEventListener("click", function () {
+      if (alTocar) alTocar();
+      window.open("/detalle-nacional.html?id=" + encodeURIComponent(p.id), "_blank");
+    });
+    return b;
+  };
 })();

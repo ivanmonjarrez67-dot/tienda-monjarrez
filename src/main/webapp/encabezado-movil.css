@@ -391,3 +391,16 @@ body.mt-on .mt-full.on { transform: translateY(0); }
   cursor: pointer;
 }
 .mt-chip:active { background: #fdeaea; border-color: var(--mt-rojo); }
+/* ---- Productos de ejemplo en el panel de categorías ---- */
+.mt-prod { display: flex; flex-direction: column; gap: 6px; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; color: inherit; font: inherit; }
+.mt-prod img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 12px; background: #ececf0; display: block; }
+.mt-prod .nom { font-size: 13px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mt-prod .pre { font-size: 14px; font-weight: 700; color: var(--mt-rojo-oscuro); }
+.mt-prod .pre s { margin-left: 6px; font-size: 12px; font-weight: 400; color: #9a9aa4; }
+.mt-prod:hover img { box-shadow: 0 4px 14px rgba(224, 36, 36, 0.25); }
+.mt-prod-sk { cursor: default; pointer-events: none; }
+.mt-prod-sk .sk-img { width: 100%; aspect-ratio: 1 / 1; border-radius: 12px; background: linear-gradient(90deg, #ececf0, #f6f6f8, #ececf0); background-size: 200% 100%; animation: mtSk 1.2s linear infinite; }
+.mt-prod-sk .sk-l { height: 10px; border-radius: 5px; background: #ececf0; }
+.mt-prod-sk .sk-l.corto { width: 55%; }
+@keyframes mtSk { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.mt-prod-grid { gap: 12px 8px; }
