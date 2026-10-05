@@ -543,7 +543,11 @@ function pintarMosaico(grid, productos, construirTarjetaHTML) {
   if (!productos || productos.length === 0) return false;
   const anchoDisponible = grid.clientWidth || window.innerWidth;
   const anchoMinColumna = 260; // 🔧 antes 210: columnas más angostas = tarjetas/fotos más chicas que Temu
-  let numColumnas = window.innerWidth <= 500 ? 2 : Math.max(1, Math.floor(anchoDisponible / anchoMinColumna));
+  // 🔧 Antes: 2 columnas solo si la pantalla medía 500px o menos; con más de 500px
+  // se calculaba por ancho y en pantallas de ~500-540px (teléfonos grandes o
+  // plegables, o con "tamaño de pantalla" pequeño) salía UNA sola columna.
+  // Ahora el mínimo siempre es 2 columnas, sea cual sea el teléfono.
+  let numColumnas = Math.max(2, Math.floor(anchoDisponible / anchoMinColumna));
   numColumnas = Math.min(numColumnas, productos.length);
   const columnas = [];
   for (let i = 0; i < numColumnas; i++) {
