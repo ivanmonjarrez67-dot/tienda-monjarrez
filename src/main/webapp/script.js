@@ -249,6 +249,8 @@ const MSG_FOTOS_PENDIENTES = "Hay fotos adicionales que aún se están subiendo 
       )
       .then((resp) => {
         if (!resp.ok) return resp.text().then((msg) => { throw new Error(msg); });
+        // 🆕 Refresca el avatar del encabezado con el icono nuevo.
+        if (window.MT && typeof window.MT.invalidarPerfil === "function") window.MT.invalidarPerfil();
       })
       .catch((err) => alert("Error al subir el icono: " + err.message));
   });

@@ -418,10 +418,20 @@
     }
     avatar.innerHTML = '<i class="fa-regular fa-user"></i>';
     perfilTxt.innerHTML = "<small>Hola,</small><b>Mi cuenta</b>";
-    if (MT.nombre) MT.nombre().then(function (n) {
-      if (!n || !haySesion()) return;
-      var p = MT.primerNombre(n);
-      avatar.textContent = p.charAt(0).toUpperCase();
+    if (MT.perfil) MT.perfil().then(function (d) {
+      if (!d || !d.nombre || !haySesion()) return;
+      var p = MT.primerNombre(d.nombre);
+      var inicial = p.charAt(0).toUpperCase();
+      avatar.textContent = inicial;
+      // Vendedor con icono de emprendimiento: se muestra su icono en vez de la inicial.
+      if (d.esVendedor && d.iconoUrl) {
+        var im = document.createElement("img");
+        im.alt = p;
+        im.onerror = function () { avatar.textContent = inicial; };
+        im.src = typeof window.optimizarUrlImagen === "function" ? window.optimizarUrlImagen(d.iconoUrl) : d.iconoUrl;
+        avatar.textContent = "";
+        avatar.appendChild(im);
+      }
       perfilTxt.innerHTML = "<small>Hola,</small><b>" + esc(p) + "</b>";
     });
   }
@@ -489,6 +499,13 @@
     });
     timerAviso = setInterval(rotarAviso, MS_ROTAR);
     setInterval(refrescar, 1500);
+    document.addEventListener("mt:perfil-actualizado", function () { ultimoEstado = ""; refrescar(); });
+    if (!document.getElementById("pcAvatarCss")) {
+      var st = document.createElement("style");
+      st.id = "pcAvatarCss";
+      st.textContent = ".pc-avatar{overflow:hidden}.pc-avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}";
+      document.head.appendChild(st);
+    }
     if (MQ.addEventListener) MQ.addEventListener("change", alCambiarAncho);
     else if (MQ.addListener) MQ.addListener(alCambiarAncho);
     alCambiarAncho();

@@ -40,21 +40,40 @@
 
   // Nombre de quien tiene sesión (viene de /api/perfil, igual que el panel
   // de Perfil). Devuelve una promesa con el nombre, o "" si no hay sesión.
-  var cache = null, pendiente = null;
+  var cachePerfil = null, pendiente = null;
   function haySesion() {
     try { return typeof window.haySesionActiva === "function" && !!window.haySesionActiva(); }
     catch (e) { return false; }
   }
   MT.haySesion = haySesion;
-  MT.nombre = function () {
-    if (!haySesion()) { cache = null; return Promise.resolve(""); }
-    if (cache !== null) return Promise.resolve(cache);
+  // Datos del perfil: { nombre, iconoUrl, esVendedor } o null si no hay sesión.
+  MT.perfil = function () {
+    if (!haySesion()) { cachePerfil = null; return Promise.resolve(null); }
+    if (cachePerfil) return Promise.resolve(cachePerfil);
     if (pendiente) return pendiente;
     pendiente = fetch("/api/perfil", { cache: "no-store" })
       .then(function (r) { return r.ok ? r.json() : {}; })
-      .then(function (p) { pendiente = null; var n = ((p && p.nombre) || "").trim(); if (n) cache = n; return n; })
-      .catch(function () { pendiente = null; return ""; });
+      .then(function (p) {
+        pendiente = null; p = p || {};
+        var d = {
+          nombre: (p.nombre || "").trim(),
+          iconoUrl: (p.iconoUrl || "").trim(),
+          esVendedor: String(p.tipo || "").toLowerCase() === "vendedor"
+        };
+        if (d.nombre) cachePerfil = d;
+        return d;
+      })
+      .catch(function () { pendiente = null; return null; });
     return pendiente;
+  };
+  // Nombre de quien tiene sesión, o "" si no hay.
+  MT.nombre = function () {
+    return MT.perfil().then(function (d) { return d ? d.nombre : ""; });
+  };
+  // Llamar cuando cambie el perfil (p. ej. al subir un icono nuevo).
+  MT.invalidarPerfil = function () {
+    cachePerfil = null;
+    try { document.dispatchEvent(new CustomEvent("mt:perfil-actualizado")); } catch (e) {}
   };
   MT.primerNombre = function (n) { return (n || "").trim().split(/\s+/)[0] || ""; };
 })();
