@@ -618,6 +618,17 @@ function limpiarAvisoFinCatalogo() {
 // imagen3. Las imágenes viajan en data-imagenes (JSON) para que el click
 // delegado de los puntos (ver listener global más abajo) sepa a qué
 // imagen cambiar sin tener que reconstruir la tarjeta entera.
+// 🆕 Misma imagen y mismas dimensiones, pero Cloudinary la entrega en el formato
+// más liviano que soporte el navegador (WebP/AVIF) y con compresión automática
+// de buena calidad. NO redimensiona: la foto se ve igual, solo pesa menos.
+function optimizarUrlImagen(url) {
+  if (typeof url !== "string") return url;
+  if (url.indexOf("res.cloudinary.com") === -1 || url.indexOf("/upload/") === -1) return url;
+  if (url.indexOf("/upload/f_auto") !== -1) return url;
+  return url.replace("/upload/", "/upload/f_auto,q_auto:best/");
+}
+window.optimizarUrlImagen = optimizarUrlImagen;
+
 function construirGaleriaHTML(imagenes, alt, estiloImg) {
   const validas = imagenes.filter(Boolean);
   if (validas.length === 0) {
@@ -626,14 +637,14 @@ function construirGaleriaHTML(imagenes, alt, estiloImg) {
   const jsonImagenes = JSON.stringify(validas).replace(/"/g, "&quot;");
   if (validas.length === 1) {
     return `<div class="producto-galeria" data-imagenes="${jsonImagenes}">
-      <img class="galeria-img" src="${validas[0]}" alt="${alt}" style="${estiloImg}">
+      <img class="galeria-img" src="${optimizarUrlImagen(validas[0])}" loading="lazy" decoding="async" alt="${alt}" style="${estiloImg}">
     </div>`;
   }
   const dotsHtml = validas
     .map((_, i) => `<span class="galeria-dot${i === 0 ? " active" : ""}" data-index="${i}"></span>`)
     .join("");
   return `<div class="producto-galeria" data-imagenes="${jsonImagenes}">
-    <img class="galeria-img" src="${validas[0]}" alt="${alt}" style="${estiloImg}">
+    <img class="galeria-img" src="${optimizarUrlImagen(validas[0])}" loading="lazy" decoding="async" alt="${alt}" style="${estiloImg}">
     <div class="galeria-dots">${dotsHtml}</div>
   </div>`;
 }
@@ -655,7 +666,7 @@ function irAImagenGaleria(galeria, idx) {
   if (!imagenes.length) return;
   const idxSeguro = ((idx % imagenes.length) + imagenes.length) % imagenes.length; // wrap-around
   const img = galeria.querySelector(".galeria-img");
-  if (img && imagenes[idxSeguro]) img.src = imagenes[idxSeguro];
+  if (img && imagenes[idxSeguro]) img.src = optimizarUrlImagen(imagenes[idxSeguro]);
   const dots = galeria.querySelectorAll(".galeria-dot");
   dots.forEach((d, i) => d.classList.toggle("active", i === idxSeguro));
 }
