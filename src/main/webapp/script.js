@@ -1704,10 +1704,33 @@ registroFormComprador?.addEventListener("submit", async (e) => {
     const data = await res.json();
 
     procesarRespuestaRegistroComprador(res, data);
+
+    // 🆕 Registro nuevo y exitoso: se inicia la sesión de una vez con el
+    // mismo correo y contraseña que acaba de escribir. Antes el registro
+    // dejaba a la persona como Invitada (no guardaba sesión en el navegador
+    // ni en el servidor), por eso el carrito y la página la mandaban a
+    // iniciar sesión otra vez justo después de registrarse.
+    if (res.ok && data.usuarioId > 0 && !data.yaRegistrado) {
+      await iniciarSesionTrasRegistroComprador(correo, contraseña);
+    }
   } catch (err) {
     alert("Error al conectar con el servidor: " + err.message);
   }
 });
+
+// 🆕 Hace el mismo login que el botón "Acceder" del comprador, pero en
+// automático tras registrarse. Si falla por cualquier motivo no pasa nada
+// grave: la persona queda como antes y puede iniciar sesión a mano.
+async function iniciarSesionTrasRegistroComprador(correo, contraseña) {
+  try {
+    const r = await fetch("LoginCompradorServlet", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `correo=${encodeURIComponent(correo)}&contraseña=${encodeURIComponent(contraseña)}`
+    });
+    if (r.ok) completarLoginComprador();
+  } catch (e) { /* sin conexión: queda como Invitada */ }
+}
 
 // 🆕 Lógica posterior a /registroComprador, extraída a una función para
 // compartirla con el registro con Google (mismo formato JSON).

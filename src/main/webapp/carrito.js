@@ -41,12 +41,49 @@
     }
   }
 
+  // ---- Producto pendiente ----------------------------------------------
+  // 🆕 Si una persona Invitada toca "agregar al carrito", se guarda el
+  // producto (en sessionStorage, vive solo en esta pestaña) antes de
+  // mandarla a iniciar sesión. En cuanto la sesión queda activa (login o
+  // registro nuevo) se retoma solo: se abre el mismo cuadro "Agregar al
+  // carrito" con ese producto, sin que tenga que volver a buscarlo.
+  const CLAVE_PENDIENTE = "carritoPendiente";
+  const VIGENCIA_PENDIENTE = 15 * 60 * 1000; // 15 min; pasado ese tiempo se descarta
+
+  function guardarPendiente(producto) {
+    try {
+      sessionStorage.setItem(CLAVE_PENDIENTE, JSON.stringify({ producto: producto, ts: Date.now() }));
+    } catch (e) {}
+  }
+
+  function borrarPendiente() {
+    try { sessionStorage.removeItem(CLAVE_PENDIENTE); } catch (e) {}
+  }
+
+  function leerPendiente() {
+    try {
+      const raw = sessionStorage.getItem(CLAVE_PENDIENTE);
+      if (!raw) return null;
+      const d = JSON.parse(raw);
+      if (!d || !d.producto || !d.producto.id || Date.now() - d.ts > VIGENCIA_PENDIENTE) {
+        borrarPendiente();
+        return null;
+      }
+      return d.producto;
+    } catch (e) {
+      return null;
+    }
+  }
+
   // Pide iniciar sesión antes de tocar el carrito. Si estamos en
   // index.html (existe window.mostrarLogin, definido ahí), se abre el
   // login sin salir de la página. Si estamos en cualquier otra página
   // (detalle-nacional.html, carrito.html, factura.html, que no cargan
   // ese login), se ofrece ir a la página principal a iniciar sesión.
-  function pedirLogin() {
+  // `producto` es opcional: si viene, queda pendiente para agregarlo
+  // apenas la persona inicie sesión.
+  function pedirLogin(producto) {
+    if (producto && producto.id) guardarPendiente(producto);
     if (typeof window.mostrarLogin === "function") {
       window.mostrarLogin("Inicia sesión para agregar productos al carrito");
       return;
@@ -57,6 +94,8 @@
       // etc., ver el <script> al final de index.html): abre el login y
       // hace clic en "Comprador/a" automáticamente al cargar.
       window.location.href = "index.html?accion=login-comprador";
+    } else {
+      borrarPendiente();
     }
   }
 
@@ -596,8 +635,6 @@
     e.preventDefault();
     e.stopPropagation(); // no debe disparar el click de la tarjeta completa (abre "Ver detalles")
 
-    if (!haySesion()) { pedirLogin(); return; }
-
     const producto = {
       id: btn.dataset.carritoId,
       nombre: btn.dataset.carritoNombre,
@@ -612,8 +649,32 @@
     if (btn.closest("#botonCarritoProducto") && typeof window.imagenElegidaDetalle === "function") {
       producto.imagen_elegida = window.imagenElegidaDetalle() || "";
     }
+    // 🆕 Sin sesión: se guarda el producto y se pide el login; al entrar se retoma solo.
+    if (!haySesion()) { pedirLogin(producto); return; }
     abrirModalConfirmar(producto);
   });
+
+  // ---- Retomar el producto pendiente tras iniciar sesión ---------------
+  function retomarPendiente() {
+    if (!haySesion()) return;
+    const p = leerPendiente();
+    if (!p) return;
+    borrarPendiente();
+    abrirModalConfirmar(p);
+  }
+
+  // Vigila el cambio de "sin sesión" a "con sesión" (login normal, login con
+  // Google o registro nuevo). Al ocurrir: refresca carrito/pedidos (así el
+  // número del carrito sale al instante, sin recargar la página) y retoma
+  // el producto que la persona quería agregar.
+  let sesionActivaAntes = haySesion();
+  setInterval(function () {
+    const ahora = haySesion();
+    if (ahora && !sesionActivaAntes) {
+      cargarCarrito().then(retomarPendiente);
+    }
+    sesionActivaAntes = ahora;
+  }, 600);
 
   // Se recarga el carrito (y el badge) apenas carga cualquier página que
   // incluya este script, y cada vez que la sesión cambie (login/logout
@@ -648,7 +709,11 @@
   }).observe(document.documentElement, { childList: true, subtree: true });
   reubicarBotones();
 
-  document.addEventListener("DOMContentLoaded", cargarCarrito);
+  document.addEventListener("DOMContentLoaded", function () {
+    // Si la persona llega ya con sesión y con un producto pendiente (ej.
+    // volvió de iniciar sesión desde otra página), se retoma de una vez.
+    cargarCarrito().then(retomarPendiente);
+  });
 
   window.Carrito = {
     botonHTML: botonHTML,
