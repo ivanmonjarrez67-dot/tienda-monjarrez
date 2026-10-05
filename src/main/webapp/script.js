@@ -2054,6 +2054,18 @@ function ocultarTodo() {
   });
 }
 
+// 🆕 Entrada por defecto como Invitado/a: deja el catálogo a la vista sin
+// mostrar el modal "Ingresar como" ni el cargador de 2 segundos que
+// acompaña al clic en el botón "Invitado". El login sigue disponible desde
+// el menú de 3 puntitos, el aviso rojo, "Mi tienda" y el carrito.
+function entrarComoInvitado() {
+  ocultarTodo();
+  hideModal(loginModal);
+  document.getElementById("contenidoInvitado")?.style.setProperty("display", "block");
+  actualizarMiTienda("invitado");
+}
+window.entrarComoInvitado = entrarComoInvitado;
+
 function cancelarFormulario(idFormulario, idForm) {
   if(confirm("¿Desea borrar la información escrita?")) {
     document.getElementById(idForm)?.reset();
@@ -2069,9 +2081,11 @@ window.addEventListener("DOMContentLoaded", () => {
   const tieneId = /\d+/.test(texto);
   // 🆕 Con sesión activa (o sesión larga) no se muestra "Ingresar como".
   const conSesion = typeof window.haySesionActiva === "function" && window.haySesionActiva();
-  if (!tieneId && !conSesion && loginModal) {
-    loginModal.style.display = "flex";
-  }
+  // 🔧 Antes, sin sesión, aquí se mostraba el modal "Ingresar como" y se
+  // quedaba a la vista hasta que la página terminaba de cargar TODO (evento
+  // "load", varios segundos) y un clic automático en "Invitado" lo cerraba.
+  // Ahora la persona entra directo como Invitada, sin ver ese modal.
+  if (!tieneId && !conSesion) entrarComoInvitado();
 });
 
 cancelarBtn?.addEventListener("click", () => hideModal(loginModal));

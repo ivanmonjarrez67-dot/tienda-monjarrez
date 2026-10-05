@@ -4362,7 +4362,7 @@ async function cargarMisProductos(usuarioId) {
   .google-aviso { font-size: 12px; text-align: center; margin: 6px 0 0; opacity: .85; }
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="script.js?v=2"></script>
+<script src="script.js?v=3"></script>
 <script src="carrito.js?v=8"></script>
 
 <script>
@@ -6237,7 +6237,10 @@ window.addEventListener("load", async () => {
     // El login sigue disponible para quien quiera entrar como
     // Vendedor/a o Comprador/a: desde el menú de 3 puntitos ("Iniciar
     // sesión", ver más abajo) o al intentar entrar a "Mi tienda".
-    document.querySelector(".role-btn.invitado")?.click();
+    // 🔧 Ya no se hace clic en el botón "Invitado" (eso mostraba el cargador
+    // de 2 segundos); se entra directo con entrarComoInvitado() de script.js.
+    if (typeof window.entrarComoInvitado === "function") window.entrarComoInvitado();
+    else document.querySelector(".role-btn.invitado")?.click();
     actualizarMiTienda("invitado"); // 🔹 Bloquear "Mi tienda" por defecto
     // 🆕 "Continuar como tu-correo" de Google, solo para invitados.
     window.mostrarOneTapGoogle?.();
