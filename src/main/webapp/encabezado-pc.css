@@ -452,3 +452,4 @@ body.mt-pc #pcAvisosOv.on { display: flex; }
 .pc-pm-o { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 12.5px; color: var(--pc-gris); }
 .pc-pm-o::before, .pc-pm-o::after { content: ""; flex: 1; height: 1px; background: var(--pc-linea); }
 .pc-pm-google-btn { display: flex; justify-content: center; min-height: 44px; }
+.pc-pm-nota { margin-top: 6px; font-size: 11.5px; line-height: 1.35; text-align: center; color: var(--pc-gris); }

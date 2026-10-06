@@ -410,3 +410,4 @@ body.mt-on .mt-full.on { transform: translateY(0); }
 .mt-google-o { display: flex; align-items: center; gap: 8px; margin: 4px 0 8px; font-size: 13px; color: var(--mt-gris); }
 .mt-google-o::before, .mt-google-o::after { content: ""; flex: 1; height: 1px; background: var(--mt-linea); }
 .mt-google-btn { display: flex; justify-content: center; min-height: 44px; }
+.mt-google-nota { margin-top: 6px; font-size: 12px; line-height: 1.35; text-align: center; color: var(--mt-gris); }

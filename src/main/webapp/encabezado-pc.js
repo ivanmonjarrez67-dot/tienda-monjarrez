@@ -383,6 +383,7 @@
     wrap.appendChild(crear("div", "pc-pm-o", "<span>o</span>"));
     var cont = crear("div", "pc-pm-google-btn");
     wrap.appendChild(cont);
+    wrap.appendChild(crear("div", "pc-pm-nota", "Si aún no tienes cuenta, la creamos con tu Google y aceptas los Términos y Condiciones."));
     if (typeof window.renderBotonGoogle === "function") {
       window.renderBotonGoogle(cont, 230, function () { wrap.style.display = ""; });
     }

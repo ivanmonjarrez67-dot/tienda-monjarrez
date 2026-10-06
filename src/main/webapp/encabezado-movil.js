@@ -255,6 +255,7 @@
     wrap.appendChild(crear("div", "mt-google-o", "<span>o</span>"));
     var cont = crear("div", "mt-google-btn");
     wrap.appendChild(cont);
+    wrap.appendChild(crear("div", "mt-google-nota", "Si aún no tienes cuenta, la creamos con tu Google y aceptas los Términos y Condiciones."));
     if (typeof window.renderBotonGoogle === "function") {
       window.renderBotonGoogle(cont, 260, function () { wrap.style.display = ""; });
     }

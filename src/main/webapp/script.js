@@ -1941,10 +1941,10 @@ async function enviarLoginCompradorGoogle(credential, desdeOneTap = false) {
     }
     // 🆕 404 = ese correo de Google no tiene cuenta: mismo aviso con "Ir a registrarme"
     if (res.status === 404) {
-      // 🆕 Desde "Continuar como..." (One Tap) no hay formulario de login a la
-      // vista: se abre el registro con sus términos pendientes.
-      if (desdeOneTap) abrirRegistroConGoogle(credential);
-      else mostrarCuentaNoExiste(correoDesdeCredencialGoogle(credential));
+      // 🆕 Ese correo de Google no tiene cuenta: se crea de una vez como comprador
+      // (los Términos y Condiciones se dan por aceptados al continuar con Google;
+      // quien quiera leerlos puede hacerlo antes de ser vendedor).
+      await enviarRegistroCompradorGoogle(credential);
       return;
     }
     alert((await res.text()) || "No se pudo iniciar sesión con Google.");
@@ -1972,13 +1972,10 @@ function onGoogleCredential(resp) {
   // Registro: debe aceptar los términos primero. Si aún no lo hizo, guardamos
   // su credencial y seguimos solos apenas marque la casilla, para que no
   // tenga que pasar otra vez por Google.
+  // 🆕 Para compradores la casilla se marca sola: con el clic en Google basta,
+  // la cuenta se crea de una vez (las políticas son sobre todo para vendedores).
   const chk = document.getElementById("aceptaTerminosComprador");
-  if (chk && !chk.checked) {
-    credencialGooglePendiente = resp.credential;
-    alert("Solo falta un paso: marca la casilla de Términos y Condiciones y terminamos tu registro con Google.");
-    chk.scrollIntoView({ behavior: "smooth", block: "center" });
-    return;
-  }
+  if (chk) chk.checked = true;
   enviarRegistroCompradorGoogle(resp.credential);
 }
 
@@ -2037,6 +2034,15 @@ function iniciarGoogleRegistro() {
         const [c, a, f] = botonesGooglePendientes.shift();
         dibujarBotonGoogle(c, a, f);
       }
+      // 🆕 Aviso corto: con Google no hay casilla que marcar.
+      bloques.forEach(b => {
+        if (b.querySelector(".google-terminos")) return;
+        const p = document.createElement("p");
+        p.className = "google-terminos";
+        p.style.cssText = "margin:8px 0 0;font-size:11.5px;opacity:.75;text-align:center;line-height:1.35";
+        p.textContent = "Si aún no tienes cuenta, la creamos con tu Google y aceptas los Términos y Condiciones.";
+        b.appendChild(p);
+      });
       ["googleBtnComprador", "googleBtnLoginComprador"].forEach(id => {
         const cont = document.getElementById(id);
         if (cont) {

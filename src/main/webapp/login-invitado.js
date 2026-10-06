@@ -54,6 +54,7 @@
       ".mtli-o{display:flex;align-items:center;gap:8px;margin:14px 0 10px;font-size:13px;color:#6b6b76}" +
       ".mtli-o::before,.mtli-o::after{content:'';flex:1;height:1px;background:#e4e4e8}" +
       ".mtli-google{display:flex;justify-content:center;min-height:44px}" +
+      ".mtli-nota{margin-top:8px;font-size:11.5px;line-height:1.35;color:#6b6b76}" +
       ".mtli-ahora{margin-top:14px;border:0;background:none;color:#6b6b76;font:500 13px 'Poppins',system-ui,sans-serif;text-decoration:underline;cursor:pointer}";
     document.head.appendChild(st);
   }
@@ -77,12 +78,32 @@
         return;
       }
       if (res.status === 404) {
-        alert("Ese correo de Google todavía no tiene cuenta en Tienda Monjarrez. Te llevamos a registrarte.");
-        window.location.href = "index.html?accion=registro-comprador";
-        return;
+        // Sin cuenta: se crea de una vez como comprador (igual que en index.html).
+        return registrarConGoogle(resp.credential);
       }
       return res.text().then(function (t) { alert(t || "No se pudo iniciar sesión con Google."); });
     }).catch(function (err) { alert("No se pudo iniciar sesión con Google: " + err.message); });
+  }
+  function registrarConGoogle(credential) {
+    return fetch("/registroCompradorGoogle", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ credential: credential }).toString()
+    }).then(function (res) {
+      return res.json().then(function (data) {
+        if (res.ok && data.usuarioId > 0 && data.sesionIniciada) {
+          try {
+            localStorage.setItem("sesionUsuario", JSON.stringify({ tipo: "comprador", expiracion: Date.now() + DURACION_COMPRADOR }));
+          } catch (e) {}
+          alert(data.yaRegistrado ? "Ya tenías una cuenta con este correo. ¡Bienvenido de nuevo!" : "¡Registro exitoso! Ya puedes empezar a comprar.");
+          var op = opcionesActuales;
+          cerrar(true);
+          if (op && typeof op.alIniciar === "function") op.alIniciar();
+          return;
+        }
+        alert(data.mensaje || "No se pudo completar el registro con Google.");
+      });
+    }).catch(function (err) { alert("No se pudo completar el registro con Google: " + err.message); });
   }
   function cargarGsi(cb) {
     if (window.google && window.google.accounts && window.google.accounts.id) { cb(); return; }
@@ -170,7 +191,9 @@
     gWrap.style.display = "none";
     var o = document.createElement("div"); o.className = "mtli-o"; o.innerHTML = "<span>o</span>";
     var gBtn = document.createElement("div"); gBtn.className = "mtli-google";
-    gWrap.appendChild(o); gWrap.appendChild(gBtn);
+    var nota = document.createElement("div"); nota.className = "mtli-nota";
+    nota.textContent = "Si aún no tienes cuenta, la creamos con tu Google y aceptas los Términos y Condiciones.";
+    gWrap.appendChild(o); gWrap.appendChild(gBtn); gWrap.appendChild(nota);
 
     var ahora = document.createElement("button");
     ahora.type = "button"; ahora.className = "mtli-ahora"; ahora.textContent = "Ahora no";
