@@ -327,6 +327,29 @@
   .gear-btn:hover{border-color:var(--accent);color:var(--accent);}
   .gear-btn.salir:hover{border-color:var(--danger);color:var(--danger);}
 
+  .img-prod{border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:12px;}
+  .img-prod-head{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;}
+  .img-prod-head input[type=text]{flex:1;min-width:140px;}
+  .img-badge{font-family:var(--mono);font-size:10.5px;padding:3px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted);}
+  .img-badge.full{border-color:var(--accent);color:var(--accent);}
+  .img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;}
+  .img-box{position:relative;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#0d1010;}
+  .img-box img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;cursor:zoom-in;}
+  #imgVisor{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:80;padding:16px;}
+  #imgVisor.show{display:flex;}
+  #imgVisor img{max-width:94vw;max-height:78vh;object-fit:contain;border-radius:6px;background:#fff;}
+  #imgVisor .vbar{display:flex;gap:14px;align-items:center;margin-top:12px;color:#fff;font-family:var(--mono);font-size:13px;}
+  #imgVisor .vbar button{background:#1c2221;color:#fff;border:1px solid var(--line);border-radius:6px;padding:8px 16px;font-size:16px;cursor:pointer;}
+  #imgVisor .vbar button:hover{border-color:var(--accent);color:var(--accent);}
+  #imgVisor .vtit{color:#fff;font-size:13px;margin-bottom:8px;text-align:center;}
+  .img-box .lbl{position:absolute;top:3px;left:3px;font-family:var(--mono);font-size:9.5px;background:rgba(0,0,0,.75);color:#fff;padding:1px 5px;border-radius:4px;}
+  .img-box .lbl.main{background:var(--accent);color:#0c1211;}
+  .img-box .est{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;background:rgba(0,0,0,.55);color:#fff;text-align:center;}
+  .img-box .acc{display:flex;justify-content:space-between;}
+  .img-box .acc button{flex:1;background:#151a19;border:0;border-top:1px solid var(--line);color:var(--text);cursor:pointer;padding:3px 0;font-size:12px;}
+  .img-box .acc button:hover{color:var(--accent);}
+  .img-out{width:100%;min-height:160px;background:#0d1010;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:9px 11px;font-family:var(--mono);font-size:11.5px;white-space:pre;}
+
   .modal-overlay{
     position:fixed;
     inset:0;
@@ -424,6 +447,7 @@
     <button class="gear-btn" id="btnPedidos" onclick="abrirPedidos()" title="Pedidos">📋</button>
     <button class="gear-btn" onclick="abrirModalPromo()" title="Cupón de promoción">🎁</button>
     <button class="gear-btn" onclick="abrirModalUrgencia()" title="Estrategia de urgencia">🔥</button>
+    <button class="gear-btn" onclick="abrirModalImg()" title="Generar links de imágenes">🖼️</button>
     <button class="gear-btn" onclick="abrirModalCJ()" title="Importar producto de CJ">📦</button>
     <button class="gear-btn" onclick="abrirModal()" title="Gestión de admins">⚙</button>
     <button class="gear-btn salir" onclick="cerrarSesion()" title="Cerrar sesión">⏻</button>
@@ -571,6 +595,38 @@
       </div>
       <div class="modal-error" id="errorUrgencia"></div>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalImgOverlay">
+  <div class="modal" style="max-width:720px;max-height:92vh;overflow-y:auto;">
+    <h2>Links de imágenes para productos nuevos</h2>
+    <div class="hint" style="margin-bottom:10px;">Un bloque por producto: nombre, precio y sus fotos. Elige todas las fotos de una vez: la <b>primera es la principal</b> y las demás son adicionales (máximo 8). Reordénalas con ‹ ›. Se suben a Cloudinary y abajo se generan los links listos para copiar.</div>
+    <div id="imgProductos"></div>
+    <div class="modal-actions" style="justify-content:flex-start;flex-wrap:wrap;">
+      <button type="button" class="btn secondary" onclick="imgAgregarProducto()">+ Otro producto</button>
+      <button type="button" class="btn aprobar" onclick="imgGenerar()">Generar links</button>
+    </div>
+    <label for="imgSalida" style="margin-top:12px;">Resultado</label>
+    <textarea id="imgSalida" class="img-out" readonly placeholder="Aquí aparecen los links…"></textarea>
+    <div class="modal-actions" style="justify-content:flex-start;flex-wrap:wrap;">
+      <button type="button" class="btn nota" onclick="imgCopiar('todo', this)">Copiar todo</button>
+      <button type="button" class="btn nota" onclick="imgCopiar('links', this)">Copiar solo los links</button>
+      <button type="button" class="btn nota" onclick="imgCopiar('sql', this)">Copiar formato SQL</button>
+      <button type="button" class="btn secondary" onclick="cerrarModalImg()">Cerrar</button>
+    </div>
+    <div class="modal-error" id="errorImg"></div>
+  </div>
+</div>
+
+<div id="imgVisor" onclick="if(event.target === this) imgCerrarVisor()">
+  <div class="vtit" id="imgVisorTit"></div>
+  <img id="imgVisorImg" alt="">
+  <div class="vbar">
+    <button type="button" onclick="imgVisorMover(-1)">‹</button>
+    <span id="imgVisorPos"></span>
+    <button type="button" onclick="imgVisorMover(1)">›</button>
+    <button type="button" onclick="imgCerrarVisor()">Cerrar</button>
   </div>
 </div>
 
@@ -1189,6 +1245,203 @@ async function guardarUrgencia(btn){
     cerrarModalUrgencia();
   }catch(e){ errorUrgencia.textContent = e.message; errorUrgencia.classList.add('show'); }
   finally{ btn.disabled = false; }
+}
+
+// --- Generador de links de imágenes (Cloudinary vía /GuardarProductoArchivo) ---
+const IMG_UPLOAD_ENDPOINT = '/GuardarProductoArchivo';
+const IMG_MAX_EXTRA = 8;           // adicionales después de la principal
+let IMG_PRODS = [];                // [{id, nombre, fotos:[{id,url,preview,estado}]}]
+let IMG_SEQ = 0;
+let IMG_COLA = Promise.resolve();
+let IMG_TEXTOS = {todo:'', links:'', sql:''};
+
+async function imgComprimir(file, maxLado = 1600, calidad = 0.82){
+  try{
+    if(!file.type.startsWith('image/') || file.type === 'image/gif') return file;
+    const bmp = await createImageBitmap(file, {imageOrientation:'from-image'});
+    const escala = Math.min(1, maxLado / Math.max(bmp.width, bmp.height));
+    if(escala === 1 && file.size < 400*1024){ bmp.close && bmp.close(); return file; }
+    const w = Math.round(bmp.width*escala), h = Math.round(bmp.height*escala);
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0,0,w,h); x.drawImage(bmp,0,0,w,h);
+    bmp.close && bmp.close();
+    const blob = await new Promise(ok => c.toBlob(ok, 'image/jpeg', calidad));
+    if(!blob || blob.size >= file.size) return file;
+    return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', {type:'image/jpeg'});
+  }catch(e){ return file; }
+}
+
+function imgNuevoProducto(){ return {id: ++IMG_SEQ, nombre:'', precio:'', fotos:[]}; }
+function abrirModalImg(){
+  errorImg.classList.remove('show');
+  if(!IMG_PRODS.length) IMG_PRODS.push(imgNuevoProducto());
+  document.getElementById('modalImgOverlay').classList.add('show');
+  imgPintar();
+}
+function cerrarModalImg(){ document.getElementById('modalImgOverlay').classList.remove('show'); }
+function imgAgregarProducto(){ IMG_PRODS.push(imgNuevoProducto()); imgPintar(); }
+function imgQuitarProducto(id){
+  if(!confirm('¿Quitar este producto de la lista?')) return;
+  IMG_PRODS = IMG_PRODS.filter(p => p.id !== id);
+  if(!IMG_PRODS.length) IMG_PRODS.push(imgNuevoProducto());
+  imgPintar();
+}
+function imgBadge(p){
+  const n = p.fotos.length;
+  if(!n) return '<span class="img-badge">sin fotos</span>';
+  const extra = Math.max(0, n-1);
+  return `<span class="img-badge ${extra > 2 ? 'full' : ''}">1 principal + ${extra} adicional${extra === 1 ? '' : 'es'}${extra > 2 ? ' · usa ImagenesProducto' : ''}</span>`;
+}
+function imgPintar(){
+  const cont = document.getElementById('imgProductos');
+  // Se conserva lo que el usuario escribe en los nombres mientras se repinta
+  cont.innerHTML = IMG_PRODS.map((p, pi) => `
+    <div class="img-prod" data-pid="${p.id}">
+      <div class="img-prod-head">
+        <b style="font-family:var(--mono);font-size:12px;">#${pi+1}</b>
+        <input type="text" placeholder="Nombre del producto" value="${esc(p.nombre)}" oninput="imgNombre(${p.id}, this.value)">
+        <input type="text" inputmode="decimal" placeholder="Precio ₡" value="${esc(p.precio)}" oninput="imgPrecio(${p.id}, this.value)" style="width:110px;flex:none;">
+        <label class="btn secondary" style="cursor:pointer;margin:0;">Elegir fotos
+          <input type="file" accept="image/*" multiple style="display:none;" onchange="imgElegir(${p.id}, this)">
+        </label>
+        ${imgBadge(p)}
+        <button type="button" class="btn revertir" onclick="imgQuitarProducto(${p.id})">Quitar</button>
+      </div>
+      <div class="img-grid">
+        ${p.fotos.map((f, i) => `
+          <div class="img-box">
+            <img src="${esc(f.preview || f.url)}" alt="" title="Clic para ver en grande" onclick="imgVer(${p.id}, ${i})">
+            <span class="lbl ${i === 0 ? 'main' : ''}">${i === 0 ? 'Principal' : 'Adic. ' + i}</span>
+            ${f.estado === 'subiendo' ? '<div class="est">subiendo…</div>' : ''}
+            ${f.estado === 'error' ? '<div class="est" style="background:rgba(198,91,78,.75)">error · toca ↻</div>' : ''}
+            <div class="acc">
+              <button type="button" onclick="imgMover(${p.id},${f.id},-1)" ${i === 0 ? 'disabled style="opacity:.3"' : ''}>‹</button>
+              ${f.estado === 'error' ? `<button type="button" onclick="imgReintentar(${p.id},${f.id})">↻</button>` : ''}
+              <button type="button" onclick="imgQuitarFoto(${p.id},${f.id})">✕</button>
+              <button type="button" onclick="imgMover(${p.id},${f.id},1)" ${i === p.fotos.length-1 ? 'disabled style="opacity:.3"' : ''}>›</button>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+function imgProd(id){ return IMG_PRODS.find(p => p.id === id); }
+function imgNombre(id, v){ const p = imgProd(id); if(p) p.nombre = v; }
+function imgPrecio(id, v){ const p = imgProd(id); if(p) p.precio = v; }
+function imgPrecioNum(v){ const n = parseFloat(String(v||'').replace(/[^\d.]/g,'')); return (isNaN(n) || n <= 0) ? null : n; }
+function imgSqlStr(t){ return String(t).replace(/'/g, "''"); }
+function imgElegir(pid, input){
+  const p = imgProd(pid); if(!p) return;
+  const archivos = [...input.files].filter(f => f.type.startsWith('image/'));
+  input.value = '';
+  const libres = (1 + IMG_MAX_EXTRA) - p.fotos.length;
+  if(!archivos.length) return;
+  if(libres <= 0){ alert('Este producto ya tiene el máximo: 1 principal + ' + IMG_MAX_EXTRA + ' adicionales.'); return; }
+  if(archivos.length > libres) alert('Máximo 1 principal + ' + IMG_MAX_EXTRA + ' adicionales. Se agregan solo las primeras ' + libres + '.');
+  archivos.slice(0, libres).forEach(file => {
+    const f = {id: ++IMG_SEQ, url:'', preview: URL.createObjectURL(file), estado:'subiendo', file};
+    p.fotos.push(f);
+    IMG_COLA = IMG_COLA.then(() => imgSubir(p, f));
+  });
+  imgPintar();
+}
+async function imgSubir(p, f){
+  if(!p.fotos.includes(f)) return;        // la quitaron antes de que le tocara
+  f.estado = 'subiendo'; imgPintar();
+  try{
+    const lista = await imgComprimir(f.file);
+    const fd = new FormData(); fd.append('imagenProducto', lista);
+    const r = await fetch(IMG_UPLOAD_ENDPOINT, {method:'POST', body: fd});
+    if(!r.ok) throw new Error((await r.text()) || ('Error ' + r.status));
+    f.url = (await r.text()).trim();
+    f.estado = f.url ? 'ok' : 'error';
+  }catch(e){ f.estado = 'error'; f.msg = e.message; }
+  imgPintar();
+}
+function imgReintentar(pid, fid){
+  const p = imgProd(pid); const f = p && p.fotos.find(x => x.id === fid); if(!f) return;
+  IMG_COLA = IMG_COLA.then(() => imgSubir(p, f));
+}
+function imgQuitarFoto(pid, fid){ const p = imgProd(pid); if(!p) return; p.fotos = p.fotos.filter(f => f.id !== fid); imgPintar(); }
+function imgMover(pid, fid, d){
+  const p = imgProd(pid); if(!p) return;
+  const i = p.fotos.findIndex(f => f.id === fid), j = i + d;
+  if(i < 0 || j < 0 || j >= p.fotos.length) return;
+  [p.fotos[i], p.fotos[j]] = [p.fotos[j], p.fotos[i]];
+  imgPintar();
+}
+// --- Vista previa grande de las fotos de un producto ---
+let IMG_VISOR = {pid:null, i:0};
+function imgVer(pid, i){ IMG_VISOR = {pid, i}; imgVisorPintar(); document.getElementById('imgVisor').classList.add('show'); }
+function imgCerrarVisor(){ document.getElementById('imgVisor').classList.remove('show'); }
+function imgVisorPintar(){
+  const p = imgProd(IMG_VISOR.pid);
+  if(!p || !p.fotos.length){ imgCerrarVisor(); return; }
+  IMG_VISOR.i = Math.max(0, Math.min(IMG_VISOR.i, p.fotos.length - 1));
+  const f = p.fotos[IMG_VISOR.i];
+  document.getElementById('imgVisorImg').src = f.preview || f.url;
+  document.getElementById('imgVisorTit').textContent = (p.nombre.trim() || 'Producto') + ' — ' + (IMG_VISOR.i === 0 ? 'PRINCIPAL' : 'ADICIONAL ' + IMG_VISOR.i);
+  document.getElementById('imgVisorPos').textContent = (IMG_VISOR.i + 1) + ' / ' + p.fotos.length;
+}
+function imgVisorMover(d){
+  const p = imgProd(IMG_VISOR.pid); if(!p) return;
+  IMG_VISOR.i = (IMG_VISOR.i + d + p.fotos.length) % p.fotos.length;
+  imgVisorPintar();
+}
+document.addEventListener('keydown', (e) => {
+  if(!document.getElementById('imgVisor').classList.contains('show')) return;
+  if(e.key === 'Escape') imgCerrarVisor();
+  else if(e.key === 'ArrowLeft') imgVisorMover(-1);
+  else if(e.key === 'ArrowRight') imgVisorMover(1);
+});
+
+function imgGenerar(){
+  errorImg.classList.remove('show');
+  const con = IMG_PRODS.filter(p => p.fotos.length);
+  if(!con.length){ errorImg.textContent = 'Agrega fotos a al menos un producto.'; errorImg.classList.add('show'); return; }
+  if(con.some(p => p.fotos.some(f => f.estado === 'subiendo'))){ errorImg.textContent = 'Espera: todavía hay fotos subiéndose.'; errorImg.classList.add('show'); return; }
+  const faltan = con.filter(p => !(p.nombre || '').trim() || imgPrecioNum(p.precio) === null);
+  if(faltan.length){ errorImg.textContent = 'Falta el nombre o el precio en: ' + faltan.map(p => '#' + (IMG_PRODS.indexOf(p)+1)).join(', '); errorImg.classList.add('show'); return; }
+  const malas = con.filter(p => p.fotos.some(f => f.estado !== 'ok'));
+  if(malas.length){ errorImg.textContent = 'Hay fotos con error (↻ para reintentar o ✕ para quitarlas).'; errorImg.classList.add('show'); return; }
+
+  const todo = [], links = [], sql = [];
+  con.forEach((p, k) => {
+    const urls = p.fotos.map(f => f.url);
+    const extra = urls.length - 1;
+    const nom = p.nombre.trim();
+    const precio = imgPrecioNum(p.precio);
+    const precioTxt = '₡' + precio.toLocaleString('es-CR', {maximumFractionDigits: 2});
+    const tipo = extra > 2 ? `COMPLETO: ${extra} adicionales → imagen2/imagen3 + ImagenesProducto` : `SIMPLE: ${extra} adicional${extra === 1 ? '' : 'es'} → solo imagen2/imagen3`;
+    todo.push(`=== ${nom} · ${precioTxt} · 1 principal + ${extra} adicional${extra === 1 ? '' : 'es'} (${tipo}) ===`);
+    todo.push('NOMBRE     : ' + nom);
+    todo.push('PRECIO     : ' + precio);
+    todo.push('PRINCIPAL  : ' + urls[0]);
+    urls.slice(1).forEach((u, i) => todo.push('ADICIONAL ' + (i+1) + ' : ' + u));
+    todo.push('');
+    links.push(`# ${nom} · ${precioTxt} (1 + ${extra})`); urls.forEach(u => links.push(u)); links.push('');
+    sql.push(`-- ${nom} · ${precioTxt} · 1 principal + ${extra} adicional${extra === 1 ? '' : 'es'}`);
+    sql.push(`nombre   = N'${imgSqlStr(nom)}'`);
+    sql.push(`precio   = ${precio}`);
+    sql.push(`imagen   = '${urls[0]}'`);
+    if(urls[1]) sql.push(`imagen2  = '${urls[1]}'`);
+    if(urls[2]) sql.push(`imagen3  = '${urls[2]}'`);
+    if(extra > 2){
+      sql.push(`-- ImagenesProducto (producto_id, url, orden): ${extra} filas`);
+      urls.slice(1).forEach((u, i) => sql.push(`(@ID, '${u}', ${i+1})${i < extra-1 ? ',' : ';'}`));
+    }
+    sql.push('');
+  });
+  IMG_TEXTOS = {todo: todo.join('\n').trim(), links: links.join('\n').trim(), sql: sql.join('\n').trim()};
+  document.getElementById('imgSalida').value = IMG_TEXTOS.todo;
+}
+async function imgCopiar(tipo, btn){
+  imgGenerar();   // siempre regenera, por si cambiaste fotos después
+  const txt = IMG_TEXTOS[tipo];
+  if(!txt) return;
+  document.getElementById('imgSalida').value = txt;
+  try{ await navigator.clipboard.writeText(txt); }
+  catch(e){ const t = document.getElementById('imgSalida'); t.select(); document.execCommand('copy'); }
+  toast('Copiado');
 }
 
 cargarPerfil();
