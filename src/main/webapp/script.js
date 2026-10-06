@@ -2813,24 +2813,134 @@ if (welcomeContainer) {
     });
   }
 
-  if (btnBorrar) {
-    btnBorrar.addEventListener("click", async () => {
-      if (!confirm("¿Seguro que deseas borrar tu cuenta? Esta acción no se puede deshacer.")) return;
-      if (!confirm("Última confirmación: se eliminarán tu cuenta y tus datos asociados de forma permanente. ¿Continuar?")) return;
+  // 🆕 Eliminar cuenta: modal propio (en vez de dos confirm()) que explica
+  // qué se pierde según el tipo de cuenta y exige escribir ELIMINAR.
+  // "Cancelar" es el botón con foco y Esc / clic afuera también cancelan.
+  function abrirModalEliminarCuenta() {
+    if (document.getElementById("modalEliminarCuenta")) return;
+
+    if (!document.getElementById("modalEliminarCuentaEstilos")) {
+      const st = document.createElement("style");
+      st.id = "modalEliminarCuentaEstilos";
+      st.textContent = `
+        #modalEliminarCuenta{position:fixed;inset:0;z-index:10050;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px}
+        #modalEliminarCuenta .mec-caja{background:#fff;color:#222;width:100%;max-width:420px;max-height:90vh;overflow:auto;border-radius:14px;padding:22px 20px 18px;box-shadow:0 12px 40px rgba(0,0,0,.35);border-top:5px solid #b33a3a}
+        #modalEliminarCuenta h3{margin:0 0 8px;font-size:18px;color:#7a1414}
+        #modalEliminarCuenta p{font-size:13.5px;line-height:1.45;margin:0 0 10px}
+        #modalEliminarCuenta ul{margin:0 0 12px;padding-left:20px;font-size:13.5px;line-height:1.5}
+        #modalEliminarCuenta .mec-aviso{background:#fdecea;border:1px solid #f0c4c4;border-radius:8px;padding:9px 11px;font-size:13px;color:#7a1414}
+        #modalEliminarCuenta label{display:block;font-size:13px;margin:12px 0 6px}
+        #modalEliminarCuenta input{width:100%;box-sizing:border-box;padding:10px;border:1px solid #bbb;border-radius:8px;font-size:15px;letter-spacing:.08em}
+        #modalEliminarCuenta .mec-acciones{display:flex;gap:10px;margin-top:16px}
+        #modalEliminarCuenta .mec-acciones button{flex:1;padding:11px 8px;border-radius:8px;font-size:14px;cursor:pointer;border:1px solid transparent}
+        #mecCancelar{background:#1f6fd8;color:#fff;font-weight:bold}
+        #mecConfirmar{background:#fff;color:#b33a3a;border-color:#b33a3a !important}
+        #mecConfirmar:disabled{opacity:.4;cursor:not-allowed}
+        #mecConfirmar:not(:disabled){background:#b33a3a;color:#fff}
+        #mecError{color:#d32f2f;font-size:13px;margin-top:10px;display:none}
+      `;
+      document.head.appendChild(st);
+    }
+
+    const esVendedorCuenta = (divTipo.textContent || "").trim().toLowerCase() === "vendedor";
+    const items = esVendedorCuenta
+      ? [
+          "Tu perfil, tu tienda y <strong>todos tus productos</strong> con sus fotos",
+          "Tu suscripción y tus datos de contacto",
+          "El <strong>seguimiento de pedidos</strong> y facturas asociadas",
+          "Todo lo que hayas ingresado en la tienda",
+        ]
+      : [
+          "Tu perfil y tus datos de entrega",
+          "Tu carrito y el <strong>seguimiento de tus pedidos</strong>",
+          "Tus preferencias y notificaciones",
+          "Todo lo que hayas ingresado en la tienda",
+        ];
+
+    const overlayEl = document.createElement("div");
+    overlayEl.id = "modalEliminarCuenta";
+    overlayEl.setAttribute("role", "alertdialog");
+    overlayEl.setAttribute("aria-modal", "true");
+    overlayEl.setAttribute("aria-labelledby", "mecTitulo");
+    overlayEl.innerHTML = `
+      <div class="mec-caja">
+        <div id="mecContenido">
+          <h3 id="mecTitulo">¿Eliminar tu cuenta definitivamente?</h3>
+          <p>Se borrará de forma permanente:</p>
+          <ul>${items.map((t) => `<li>${t}</li>`).join("")}</ul>
+          <div class="mec-aviso"><strong>Esto no se puede deshacer.</strong> Si más adelante quieres volver, tendrás que crear una cuenta nueva desde cero.</div>
+          <p style="margin-top:10px;font-size:12.5px;color:#666">¿Solo quieres salir? Eso se hace con «Cerrar sesión» en el menú, sin borrar nada.</p>
+          <label for="mecInput">Para confirmar, escribe <strong>ELIMINAR</strong>:</label>
+          <input type="text" id="mecInput" autocomplete="off" autocapitalize="characters" spellcheck="false" />
+          <div id="mecError"></div>
+          <div class="mec-acciones">
+            <button type="button" id="mecCancelar">Cancelar</button>
+            <button type="button" id="mecConfirmar" disabled>Eliminar cuenta</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(overlayEl);
+
+    const inputConf = overlayEl.querySelector("#mecInput");
+    const btnCancel = overlayEl.querySelector("#mecCancelar");
+    const btnOk = overlayEl.querySelector("#mecConfirmar");
+    const errorEl = overlayEl.querySelector("#mecError");
+    let eliminando = false;
+
+    function cerrarModal() {
+      if (eliminando) return;
+      document.removeEventListener("keydown", onKey);
+      overlayEl.remove();
+    }
+    function onKey(e) { if (e.key === "Escape") cerrarModal(); }
+    document.addEventListener("keydown", onKey);
+
+    overlayEl.addEventListener("click", (e) => { if (e.target === overlayEl) cerrarModal(); });
+    btnCancel.addEventListener("click", cerrarModal);
+    inputConf.addEventListener("input", () => {
+      btnOk.disabled = inputConf.value.trim().toUpperCase() !== "ELIMINAR";
+    });
+
+    btnOk.addEventListener("click", async () => {
+      if (btnOk.disabled || eliminando) return;
+      eliminando = true;
+      btnOk.disabled = true;
+      btnCancel.disabled = true;
+      inputConf.disabled = true;
+      btnOk.textContent = "Eliminando...";
+      errorEl.style.display = "none";
       try {
         const res = await fetch("/api/perfil/eliminar", { method: "POST" });
         if (res.ok) {
-          alert("Tu cuenta fue eliminada. Serás redirigido al inicio.");
           localStorage.removeItem("sesionUsuario");
-          window.location.href = "/";
+          document.removeEventListener("keydown", onKey);
+          overlayEl.querySelector("#mecContenido").innerHTML = `
+            <h3>Tu cuenta fue eliminada</h3>
+            <p>Gracias por haber sido parte de Tienda Monjarrez. Cuando quieras volver, puedes crear una cuenta nueva.</p>
+            <div class="mec-acciones"><button type="button" id="mecIrInicio" style="background:#1f6fd8;color:#fff;font-weight:bold">Ir al inicio</button></div>`;
+          const irInicio = () => { window.location.href = "/"; };
+          overlayEl.querySelector("#mecIrInicio").addEventListener("click", irInicio);
+          setTimeout(irInicio, 6000);
         } else {
           const texto = await res.text();
-          mostrarMensaje(texto || "No se pudo eliminar la cuenta.", "error");
+          throw new Error(texto || "No se pudo eliminar la cuenta.");
         }
       } catch (err) {
-        mostrarMensaje("Error de conexión al eliminar la cuenta.", "error");
+        eliminando = false;
+        btnCancel.disabled = false;
+        inputConf.disabled = false;
+        btnOk.textContent = "Eliminar cuenta";
+        btnOk.disabled = inputConf.value.trim().toUpperCase() !== "ELIMINAR";
+        errorEl.textContent = err.message && err.message.length < 200 ? err.message : "No se pudo eliminar la cuenta. Intenta de nuevo.";
+        errorEl.style.display = "block";
       }
     });
+
+    btnCancel.focus(); // el foco inicial es la opción segura
+  }
+
+  if (btnBorrar) {
+    btnBorrar.addEventListener("click", abrirModalEliminarCuenta);
   }
 
   const inputPassActual = document.getElementById("perfilPasswordActual");

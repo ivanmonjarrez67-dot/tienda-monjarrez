@@ -3499,19 +3499,40 @@ async function cargarMisProductos(usuarioId) {
       #perfilGuardarBtn:hover {
         background: #1a5cb8;
       }
+      /* 🆕 Zona de peligro (Eliminar cuenta): bien separada de Guardar */
+      .perfil-zona-peligro {
+        margin-top: 64px;
+        padding-top: 18px;
+        border-top: 1px dashed #e0b4b4;
+      }
+      .perfil-zona-peligro-titulo {
+        font-size: 12px;
+        font-weight: bold;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: #b33a3a;
+        margin-bottom: 6px;
+      }
+      .perfil-zona-peligro p {
+        font-size: 12px;
+        color: #777;
+        line-height: 1.4;
+        margin: 0 0 12px;
+      }
       #perfilBorrarCuentaBtn {
-        margin-top: 30px;
+        margin-top: 0;
         width: 100%;
         background: transparent;
-        color: #d32f2f;
-        border: 1px solid #d32f2f;
-        padding: 10px;
+        color: #b33a3a;
+        border: 1px solid #e0b4b4;
+        padding: 9px;
         border-radius: 8px;
-        font-size: 13px;
+        font-size: 12px;
         cursor: pointer;
       }
       #perfilBorrarCuentaBtn:hover {
         background: #fdecea;
+        border-color: #b33a3a;
       }
       #perfilMensaje {
         margin-top: 14px;
@@ -3923,7 +3944,16 @@ async function cargarMisProductos(usuarioId) {
           <p id="perfilMensaje"></p>
 
           <button id="perfilGuardarBtn">Guardar cambios</button>
-          <button id="perfilBorrarCuentaBtn">Borrar cuenta</button>
+
+          <!-- 🆕 Zona de peligro: el borrado de cuenta queda lejos de
+               "Guardar cambios", con otro nombre y sin parecerse a
+               "Cerrar sesión". La confirmación es un modal propio
+               (ver script.js), no un alert. -->
+          <div class="perfil-zona-peligro">
+            <div class="perfil-zona-peligro-titulo">Zona de peligro</div>
+            <p>Eliminar tu cuenta borra tus datos de forma permanente. No es lo mismo que cerrar sesión.</p>
+            <button id="perfilBorrarCuentaBtn" type="button"><i class="fa-solid fa-trash-can"></i> Eliminar mi cuenta…</button>
+          </div>
         </div>
       </div>
     </div>
