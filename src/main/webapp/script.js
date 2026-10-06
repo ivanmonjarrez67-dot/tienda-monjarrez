@@ -837,8 +837,23 @@ function puntajeBestsellerProducto(idProducto, dia) {
   return pseudoAleatorio(id * 7.9218 + dia * 31.415);
 }
 
-// 🆕 Los servicios (categoría "Servicios") NO llevan estrategia de urgencia:
-// ni precio tachado/contador, ni "Solo quedan X", ni "Artículo más vendido".
+// 🆕 ===== Urgencia SOLO para los vendedores/categorías que el admin elija =====
+// El panel de administrador (🔥) guarda qué vendedores y qué categorías llevan
+// la estrategia de urgencia. El servidor cruza ambas cosas y devuelve solo los
+// IDs de producto a los que SÍ les toca (vendedor elegido Y categoría elegida).
+// Si la configuración no carga, por seguridad NO se muestra urgencia.
+let urgenciaIds = new Set();
+const urgenciaConfigPromise = fetch("/api/urgencia-config", { cache: "no-store" })
+  .then((r) => (r.ok ? r.json() : { ids: [] }))
+  .then((d) => { urgenciaIds = new Set((d.ids || []).map(String)); })
+  .catch(() => { urgenciaIds = new Set(); });
+
+function aplicaUrgencia(producto) {
+  return !!producto && urgenciaIds.has(String(producto.id ?? ""));
+}
+
+// 🆕 (Antes) Los servicios NO llevaban urgencia fija. Ahora eso se controla
+// desde el panel admin con las categorías (Servicios viene desmarcada).
 function esProductoServicio(producto) {
   return String((producto && producto.categoria) || "").trim().toLowerCase() === "servicios";
 }
@@ -846,7 +861,7 @@ function esProductoServicio(producto) {
 function calcularBestsellersDelDia(productos) {
   const dia = Math.floor(Date.now() / MS_DIA_URGENCIA);
   const conPuntaje = (productos || [])
-    .filter((p) => p && p.id !== undefined && p.id !== null && p.id !== "" && !esProductoServicio(p))
+    .filter((p) => p && p.id !== undefined && p.id !== null && p.id !== "" && aplicaUrgencia(p))
     .map((p) => ({ id: String(p.id), puntaje: puntajeBestsellerProducto(p.id, dia) }));
   conPuntaje.sort((a, b) => b.puntaje - a.puntaje);
   const mapa = new Map();
@@ -875,7 +890,7 @@ function construirTarjetaProductoHTML(producto) {
   // franja de urgencia este ciclo (independiente de si hay o no rebaja).
   // 🆕 Servicios: sin urgencia (se usa un objeto "vacío" para que el resto del
   // armado de la tarjeta no cambie). La rebaja REAL del vendedor sí se respeta.
-  const esServicio = esProductoServicio(producto);
+  const esServicio = !aplicaUrgencia(producto); // true = esta tarjeta NO lleva urgencia
   const urgencia = esServicio
     ? { precioFalsoTachado: null, porcentajeFalso: null, msRestantes: 0, mostrarFranja: false, frase: "", fraseSecundaria: "" }
     : calcularUrgenciaProducto(producto);
@@ -1051,9 +1066,8 @@ function abrirProductoDesdeUrl() {
 const gridProductosInicial = document.getElementById("productGrid");
 mostrarEsqueletoCarga(gridProductosInicial);
 
-fetch("/api/productos")
-  .then((response) => response.json())
-  .then((productos) => {
+Promise.all([fetch("/api/productos").then((response) => response.json()), urgenciaConfigPromise])
+  .then(([productos]) => {
     const grid = document.getElementById("productGrid");
     grid.classList.remove("skeleton-grid");
     // 🆕 Catálogo COMPLETO: acá (y solo acá / en cargarProductos() sin
@@ -1091,7 +1105,7 @@ function buscarProductos() {
     ? `/api/busqueda-productos?q=${encodeURIComponent(query)}`
     : `/api/busqueda-productos`;
 
-  fetch(url)
+  urgenciaConfigPromise.then(() => fetch(url))
     .then((response) => response.json())
     .then((productos) => {
       const grid = document.getElementById("productGrid");
@@ -1190,7 +1204,7 @@ function cargarProductos() {
   const params = new URLSearchParams();
   if (filtroPrincipal) params.append("filtro", filtroPrincipal);
   if (categoriaSeleccionada) params.append("categoria", categoriaSeleccionada);
-  fetch(`/api/productos-filtrados?${params.toString()}`)
+  urgenciaConfigPromise.then(() => fetch(`/api/productos-filtrados?${params.toString()}`))
     .then((response) => response.json())
     .then((productos) => {
       const grid = document.getElementById("productGrid");

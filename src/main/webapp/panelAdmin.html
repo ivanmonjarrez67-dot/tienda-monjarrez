@@ -423,6 +423,7 @@
     <div class="divider"></div>
     <button class="gear-btn" id="btnPedidos" onclick="abrirPedidos()" title="Pedidos">📋</button>
     <button class="gear-btn" onclick="abrirModalPromo()" title="Cupón de promoción">🎁</button>
+    <button class="gear-btn" onclick="abrirModalUrgencia()" title="Estrategia de urgencia">🔥</button>
     <button class="gear-btn" onclick="abrirModalCJ()" title="Importar producto de CJ">📦</button>
     <button class="gear-btn" onclick="abrirModal()" title="Gestión de admins">⚙</button>
     <button class="gear-btn salir" onclick="cerrarSesion()" title="Cerrar sesión">⏻</button>
@@ -544,6 +545,32 @@
       </div>
       <div class="modal-error" id="errorPromo"></div>
     </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalUrgenciaOverlay">
+  <div class="modal" style="max-width:620px;max-height:90vh;overflow-y:auto;">
+    <h2>Estrategia de urgencia</h2>
+    <div class="hint" style="margin-bottom:10px;">La urgencia (precio tachado, contador, "Solo quedan X", "Artículo más vendido") solo se ve en productos cuyo vendedor <b>y</b> categoría estén marcados aquí.</div>
+    <div class="modal-form active" id="formUrgencia">
+      <label style="font-weight:600;">1) Vendedores</label>
+      <input type="text" id="urgBuscar" placeholder="Buscar vendedor…" oninput="filtrarVendedoresUrgencia()">
+      <div style="display:flex;gap:8px;margin:6px 0;align-items:center;flex-wrap:wrap;">
+        <button type="button" class="btn secondary" onclick="marcarVendedoresUrgencia(true)">Marcar todos</button>
+        <button type="button" class="btn secondary" onclick="marcarVendedoresUrgencia(false)">Quitar todos</button>
+        <span class="hint" id="urgContador" style="margin:0;"></span>
+      </div>
+      <div id="urgVendedores" style="max-height:260px;overflow-y:auto;border:1px solid var(--line);border-radius:6px;padding:6px 10px;"></div>
+
+      <label style="font-weight:600;margin-top:14px;">2) Categorías</label>
+      <div id="urgCategorias" style="border:1px solid var(--line);border-radius:6px;padding:6px 10px;"></div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" onclick="cerrarModalUrgencia()">Cancelar</button>
+        <button type="button" class="btn aprobar" onclick="guardarUrgencia(this)">Guardar</button>
+      </div>
+      <div class="modal-error" id="errorUrgencia"></div>
+    </div>
   </div>
 </div>
 
@@ -1092,6 +1119,76 @@ document.getElementById('formPromo').addEventListener('submit', (e) => {
 function reiniciarPromo(){
   if(confirm('¿Reiniciar el contador de cupos? Los pedidos que ya recibieron el regalo no se tocan, pero vuelven a estar todos los cupos disponibles.'))
     enviarPromo('accion=reiniciar', 'Cupos reiniciados');
+}
+
+// --- Modal de la estrategia de urgencia (vendedores + categorías) ---
+const URGENCIA_ENDPOINT = '/admin/urgenciaConfig';
+let URG_VENDEDORES = [];   // [{usuario_id, nombre, productos, activo}]
+let URG_CATEGORIAS = [];   // [{nombre, activa}]
+
+function pintarVendedoresUrgencia(){
+  const q = (document.getElementById('urgBuscar').value || '').trim().toLowerCase();
+  const cont = document.getElementById('urgVendedores');
+  const lista = URG_VENDEDORES.filter(v => !q || String(v.nombre||'').toLowerCase().includes(q) || String(v.usuario_id).includes(q));
+  cont.innerHTML = lista.length ? lista.map(v => `
+    <label style="display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line);cursor:pointer;">
+      <input type="checkbox" style="width:auto;" ${v.activo ? 'checked' : ''} onchange="cambiarVendedorUrgencia(${v.usuario_id}, this.checked)">
+      <span style="flex:1;">${esc(v.nombre || ('Vendedor #' + v.usuario_id))} <span class="hint" style="margin:0;">· id ${v.usuario_id} · ${v.productos} producto(s)</span></span>
+    </label>`).join('') : '<div class="hint">Sin resultados</div>';
+  const n = URG_VENDEDORES.filter(v => v.activo).length;
+  document.getElementById('urgContador').textContent = `${n} de ${URG_VENDEDORES.length} con urgencia`;
+}
+function filtrarVendedoresUrgencia(){ pintarVendedoresUrgencia(); }
+function cambiarVendedorUrgencia(id, marcado){
+  const v = URG_VENDEDORES.find(x => x.usuario_id === id); if(v) v.activo = marcado;
+  pintarVendedoresUrgencia();
+}
+// Marca/quita a los vendedores que se ven con el filtro de búsqueda actual
+function marcarVendedoresUrgencia(valor){
+  const q = (document.getElementById('urgBuscar').value || '').trim().toLowerCase();
+  URG_VENDEDORES.forEach(v => {
+    if(!q || String(v.nombre||'').toLowerCase().includes(q) || String(v.usuario_id).includes(q)) v.activo = valor;
+  });
+  pintarVendedoresUrgencia();
+}
+function pintarCategoriasUrgencia(){
+  document.getElementById('urgCategorias').innerHTML = URG_CATEGORIAS.map((c,i) => `
+    <label style="display:flex;gap:8px;align-items:center;padding:5px 0;cursor:pointer;">
+      <input type="checkbox" style="width:auto;" ${c.activa ? 'checked' : ''} onchange="URG_CATEGORIAS[${i}].activa = this.checked"> ${esc(c.nombre)}
+    </label>`).join('');
+}
+async function abrirModalUrgencia(){
+  errorUrgencia.classList.remove('show');
+  document.getElementById('urgBuscar').value = '';
+  document.getElementById('modalUrgenciaOverlay').classList.add('show');
+  document.getElementById('urgVendedores').innerHTML = '<div class="hint">cargando vendedores…</div>';
+  try{
+    const r = await fetch(URGENCIA_ENDPOINT);
+    if(r.status === 401){ window.location.href = 'adminLogin.html'; return; }
+    if(!r.ok) throw new Error('el servidor respondió ' + r.status);
+    const d = await r.json();
+    URG_VENDEDORES = d.vendedores || []; URG_CATEGORIAS = d.categorias || [];
+    pintarVendedoresUrgencia(); pintarCategoriasUrgencia();
+  }catch(e){ errorUrgencia.textContent = 'No se pudo cargar: ' + e.message; errorUrgencia.classList.add('show'); }
+}
+function cerrarModalUrgencia(){ document.getElementById('modalUrgenciaOverlay').classList.remove('show'); }
+async function guardarUrgencia(btn){
+  errorUrgencia.classList.remove('show');
+  btn.disabled = true;
+  try{
+    const body = new URLSearchParams({
+      accion: 'guardar',
+      vendedores: URG_VENDEDORES.filter(v => v.activo).map(v => v.usuario_id).join(','),
+      categorias: URG_CATEGORIAS.filter(c => c.activa).map(c => c.nombre).join('|')
+    }).toString();
+    const r = await fetch(URGENCIA_ENDPOINT, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body});
+    if(r.status === 401){ window.location.href = 'adminLogin.html'; return; }
+    const d = await r.json();
+    if(!r.ok || d.error) throw new Error(d.error || 'error desconocido');
+    toast('Estrategia de urgencia actualizada');
+    cerrarModalUrgencia();
+  }catch(e){ errorUrgencia.textContent = e.message; errorUrgencia.classList.add('show'); }
+  finally{ btn.disabled = false; }
 }
 
 cargarPerfil();
