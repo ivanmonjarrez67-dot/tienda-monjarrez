@@ -196,7 +196,8 @@ function pintar(data, esDemo){
   const porCobrar = peds.filter(p=>p.estado==='pago_pendiente').reduce((s,p)=>s+p.total,0);
   const cobrado = peds.reduce((s,p)=>s+p.cobrado,0);
   const saldo = peds.reduce((s,p)=>s+p.saldo,0), nSaldo = peds.filter(p=>p.saldo>0).length;
-  const enCamino = peds.filter(p=>['en_camino','comprado','en_cr'].includes(p.estado)).length;
+  const cnt = l => peds.filter(p=>l.includes(p.estado)).length;   // grupos de estados (se pueden cambiar aquí)
+  const nProceso = cnt(['pago_pendiente','pago_verificado','comprado']), nCamino = cnt(['en_camino','en_cr']), nEntregado = cnt(['entregado']);
   const kp = [
     ['Total de todos los pedidos', crc(ingresos), 'Suma de ventas (no es ganancia)', '#4f46e5'],
     ['Pedidos', peds.length, 'Incluye la primera venta', '#22b8a5'],
@@ -205,7 +206,9 @@ function pintar(data, esDemo){
     ['Por cobrar (sin verificar)', crc(porCobrar), 'Pagos pendientes de verificar', '#e8a13a'],
     ['Monto pagado (verificados)', crc(cobrado), 'Lo que ya pagaron los pedidos con pago verificado', '#1f9d6b'],
     ['Saldo pendiente', crc(saldo), nSaldo + ' pedido(s) verificados que aún deben dinero (pagó la mitad o es contra entrega)', '#d9831f'],
-    ['En camino', enCamino, 'Comprados, en camino o en CR', '#1f9d6b']];
+    ['En proceso', nProceso, 'Pago pendiente, verificado o ya comprados', '#8f63e0'],
+    ['En camino', nCamino, 'En camino o ya en Costa Rica', '#2b9cc0'],
+    ['Entregados', nEntregado, 'Pedidos ya entregados', '#157a45']];
   document.getElementById('kpis').innerHTML = kp.map(k => `<div class="card kpi" style="--c:${k[3]}"><span>${k[0]}</span><b>${k[1]}</b><i>${k[2]}</i></div>`).join('');
 
   /* estados */
