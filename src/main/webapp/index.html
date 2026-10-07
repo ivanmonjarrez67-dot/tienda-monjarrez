@@ -6996,10 +6996,18 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
 
     /* Pantallas medianas (una sola línea): Compartir/QR en ícono y la
        insignia solo con el ícono de la plántula */
-    @media (max-width: 1500px) {
-      .mt-perfil { flex-basis: 330px; }
-      .mt-btn-sec { width: 40px; padding: 0; }
-      .mt-btn-txt { display: none; }
+    /* Computador: Compartir/QR solo con ícono (el texto sale en el tooltip) y
+       el resto de controles más compactos, para que el buscador gane ancho */
+    .mt-perfil { flex-basis: 340px; }
+    .mt-btn-sec { width: 40px; padding: 0; }
+    .mt-btn-txt { display: none; }
+    @media (min-width: 1241px) {
+      .mt-header { gap: 10px; }
+      .mt-buscar { flex: 1 1 420px; min-width: 300px; }
+      .mt-stat { padding: 0 9px; }
+      .mt-acciones { gap: 6px; }
+      #miTiendaHeader #addProductButton.mt-btn-primary { padding: 0 14px; font-size: 13px; }
+      .mt-volver { padding: 0 12px; font-size: 13px; }
     }
     @media (min-width: 1241px) and (max-width: 1500px) {
       .mt-badge-txt { display: none; }
