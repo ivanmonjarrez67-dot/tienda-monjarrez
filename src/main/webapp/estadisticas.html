@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estadísticas — Tienda Monjarrez</title>
+<link rel="icon" href="icon-512.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f4f5fb;--card:#fff;--ink:#1c2033;--mut:#8087a2;--line:#e8eaf3;--ac:#4f46e5;--ac2:#22b8a5;--ok:#1f9d6b;--warn:#d9831f;--bad:#d64545;--side:#1b2133}
+*{box-sizing:border-box;margin:0}
+body:not(.ok){visibility:hidden}  /* nada se ve hasta confirmar la sesión de admin */
+body{font-family:'Plus Jakarta Sans','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+.top{background:var(--side);color:#fff;padding:18px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}.brand img{width:38px;height:38px;border-radius:10px}
+.brand h1{font-size:18px;font-weight:800}.brand small{color:#9aa3c4;font-weight:500;display:block;font-size:12px}
+.live{display:flex;align-items:center;gap:10px;font-size:12px;color:#c3c9e2}
+.dot{width:9px;height:9px;border-radius:50%;background:#35d49a;box-shadow:0 0 0 0 #35d49a88;animation:p 2s infinite}
+.dot.off{background:#e0a23a;animation:none}
+@keyframes p{70%{box-shadow:0 0 0 8px #35d49a00}}
+button.r{background:#ffffff18;border:1px solid #ffffff30;color:#fff;padding:7px 14px;border-radius:8px;font:inherit;font-size:12px;cursor:pointer}
+button.r:hover{background:#ffffff28}
+main{max-width:1240px;margin:0 auto;padding:24px 20px 48px}
+.banner{background:#fff4e0;border:1px solid #f0d49c;color:#8a5a0c;padding:10px 14px;border-radius:10px;margin-bottom:18px;font-size:13px}
+.grid{display:grid;gap:16px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(210px,1fr));margin-bottom:16px}
+.card{background:var(--card);border-radius:14px;padding:18px 20px;box-shadow:0 1px 2px #1c20330d,0 4px 18px #1c20330a;min-width:0}
+.kpi{border-left:4px solid var(--c);padding-left:16px}
+.kpi span{color:var(--mut);font-size:12.5px;font-weight:500}
+.kpi b{display:block;font-size:26px;font-weight:800;margin:4px 0 2px;letter-spacing:-.5px}
+.kpi i{font-style:normal;font-size:12px;color:var(--mut)}
+.row{grid-template-columns:2fr 1fr;margin-bottom:16px}
+.row2{grid-template-columns:1fr 1.4fr;margin-bottom:16px}
+h2{font-size:14.5px;font-weight:700;margin-bottom:14px}
+.cv{position:relative;height:250px}
+.leg{display:flex;flex-direction:column;gap:8px;margin-top:12px;font-size:13px}
+.leg div{display:flex;justify-content:space-between;align-items:center}
+.leg em{font-style:normal;display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px}
+.top5 .it{display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.top5 .it:last-child{border:0}
+.top5 img,.ph{width:36px;height:36px;border-radius:8px;object-fit:cover;background:#eceefa}
+.nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{height:5px;background:var(--line);border-radius:3px;margin-top:5px}.bar>div{height:100%;background:var(--ac);border-radius:3px}
+.mut{color:var(--mut);font-size:12px}
+.sellers{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.sv{display:flex;gap:12px;align-items:center}
+.av{width:48px;height:48px;border-radius:50%;object-fit:cover;background:var(--ac);color:#fff;display:grid;place-items:center;font-weight:800;font-size:17px;flex:none}
+.sv b{font-size:14px;display:block}
+.sv .n{font-size:18px;font-weight:800;color:var(--ac)}
+.sec{margin:26px 0 12px;font-size:15px;font-weight:700}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:640px}
+th{text-align:left;color:var(--mut);font-weight:500;font-size:12px;padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:11px 10px;border-bottom:1px solid var(--line);font-size:13px}
+tr:last-child td{border:0}
+.pill{padding:4px 11px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.p-pago_pendiente{background:#fdeed8;color:var(--warn)}.p-pago_verificado{background:#dcf3ea;color:var(--ok)}
+.p-comprado{background:#e3e6fb;color:var(--ac)}.p-en_camino{background:#dff1f6;color:#1e86a3}
+.p-en_cr{background:#e9e3f8;color:#7a4bd1}.p-entregado{background:#d9f2e1;color:#157a45}
+@media(max-width:900px){.row,.row2{grid-template-columns:1fr}.top{padding:16px}}
+@media(prefers-reduced-motion:reduce){.dot{animation:none}}
+button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><img src="icon-512.png" alt="" onerror="this.style.display='none'">
+    <h1>Estadísticas de la tienda<small>Tienda Monjarrez · panel admin</small></h1></div>
+  <div class="live"><span class="dot" id="dot"></span><span id="upd">Cargando…</span><button class="r" onclick="cargar()">Actualizar ahora</button></div>
+</header>
+<main>
+  <div class="banner" id="banner" hidden></div>
+  <section class="grid kpis" id="kpis"></section>
+  <section class="grid row">
+    <div class="card"><h2>Ventas por día (₡)</h2><div class="cv"><canvas id="cVentas"></canvas></div></div>
+    <div class="card"><h2>Estado de los pedidos</h2><div class="cv" style="height:190px"><canvas id="cEstado"></canvas></div><div class="leg" id="leg"></div></div>
+  </section>
+  <section class="grid row2">
+    <div class="card top5"><h2>Productos más vendidos</h2><div id="top"></div></div>
+    <div class="card"><h2>Pedidos recientes</h2><div class="tw"><table><thead><tr><th>#</th><th>Cliente</th><th>Productos</th><th>Fecha</th><th>Estado</th><th>Total</th></tr></thead><tbody id="rec"></tbody></table></div></div>
+  </section>
+  <div class="sec">Vendedores</div>
+  <section class="grid sellers" id="sellers"></section>
+</main>
+
+<script>
+/* ===== CONFIGURACIÓN ===== */
+const ENDPOINT = '/admin/estadisticas';   // servlet nuevo (ver SQL aparte)
+const REFRESH_MS = 30000;                 // se actualiza solo cada 30 s
+const PEDIDO_DESDE = 13;                  // solo cuentan pedidos desde el #13
+const CANCELADOS = [17, 19, 25];          // pedidos cancelados (por si el servidor los manda)
+
+/* Primera venta de la web, sin registro en la base de datos.
+   ⚠ Pon el precio real de cada producto en "precio" (en colones). */
+const VENTA_INICIAL = {
+  id: 'Inicial', fecha: '2026-01-01', estado: 'entregado', cliente: 'Primera venta', vendedor_id: 'joshua',
+  items: [
+    {nombre: 'Máquina cortadora de pelo', cantidad: 1, precio: 0},
+    {nombre: 'Reloj smartwatch táctil',   cantidad: 2, precio: 0},
+    {nombre: 'Afilador de cuchillos',     cantidad: 1, precio: 0},
+    {nombre: 'Lámpara de 3 cabezas',      cantidad: 1, precio: 0}
+  ]
+};
+const VENDEDOR_INICIAL = {id: 'joshua', nombre: 'Joshua Store', icono: ''};
+
+const ETQ = {pago_pendiente:'Pago pendiente',pago_verificado:'Pago verificado',comprado:'Comprado',en_camino:'En camino',en_cr:'En Costa Rica',entregado:'Entregado'};
+const COL = {pago_pendiente:'#e8a13a',pago_verificado:'#2fb784',comprado:'#4f46e5',en_camino:'#2b9cc0',en_cr:'#8f63e0',entregado:'#157a45'};
+const crc = n => '₡' + Math.round(Number(n)||0).toLocaleString('es-CR');
+const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let chV, chE;
+
+/* ===== DATOS DE EJEMPLO (solo si el servidor no responde) ===== */
+function demo(){
+  const it = (n,c,p,v) => ({nombre:n,cantidad:c,precio:p,vendedor_id:v});
+  return {vendedores:[{id:'a',nombre:'Productos Rivera',icono:''},{id:'b',nombre:'Tienda Lisbeth',icono:''}],
+    pedidos:[
+      {id:28,fecha:'2026-10-06',estado:'pago_verificado',cliente:'Productos Rivera',items:[it('Lámpara LED',1,3200,'a')]},
+      {id:27,fecha:'2026-10-05',estado:'pago_verificado',cliente:'Daniela R.',items:[it('Reloj smartwatch',1,3500,'b')]},
+      {id:22,fecha:'2026-10-04',estado:'pago_pendiente',cliente:'Jennifer M.',items:[it('Cortadora de pelo',2,5900,'a')]},
+      {id:16,fecha:'2026-10-03',estado:'en_camino',cliente:'Antonio',items:[it('Afilador',1,1350,'b')]},
+      {id:13,fecha:'2026-10-01',estado:'en_camino',cliente:'Darwin',items:[it('Reloj smartwatch',2,5500,'a')]}]};
+}
+
+/* ===== CARGA ===== */
+async function cargar(){
+  let data, esDemo = false;
+  try{
+    const r = await fetch(ENDPOINT, {cache:'no-store'});
+    if(r.status === 401 || r.status === 403){ location.replace('adminLogin.html'); return; }
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    data = await r.json();
+  }catch(e){ data = demo(); esDemo = true; }
+  pintar(data, esDemo);
+}
+
+function pintar(data, esDemo){
+  const vend = {}; (data.vendedores||[]).forEach(v => vend[v.id] = v);
+  vend[VENDEDOR_INICIAL.id] ||= VENDEDOR_INICIAL;  // si pones su usuario_id real, se junta con su tarjeta
+  const peds = (data.pedidos||[]).filter(p => Number(p.id) >= PEDIDO_DESDE && !CANCELADOS.includes(Number(p.id)) && !/cancel/i.test(p.estado));
+  peds.push(VENTA_INICIAL);
+  peds.forEach(p => { p.items = p.items||[]; p.total = p.total ?? p.items.reduce((s,i)=>s+i.cantidad*i.precio,0); p.unidades = p.items.reduce((s,i)=>s+i.cantidad,0); });
+
+  const ingresos = peds.reduce((s,p)=>s+p.total,0), unid = peds.reduce((s,p)=>s+p.unidades,0);
+  const porCobrar = peds.filter(p=>p.estado==='pago_pendiente').reduce((s,p)=>s+p.total,0);
+  const enCamino = peds.filter(p=>['en_camino','comprado','en_cr'].includes(p.estado)).length;
+  const kp = [
+    ['Total de todos los pedidos', crc(ingresos), 'Suma de ventas (no es ganancia)', '#4f46e5'],
+    ['Pedidos', peds.length, 'Incluye la primera venta', '#22b8a5'],
+    ['Productos vendidos', unid, 'Unidades en total', '#8f63e0'],
+    ['Ticket promedio', crc(ingresos/peds.length), 'Por pedido', '#2b9cc0'],
+    ['Por cobrar', crc(porCobrar), 'Pagos pendientes', '#e8a13a'],
+    ['En camino', enCamino, 'Comprados, en camino o en CR', '#1f9d6b']];
+  document.getElementById('kpis').innerHTML = kp.map(k => `<div class="card kpi" style="--c:${k[3]}"><span>${k[0]}</span><b>${k[1]}</b><i>${k[2]}</i></div>`).join('');
+
+  /* ventas por día */
+  const dias = {}; peds.forEach(p => { const d = String(p.fecha).slice(0,10); dias[d] = (dias[d]||0) + p.total; });
+  const ks = Object.keys(dias).sort();
+  chV && chV.destroy();
+  chV = new Chart(document.getElementById('cVentas'), {type:'line',
+    data:{labels:ks.map(d=>new Date(d+'T12:00').toLocaleDateString('es-CR',{day:'numeric',month:'short'})),
+      datasets:[{data:ks.map(k=>dias[k]),borderColor:'#4f46e5',backgroundColor:'#4f46e51a',fill:true,tension:.35,pointRadius:4,pointBackgroundColor:'#fff',pointBorderWidth:2}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>crc(c.raw)}}},
+      scales:{y:{ticks:{callback:v=>crc(v)},grid:{color:'#eef0f7'}},x:{grid:{display:false}}}}});
+
+  /* estados */
+  const est = {}; peds.forEach(p => est[p.estado] = (est[p.estado]||0)+1);
+  const eks = Object.keys(est);
+  chE && chE.destroy();
+  chE = new Chart(document.getElementById('cEstado'), {type:'doughnut',
+    data:{labels:eks.map(k=>ETQ[k]||k),datasets:[{data:eks.map(k=>est[k]),backgroundColor:eks.map(k=>COL[k]||'#999'),borderWidth:0}]},
+    options:{maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false}}}});
+  document.getElementById('leg').innerHTML = eks.map(k=>`<div><span><em style="background:${COL[k]||'#999'}"></em>${ETQ[k]||k}</span><b>${est[k]}</b></div>`).join('');
+
+  /* top productos */
+  const pr = {};
+  peds.forEach(p => p.items.forEach(i => { const o = pr[i.nombre] ||= {n:i.nombre,img:i.imagen,c:0,t:0}; o.c += i.cantidad; o.t += i.cantidad*i.precio; if(i.imagen) o.img = i.imagen; }));
+  const tp = Object.values(pr).sort((a,b)=>b.c-a.c).slice(0,6), mx = tp[0]?.c||1;
+  document.getElementById('top').innerHTML = tp.map(o => `<div class="it">${o.img?`<img src="${esc(o.img)}" alt="">`:'<div class="ph"></div>'}
+    <div><div class="nm">${esc(o.n)}</div><div class="bar"><div style="width:${o.c/mx*100}%"></div></div></div>
+    <div style="text-align:right"><b>${o.c} u.</b><div class="mut">${crc(o.t)}</div></div></div>`).join('');
+
+  /* pedidos recientes */
+  const rec = [...peds].sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)) || Number(b.id)-Number(a.id)).slice(0,8);
+  document.getElementById('rec').innerHTML = rec.map(p => `<tr><td>${esc(p.id)}</td><td>${esc(p.cliente||'—')}</td>
+    <td class="mut">${p.items.map(i=>i.cantidad+'× '+esc(i.nombre)).join(', ')}</td>
+    <td class="mut">${new Date(String(p.fecha).slice(0,10)+'T12:00').toLocaleDateString('es-CR',{day:'numeric',month:'short'})}</td>
+    <td><span class="pill p-${p.estado}">${ETQ[p.estado]||p.estado}</span></td><td><b>${crc(p.total)}</b></td></tr>`).join('');
+
+  /* vendedores */
+  const sv = {};
+  peds.forEach(p => p.items.forEach(i => { const id = i.vendedor_id ?? p.vendedor_id; const o = sv[id] ||= {id,u:0,t:0,ps:new Set()}; o.u += i.cantidad; o.t += i.cantidad*i.precio; o.ps.add(p.id); }));
+  document.getElementById('sellers').innerHTML = Object.values(sv).sort((a,b)=>b.t-a.t).map(o => {
+    const v = vend[o.id] || {nombre:'Vendedor '+o.id}, ini = esc((v.nombre||'?').trim().slice(0,2).toUpperCase());
+    return `<div class="card sv">${v.icono?`<img class="av" src="${esc(v.icono)}" alt="">`:`<div class="av">${ini}</div>`}
+      <div><b>${esc(v.nombre)}</b><span class="n">${crc(o.t)}</span><div class="mut">${o.ps.size} pedido(s) · ${o.u} producto(s)</div></div></div>`; }).join('');
+
+  const sinPrecio = VENTA_INICIAL.items.some(i=>!i.precio);
+  const bn = document.getElementById('banner');
+  bn.hidden = !(esDemo || sinPrecio);
+  bn.textContent = esDemo ? 'No se pudo leer /admin/estadisticas: se muestran datos de ejemplo. Falta crear el servlet o iniciar sesión como admin.'
+                          : 'Falta poner el precio de los productos de la primera venta (VENTA_INICIAL en el código); por ahora suman ₡0.';
+  document.getElementById('dot').classList.toggle('off', esDemo);
+  document.getElementById('upd').textContent = (esDemo ? 'Datos de ejemplo · ' : 'En vivo · ') + 'actualizado ' + new Date().toLocaleTimeString('es-CR',{hour:'2-digit',minute:'2-digit'});
+}
+/* Misma sesión que el panel admin: si no hay login, manda a adminLogin.html */
+async function verificarSesion(){
+  try{
+    const r = await fetch('/admin/perfil', {cache:'no-store'});
+    if(r.status === 401 || r.status === 403){ location.replace('adminLogin.html'); return false; }
+  }catch(e){ /* sin servidor (prueba local): se muestra con datos de ejemplo */ }
+  document.body.classList.add('ok');
+  return true;
+}
+verificarSesion().then(ok => { if(ok){ cargar(); setInterval(cargar, REFRESH_MS); } });
+</script>
+</body>
+</html>
