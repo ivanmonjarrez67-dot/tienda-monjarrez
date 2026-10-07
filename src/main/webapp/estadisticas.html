@@ -38,7 +38,7 @@ h2{font-size:14.5px;font-weight:700;margin-bottom:14px}
 .leg{display:flex;flex-direction:column;gap:8px;margin-top:12px;font-size:13px}
 .leg div{display:flex;justify-content:space-between;align-items:center}
 .leg em{font-style:normal;display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px}
-.top5 .it{display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.top5 .it{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
 .top5 .it:last-child{border:0}
 .top5 img,.ph{width:36px;height:36px;border-radius:8px;object-fit:cover;background:#eceefa}
 .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -222,7 +222,7 @@ function pintar(data, esDemo){
   peds.forEach(p => p.items.forEach(i => { const o = pr[i.nombre] ||= {n:i.nombre,img:i.imagen,c:0,t:0}; o.c += i.cantidad; o.t += i.cantidad*i.precio; if(i.imagen) o.img = i.imagen; }));
   const tp = Object.values(pr).sort((a,b)=>b.c-a.c).slice(0,6), mx = tp[0]?.c||1;
   document.getElementById('top').innerHTML = tp.map(o => `<div class="it">${o.img?`<img src="${esc(o.img)}" alt="">`:'<div class="ph"></div>'}
-    <div><div class="nm">${esc(o.n)}</div><div class="bar"><div style="width:${o.c/mx*100}%"></div></div></div>
+    <div><div class="nm" title="${esc(o.n)}">${esc(o.n)}</div><div class="bar"><div style="width:${o.c/mx*100}%"></div></div></div>
     <div style="text-align:right"><b>${o.c} u.</b><div class="mut">${crc(o.t)}</div></div></div>`).join('');
 
   /* pedidos recientes */
