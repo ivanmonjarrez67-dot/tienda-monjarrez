@@ -3,17 +3,16 @@ package entidades.controladores;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
-import java.io.File;
 import java.io.IOException;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
+import entidades.CloudinaryService;
 import entidades.DatabaseConnection;
 
 @WebServlet("/EliminarProducto")
 public class EliminarProductoServlet extends HttpServlet {
-
-    // 📂 Ruta de imágenes
-    private static final String UPLOAD_DIR = "C:/Monjarrez_Mi_Tienda_En_Linea/uploads/productos";
 
     @Override
     protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -43,20 +42,19 @@ public class EliminarProductoServlet extends HttpServlet {
 
         try (Connection conn = DatabaseConnection.getConnection()) {
 
-            // 1️⃣ Obtener nombre de la imagen antes de borrar
-            String nombreImagen = null;
+            // 🆕 1️⃣ Juntar TODAS las URLs de imágenes del producto antes de borrar
+            // (principal + adicionales). Después del DELETE ya no se pueden leer.
+            List<String> urlsImagenes = new ArrayList<>();
             try (PreparedStatement psSelect = conn.prepareStatement("SELECT imagen FROM Productos WHERE id = ?")) {
                 psSelect.setInt(1, id);
                 try (ResultSet rs = psSelect.executeQuery()) {
-                    if (rs.next()) {
-                        nombreImagen = rs.getString("imagen");
-                    }
+                    if (rs.next()) urlsImagenes.add(rs.getString("imagen"));
                 }
             }
+            agregarUrlsDeTabla(conn, "ImagenesAdicionalesProducto", id, urlsImagenes);
+            agregarUrlsDeTabla(conn, "ImagenesProducto", id, urlsImagenes);
 
-            // 🆕 2️⃣ Si el producto ya fue vendido (aparece en DetallePedido) NO se
-            // borra: ese registro es el historial de compras/facturas de los
-            // clientes y la llave foránea no lo permite. Se avisa con un 409.
+            // 2️⃣ Si el producto ya fue vendido (aparece en DetallePedido) NO se borra.
             if (existe(conn, "SELECT 1 FROM DetallePedido WHERE producto_id = ?", id)) {
                 response.setStatus(HttpServletResponse.SC_CONFLICT);
                 response.setContentType("text/plain;charset=UTF-8");
@@ -66,10 +64,7 @@ public class EliminarProductoServlet extends HttpServlet {
                 return;
             }
 
-            // 3️⃣ Borrar las tablas hijas con NO ACTION (ToquesContacto, DetalleCarrito,
-            // ImagenElegidaCarrito, ProductosExtranjeros, ImagenesAdicionalesProducto, Descuentos).
-            // ImagenesProducto y Resenas se borran solas por ON DELETE CASCADE.
-            // Todo en una transacción: si algo falla se revierte.
+            // 3️⃣ Borrado en una transacción (igual que antes)
             boolean autoCommitOriginal = conn.getAutoCommit();
             boolean encontrado;
             try {
@@ -98,23 +93,16 @@ public class EliminarProductoServlet extends HttpServlet {
                 return;
             }
 
-            // 4️⃣ Si el producto tenía imagen → borrarla del servidor
-            if (nombreImagen != null && !nombreImagen.isEmpty()) {
-                // ⚠️ nombreImagen viene con la URL completa (http://...) → extraemos solo el nombre real
-                String fileName = nombreImagen.substring(nombreImagen.lastIndexOf("=") + 1);
-
-                File imagen = new File(UPLOAD_DIR, fileName);
-                if (imagen.exists() && imagen.isFile()) {
-                    if (imagen.delete()) {
-                        System.out.println("✅ Imagen eliminada: " + imagen.getAbsolutePath());
-                    } else {
-                        System.out.println("⚠️ No se pudo borrar la imagen: " + imagen.getAbsolutePath());
-                    }
-                }
+            // 🆕 4️⃣ Recién con el commit hecho se borran las fotos en Cloudinary.
+            // Si falla, el producto ya no existe de todos modos: solo se registra.
+            try {
+                CloudinaryService.borrarPorUrls(urlsImagenes);
+            } catch (Exception e) {
+                System.out.println("[EliminarProducto] No se pudieron borrar imágenes de Cloudinary: " + e.getMessage());
             }
 
             response.setStatus(HttpServletResponse.SC_OK);
-            response.getWriter().write("Producto y su imagen eliminados correctamente.");
+            response.getWriter().write("Producto y sus imágenes eliminados correctamente.");
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -122,7 +110,32 @@ public class EliminarProductoServlet extends HttpServlet {
         }
     }
 
-    /** Devuelve true si la consulta (con un parámetro id) trae al menos una fila. */
+    /**
+     * Agrega a la lista todo valor de texto que parezca URL en las filas de esa
+     * tabla para ese producto. Es genérico a propósito: no depende de cómo se
+     * llamen las columnas (imagen2, imagen3, url...). Si la tabla no existe o no
+     * tiene producto_id, simplemente no agrega nada.
+     */
+    private void agregarUrlsDeTabla(Connection conn, String tabla, int productoId, List<String> destino) {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM " + tabla + " WHERE producto_id = ?")) {
+            ps.setInt(1, productoId);
+            try (ResultSet rs = ps.executeQuery()) {
+                ResultSetMetaData md = rs.getMetaData();
+                while (rs.next()) {
+                    for (int c = 1; c <= md.getColumnCount(); c++) {
+                        int t = md.getColumnType(c);
+                        if (t == Types.VARCHAR || t == Types.NVARCHAR || t == Types.LONGVARCHAR || t == Types.LONGNVARCHAR) {
+                            String v = rs.getString(c);
+                            if (v != null && v.startsWith("http")) destino.add(v);
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("[EliminarProducto] No se leyó " + tabla + ": " + e.getMessage());
+        }
+    }
+
     private boolean existe(Connection conn, String sql, int id) throws SQLException {
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, id);
@@ -132,7 +145,6 @@ public class EliminarProductoServlet extends HttpServlet {
         }
     }
 
-    /** Ejecuta un DELETE parametrizado por id y devuelve las filas afectadas. */
     private int ejecutarDelete(Connection conn, String sql, int id) throws SQLException {
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, id);

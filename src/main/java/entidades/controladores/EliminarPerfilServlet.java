@@ -4,7 +4,13 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.List;
 
+import entidades.CloudinaryService;
 import entidades.DatabaseConnection;
 import entidades.EmailService;
 import jakarta.servlet.ServletException;
@@ -15,74 +21,26 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 /**
- * Elimina de forma permanente la cuenta del usuario actualmente logueado,
- * junto con todos sus datos asociados en las demás tablas.
+ * Elimina de forma permanente la cuenta del usuario logueado y todos sus
+ * datos asociados. El usuario_id sale de la SESIÓN del servidor, nunca de un
+ * parámetro del cliente.
  *
- * Igual que PerfilServlet y ActualizarPerfilServlet: el usuario_id sale de
- * la SESIÓN del servidor, nunca de un parámetro del cliente — así nadie
- * puede borrar la cuenta de otra persona.
+ * Orden de borrado: cada tabla hija se vacía ANTES que la tabla a la que
+ * apunta (llaves foráneas). Todo va en una sola transacción: si algo falla
+ * se hace rollback y la cuenta no queda a medio borrar.
  *
- * Orden de borrado (importante por las llaves foráneas). Los pasos se
- * agrupan en: datos que el usuario generó como cliente, datos ligados a
- * SUS productos (si es vendedor), y por último las tablas "padre".
- *
- *   -- Como usuario/cliente (compradores Y vendedores) --
- *   1.  Intereses                    (usuario_id)
- *   2.  Compradores                  (usuario_id)
- *   3.  DatosEnvioUsuario            (usuario_id — teléfono y dirección de entrega)
- *   4.  Resenas                      (usuario_id — reseñas que ESCRIBIÓ)
- *   5.  ToquesContacto               (usuario_id — sus clics de contacto)
- *   6.  DetalleCarrito               (carrito_id, de SU carrito)
- *   7.  Carrito                      (usuario_id)
- *   8.  DetallePedido                (pedido_id, de SUS pedidos como comprador)
- *   9.  Pedidos                      (usuario_id)
- *
- *   -- Ligado a SUS productos (vendedores) --
- *  10.  Resenas                      (producto_id de sus productos)
- *  11.  ToquesContacto               (producto_id de sus productos)
- *  12.  DetalleCarrito               (producto_id de sus productos, en carritos ajenos)
- *  13.  DetallePedido                (usuario_id_vendedor / producto_id de sus productos)
- *  14.  ImagenesAdicionalesProducto  (producto_id)
- *  15.  Descuentos                   (producto_id)
- *  16.  ProductosExtranjeros         (producto_id)
- *  17.  Productos                    (usuario_id) — ya sin hijos pendientes
- *
- *   -- Datos del registro de vendedor y tabla padre --
- *  18.  SuscripcionVendedor          (usuario_id)
- *  19.  Notas                        (solicitud_id, de sus solicitudes)
- *  20.  SolicitudesDeVendedor        (usuario_id) — ya sin Notas pendientes
- *  21.  IconosVendedor               (vendedor_id, de la fila del usuario en Vendedores)
- *  22.  Vendedores                   (usuario_id) — ya sin hijos pendientes
- *  23.  Usuarios                     (al final, porque las demás tablas dependen de este id)
- *
- * Por qué este orden: cada tabla hija tiene que vaciarse ANTES que la
- * tabla a la que apunta, o SQL Server rechaza el DELETE por la llave
- * foránea (errores tipo "FK_Resenas_Usuario", "FK_ProductosExtranjeros_Productos",
- * "FK_IconosVendedor_Vendedores"). Cuando la tabla hija no guarda el
- * usuario_id directo, se usa una subconsulta (IN (SELECT id FROM ...)).
- *
- * ⚠️ Los pedidos: DetallePedido/Pedidos son historial de compras. Al
- * borrar una cuenta se eliminan los pedidos de ese comprador y las líneas
- * de pedido que involucran productos del vendedor que se va. Si prefieres
- * conservar ese historial (p. ej. por contabilidad), en vez de borrar
- * habría que anonimizar (poner usuario_id/producto_id en NULL, lo que
- * exige que esas columnas permitan NULL).
- *
- * Todo se hace dentro de una sola transacción: si algo falla, se revierte
- * todo (rollback) y la cuenta no queda a medio borrar.
- *
- * 🆕 Antes de borrar nada, se capturan nombre, correo y tipo (rol) del
- * usuario desde la tabla Usuarios. Esos datos son los ÚLTIMOS que se van
- * a poder leer de esta cuenta, así que se guardan en variables antes del
- * DELETE. Solo si el commit() sale bien se envía el correo de
- * confirmación de eliminación, usando esos datos ya capturados — nunca
- * se manda el correo si el borrado falla.
+ * 🆕 Cambios de esta versión:
+ *  - ImagenElegidaCarrito: se borra antes de DetalleCarrito/Carrito/Productos
+ *    (antes faltaba y podía hacer fallar el borrado por llave foránea).
+ *  - Cloudinary: antes de borrar se juntan las URLs de las fotos del usuario
+ *    (productos, adicionales, logo de vendedor) y, SOLO si el commit sale
+ *    bien, se borran en Cloudinary.
+ *  - Correo de confirmación: igual que antes, solo tras el commit.
  */
 @WebServlet("/api/perfil/eliminar")
 public class EliminarPerfilServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
-    // Subconsultas que se repiten en varios DELETE
     private static final String PRODUCTOS_DEL_USUARIO = "(SELECT id FROM Productos WHERE usuario_id = ?)";
     private static final String CARRITOS_DEL_USUARIO = "(SELECT id FROM Carrito WHERE usuario_id = ?)";
     private static final String PEDIDOS_DEL_USUARIO = "(SELECT id FROM Pedidos WHERE usuario_id = ?)";
@@ -106,10 +64,7 @@ public class EliminarPerfilServlet extends HttpServlet {
 
         try (Connection conn = DatabaseConnection.getConnection()) {
 
-            // 🆕 Capturar los datos del perfil ANTES de borrar nada — son
-            // los últimos que vamos a poder leer de esta cuenta.
-            // La tabla Usuarios ya trae el rol en la columna "tipo", así
-            // que no hace falta consultar Vendedores para inferirlo.
+            // Datos que ya no se podrán leer después del DELETE
             String nombre = null;
             String correo = null;
             String tipo = null;
@@ -126,18 +81,28 @@ public class EliminarPerfilServlet extends HttpServlet {
                 }
             }
 
+            // 🆕 URLs de fotos del usuario (se leen ANTES de borrar las filas)
+            List<String> urlsImagenes = new ArrayList<>();
+            recolectarUrls(conn, "SELECT imagen FROM Productos WHERE usuario_id = ?", usuarioId, urlsImagenes);
+            recolectarUrls(conn, "SELECT * FROM ImagenesAdicionalesProducto WHERE producto_id IN " + PRODUCTOS_DEL_USUARIO, usuarioId, urlsImagenes);
+            recolectarUrls(conn, "SELECT * FROM ImagenesProducto WHERE producto_id IN " + PRODUCTOS_DEL_USUARIO, usuarioId, urlsImagenes);
+            recolectarUrls(conn, "SELECT * FROM IconosVendedor WHERE vendedor_id IN " + VENDEDORES_DEL_USUARIO, usuarioId, urlsImagenes);
+
             boolean autoCommitOriginal = conn.getAutoCommit();
             try {
                 conn.setAutoCommit(false);
 
                 // ---------- Como usuario/cliente ----------
                 ejecutarDelete(conn, "DELETE FROM Intereses WHERE usuario_id = ?", usuarioId);
-                // 🆕 Compradores.usuario_id → Usuarios (FK__Comprador__usuar__7C4F7684)
                 ejecutarDelete(conn, "DELETE FROM Compradores WHERE usuario_id = ?", usuarioId);
-                // 🆕 DatosEnvioUsuario.usuario_id → Usuarios (teléfono y dirección de entrega)
                 ejecutarDelete(conn, "DELETE FROM DatosEnvioUsuario WHERE usuario_id = ?", usuarioId);
                 ejecutarDelete(conn, "DELETE FROM Resenas WHERE usuario_id = ?", usuarioId);
                 ejecutarDelete(conn, "DELETE FROM ToquesContacto WHERE usuario_id = ?", usuarioId);
+
+                // 🆕 ImagenElegidaCarrito: no sé con certeza cuáles de sus columnas
+                // apuntan a otras tablas, así que se borra por cada columna conocida
+                // que EXISTA (usuario_id / carrito_id / producto_id).
+                borrarImagenElegidaCarrito(conn, usuarioId);
 
                 ejecutarDelete(conn, "DELETE FROM DetalleCarrito WHERE carrito_id IN " + CARRITOS_DEL_USUARIO, usuarioId);
                 ejecutarDelete(conn, "DELETE FROM Carrito WHERE usuario_id = ?", usuarioId);
@@ -153,7 +118,6 @@ public class EliminarPerfilServlet extends HttpServlet {
                 ejecutarDelete(conn, "DELETE FROM DetallePedido WHERE usuario_id_vendedor = ?", usuarioId);
                 ejecutarDelete(conn, "DELETE FROM DetallePedido WHERE producto_id IN " + PRODUCTOS_DEL_USUARIO, usuarioId);
 
-                // Tablas hijas de Productos: antes de borrar Productos
                 ejecutarDelete(conn, "DELETE FROM ImagenesAdicionalesProducto WHERE producto_id IN " + PRODUCTOS_DEL_USUARIO, usuarioId);
                 ejecutarDelete(conn, "DELETE FROM Descuentos WHERE producto_id IN " + PRODUCTOS_DEL_USUARIO, usuarioId);
                 ejecutarDelete(conn, "DELETE FROM ProductosExtranjeros WHERE producto_id IN " + PRODUCTOS_DEL_USUARIO, usuarioId);
@@ -162,19 +126,14 @@ public class EliminarPerfilServlet extends HttpServlet {
 
                 // ---------- Registro de vendedor y tabla padre ----------
                 ejecutarDelete(conn, "DELETE FROM SuscripcionVendedor WHERE usuario_id = ?", usuarioId);
-
-                // Notas.solicitud_id apunta a SolicitudesDeVendedor.id: va antes.
                 ejecutarDelete(conn, "DELETE FROM Notas WHERE solicitud_id IN " + SOLICITUDES_DEL_USUARIO, usuarioId);
                 ejecutarDelete(conn, "DELETE FROM SolicitudesDeVendedor WHERE usuario_id = ?", usuarioId);
-
-                // IconosVendedor.vendedor_id apunta a Vendedores.id (no a usuario_id).
                 ejecutarDelete(conn, "DELETE FROM IconosVendedor WHERE vendedor_id IN " + VENDEDORES_DEL_USUARIO, usuarioId);
                 ejecutarDelete(conn, "DELETE FROM Vendedores WHERE usuario_id = ?", usuarioId);
 
                 int filasBorradas = ejecutarDelete(conn, "DELETE FROM Usuarios WHERE id = ?", usuarioId);
 
                 if (filasBorradas == 0) {
-                    // No existía el usuario (cuenta ya borrada, sesión vieja, etc.)
                     conn.rollback();
                     conn.setAutoCommit(autoCommitOriginal);
                     response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -190,7 +149,6 @@ public class EliminarPerfilServlet extends HttpServlet {
                 conn.setAutoCommit(autoCommitOriginal);
             }
 
-            // Cerrar la sesión del servidor ya que la cuenta ya no existe
             session.invalidate();
 
             response.setStatus(HttpServletResponse.SC_OK);
@@ -198,11 +156,14 @@ public class EliminarPerfilServlet extends HttpServlet {
 
             System.out.println("[EliminarPerfilServlet] Usuario " + usuarioId + " eliminó su cuenta.");
 
-            // 🆕 El commit ya fue exitoso — recién ahora se envía el correo,
-            // con los datos capturados antes del borrado. Si por algún
-            // motivo no se pudo leer el email (fila no encontrada arriba,
-            // dato nulo, etc.) simplemente no se envía, sin romper la
-            // respuesta al cliente (la cuenta ya se borró de todas formas).
+            // 🆕 Commit exitoso → ahora sí se borran las fotos en Cloudinary
+            // (mejor esfuerzo: si falla, solo se registra).
+            try {
+                CloudinaryService.borrarPorUrls(urlsImagenes);
+            } catch (Exception e) {
+                System.out.println("[EliminarPerfilServlet] No se pudieron borrar imágenes de Cloudinary: " + e.getMessage());
+            }
+
             if (correo != null && !correo.isEmpty()) {
                 String rol = "vendedor".equalsIgnoreCase(tipo) ? "vendedor" : "comprador";
                 String nombreParaCorreo = (nombre != null && !nombre.isEmpty()) ? nombre : "usuario";
@@ -220,10 +181,61 @@ public class EliminarPerfilServlet extends HttpServlet {
     }
 
     /** Ejecuta un DELETE parametrizado por usuarioId y devuelve las filas afectadas. */
-    private int ejecutarDelete(Connection conn, String sql, int usuarioId) throws java.sql.SQLException {
+    private int ejecutarDelete(Connection conn, String sql, int usuarioId) throws SQLException {
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, usuarioId);
             return stmt.executeUpdate();
+        }
+    }
+
+    /**
+     * 🆕 Borra de ImagenElegidaCarrito lo que dependa del usuario, según las
+     * columnas que realmente tenga la tabla. Si la tabla no existe, no hace nada.
+     */
+    private void borrarImagenElegidaCarrito(Connection conn, int usuarioId) throws SQLException {
+        boolean tieneUsuario = false, tieneCarrito = false, tieneProducto = false;
+        try (ResultSet rs = conn.getMetaData().getColumns(null, null, "ImagenElegidaCarrito", null)) {
+            while (rs.next()) {
+                String col = rs.getString("COLUMN_NAME");
+                if ("usuario_id".equalsIgnoreCase(col)) tieneUsuario = true;
+                if ("carrito_id".equalsIgnoreCase(col)) tieneCarrito = true;
+                if ("producto_id".equalsIgnoreCase(col)) tieneProducto = true;
+            }
+        }
+        if (tieneUsuario) {
+            ejecutarDelete(conn, "DELETE FROM ImagenElegidaCarrito WHERE usuario_id = ?", usuarioId);
+        }
+        if (tieneCarrito) {
+            ejecutarDelete(conn, "DELETE FROM ImagenElegidaCarrito WHERE carrito_id IN " + CARRITOS_DEL_USUARIO, usuarioId);
+        }
+        if (tieneProducto) {
+            // Filas de OTROS usuarios que eligieron imagen de un producto de este vendedor
+            ejecutarDelete(conn, "DELETE FROM ImagenElegidaCarrito WHERE producto_id IN " + PRODUCTOS_DEL_USUARIO, usuarioId);
+        }
+    }
+
+    /**
+     * 🆕 Agrega a "destino" todo texto que empiece con http en las filas que
+     * devuelva la consulta (un parámetro: usuarioId). Genérico a propósito: no
+     * depende del nombre de las columnas. Si la tabla no existe, no agrega nada.
+     */
+    private void recolectarUrls(Connection conn, String sql, int usuarioId, List<String> destino) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, usuarioId);
+            try (ResultSet rs = ps.executeQuery()) {
+                ResultSetMetaData md = rs.getMetaData();
+                while (rs.next()) {
+                    for (int c = 1; c <= md.getColumnCount(); c++) {
+                        int t = md.getColumnType(c);
+                        if (t == Types.VARCHAR || t == Types.NVARCHAR || t == Types.LONGVARCHAR || t == Types.LONGNVARCHAR) {
+                            String v = rs.getString(c);
+                            if (v != null && v.startsWith("http")) destino.add(v);
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("[EliminarPerfilServlet] No se leyeron URLs (" + e.getMessage() + ")");
         }
     }
 }
