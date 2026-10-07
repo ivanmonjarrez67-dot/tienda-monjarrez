@@ -2661,60 +2661,55 @@
        Para sumar una opción nueva basta con agregar un <button class="mt-btn">
        dentro de #miTiendaAcciones o un <div class="mt-stat"> dentro de
        #miTiendaStats. -->
-  <header id="miTiendaHeader" class="mt-header">
-    <div class="mt-header-top">
-      <button type="button" id="btnVolverTienda" class="mt-volver">
-        <i class="fa-solid fa-arrow-left"></i> Volver a la tienda
-      </button>
+  <div id="miTiendaHeader" class="mt-header">
+    <button type="button" id="btnVolverTienda" class="mt-volver">
+      <i class="fa-solid fa-arrow-left"></i> <span>Volver a la tienda</span>
+    </button>
 
-      <div id="miTiendaAcciones" class="mt-acciones">
-        <button type="button" id="btnCompartirPerfil" class="mt-btn mt-btn-sec" hidden>
-          <i class="fa-solid fa-share-nodes"></i> Compartir
-        </button>
-        <button type="button" id="btnQrPerfil" class="mt-btn mt-btn-sec" hidden title="Código QR de tu perfil">
-          <i class="fa-solid fa-qrcode"></i> Código QR
-        </button>
-        <button id="addProductButton" class="mt-btn mt-btn-primary">
-          <i class="fa-solid fa-plus"></i> Agregar producto
-        </button>
+    <!-- Identidad del emprendimiento (logo, nombre, Emprendedor Nacional,
+         ubicación y descripción corta) -->
+    <div class="mt-perfil">
+      <div id="mtAvatar" class="mt-avatar" aria-hidden="true"></div>
+      <div class="mt-perfil-info">
+        <div class="mt-linea1">
+          <h2 id="mtNombre">Mi tienda</h2>
+          <span class="mt-badge"><i class="fa-solid fa-seedling"></i> Emprendedor Nacional</span>
+        </div>
+        <p class="mt-linea2" id="mtLinea2" hidden>
+          <span id="mtUbicacion" hidden><i class="fa-solid fa-location-dot"></i> <span id="mtUbicacionTexto"></span></span><span class="mt-bio" id="mtBio" hidden></span>
+        </p>
       </div>
     </div>
 
-    <div class="mt-header-main">
-      <!-- Misma información que ve el público en el perfil del vendedor -->
-      <div class="mt-perfil">
-        <div id="mtAvatar" class="mt-avatar" aria-hidden="true"></div>
-        <div class="mt-perfil-info">
-          <span class="mt-eyebrow">Mi tienda · Panel del vendedor</span>
-          <h2 id="mtNombre">Mi tienda</h2>
-          <div class="mt-meta">
-            <span class="mt-badge"><i class="fa-solid fa-seedling"></i> Emprendedor Nacional</span>
-            <span class="mt-ubicacion" id="mtUbicacion" hidden>
-              <i class="fa-solid fa-location-dot"></i> <span id="mtUbicacionTexto"></span>
-            </span>
-          </div>
-          <p class="mt-bio" id="mtBio" hidden></p>
-          <div class="mt-redes" id="mtRedes" hidden></div>
+    <!-- Resumen: aquí se agregan tarjetas futuras (vistas, ventas, etc.) -->
+    <div id="miTiendaStats" class="mt-stats">
+      <div id="seguidoresMiTienda" class="mt-stat" style="display:none;"></div>
+      <div id="articulosMiTienda" class="mt-stat" title="Artículos publicados">
+        <div class="mt-stat-icono"><i class="fa-solid fa-box-open"></i></div>
+        <div class="mt-stat-info">
+          <span class="mt-stat-num"><span id="mtArticulosNum">0</span><small id="mtArticulosLimite" hidden></small></span>
+          <span class="mt-stat-label" id="mtArticulosLabel">Artículos</span>
         </div>
       </div>
+    </div>
 
-      <div id="miTiendaStats" class="mt-stats">
-        <div id="seguidoresMiTienda" class="mt-stat" style="display:none;"></div>
-        <div id="articulosMiTienda" class="mt-stat">
-          <div class="mt-stat-icono"><i class="fa-solid fa-box-open"></i></div>
-          <div class="mt-stat-info">
-            <span class="mt-stat-num" id="mtArticulosNum">0</span>
-            <span class="mt-stat-label" id="mtArticulosLabel">Artículos</span>
-            <span class="mt-stat-sub" id="mtArticulosSub" hidden></span>
-          </div>
-        </div>
-      </div>
+    <!-- Acciones del vendedor: aquí se agregan opciones futuras -->
+    <div id="miTiendaAcciones" class="mt-acciones">
+      <button type="button" id="btnCompartirPerfil" class="mt-btn mt-btn-sec" hidden title="Compartir mi perfil" aria-label="Compartir mi perfil">
+        <i class="fa-solid fa-share-nodes"></i><span class="mt-btn-txt"> Compartir</span>
+      </button>
+      <button type="button" id="btnQrPerfil" class="mt-btn mt-btn-sec" hidden title="Código QR de mi perfil" aria-label="Código QR de mi perfil">
+        <i class="fa-solid fa-qrcode"></i><span class="mt-btn-txt"> Código QR</span>
+      </button>
+      <button id="addProductButton" class="mt-btn mt-btn-primary">
+        <i class="fa-solid fa-plus"></i> Agregar producto
+      </button>
     </div>
 
     <!-- ID de usuario: se mantiene en el DOM (se usa para las peticiones),
-         pero no debe verse. -->
+         pero no debe verse (script.js le pone display:block al entrar). -->
     <div id="usuarioIdVisibleMitienda" style="display:none;">ID de usuario: ---</div>
-  </header>
+  </div>
 
   <!-- 🆕 Contenedor dedicado para las tarjetas de "Mis Productos".
        Antes cargarProductosMiTienda() pintaba en #productGrid, pero ese
@@ -6812,153 +6807,138 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
   </div>
 
   <style>
-    /* Colores propios (no dependen del tema claro/oscuro/rosado del sitio):
-       el encabezado se ve igual de profesional en todos. */
+    /* El encabezado vive DENTRO del fondo de "Mi tienda" (script.js pinta el tema
+       claro/oscuro/rosado/estrellado en #miTiendaContainer), así que hereda el
+       color de texto del tema y usa grises translúcidos: se ve bien en todos. */
     #miTiendaContainer { --mt-rojo: #d11a2a; --mt-vino: #800020; }
+    #usuarioIdVisibleMitienda { display: none !important; }
     .mt-header [hidden] { display: none !important; }
 
     .mt-header {
-      position: relative;
-      max-width: 1180px;
-      margin: 18px auto 8px auto;
-      padding: 18px 22px 24px 22px;
-      border-radius: 16px;
-      color: #fff;
-      background: linear-gradient(135deg, #1c1c20 0%, #101013 100%);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
-      overflow: hidden;
+      display: flex; align-items: center; gap: 16px;
+      box-sizing: border-box; width: 100%;
+      padding: 14px 20px;
+      color: inherit;
+      border-bottom: 1px solid rgba(128, 128, 128, 0.28);
     }
-    .mt-header::before {
-      content: "";
-      position: absolute; left: 0; right: 0; top: 0; height: 3px;
-      background: linear-gradient(90deg, var(--mt-vino), var(--mt-rojo), var(--mt-vino));
-    }
+    .mt-header * { box-sizing: border-box; }
 
-    .mt-header-top {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 12px; flex-wrap: wrap;
-      padding-bottom: 16px; margin-bottom: 20px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    /* Botón "Volver a la tienda" */
+    /* Volver a la tienda */
     .mt-volver {
-      display: inline-flex; align-items: center; gap: 9px;
-      padding: 9px 18px; border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.22);
-      background: rgba(255, 255, 255, 0.07);
-      color: #fff; font-family: inherit; font-size: 14px; font-weight: 600;
-      cursor: pointer; transition: background .2s, border-color .2s;
+      flex-shrink: 0; display: inline-flex; align-items: center; gap: 8px;
+      height: 40px; padding: 0 16px; border-radius: 999px;
+      border: 1px solid rgba(128, 128, 128, 0.45);
+      background: rgba(128, 128, 128, 0.12);
+      color: inherit; font-family: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer; white-space: nowrap; transition: background .2s, border-color .2s;
     }
     .mt-volver i { transition: transform .2s; }
-    .mt-volver:hover { background: rgba(255, 255, 255, 0.16); border-color: rgba(255, 255, 255, 0.45); }
+    .mt-volver:hover { background: rgba(128, 128, 128, 0.24); border-color: rgba(128, 128, 128, 0.7); }
     .mt-volver:hover i { transform: translateX(-3px); }
-    .mt-volver:focus-visible, .mt-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    .mt-volver:focus-visible, .mt-btn:focus-visible { outline: 2px solid var(--mt-rojo); outline-offset: 2px; }
 
-    /* Zona de acciones del vendedor (aquí se agregan opciones futuras) */
-    .mt-acciones { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .mt-btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 9px 18px; border-radius: 999px; border: 1px solid transparent;
-      font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
-      transition: background .2s, border-color .2s, transform .2s, box-shadow .2s;
-    }
-    .mt-btn-sec { background: transparent; color: #fff; border-color: rgba(255, 255, 255, 0.3); }
-    .mt-btn-sec:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.6); }
-
-    /* "Agregar producto": se mantiene el id (script.js lo usa) y se
-       sobreescribe el estilo viejo de styles.css solo dentro del encabezado */
-    #miTiendaHeader #addProductButton.mt-btn-primary {
-      background: linear-gradient(135deg, var(--mt-rojo), var(--mt-vino));
-      color: #fff; border: none; padding: 10px 20px;
-      box-shadow: 0 4px 12px rgba(209, 26, 42, 0.35);
-    }
-    #miTiendaHeader #addProductButton.mt-btn-primary:hover {
-      background: linear-gradient(135deg, #e5283a, #a00028);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 18px rgba(209, 26, 42, 0.45);
-    }
-
-    /* ---- Identidad del emprendimiento ---- */
-    .mt-header-main {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 24px; flex-wrap: wrap;
-    }
-    .mt-perfil { display: flex; align-items: flex-start; gap: 18px; flex: 1 1 420px; min-width: 0; }
+    /* Identidad */
+    .mt-perfil { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 12px; }
     .mt-avatar {
-      width: 88px; height: 88px; flex-shrink: 0; border-radius: 50%;
+      width: 48px; height: 48px; flex-shrink: 0; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 30px; font-weight: 800; text-transform: uppercase; color: #fff;
+      font-size: 17px; font-weight: 800; text-transform: uppercase; color: #fff;
       background: linear-gradient(135deg, var(--mt-rojo), var(--mt-vino));
-      border: 3px solid rgba(255, 255, 255, 0.18);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+      border: 2px solid rgba(209, 26, 42, 0.35);
       overflow: hidden;
     }
     .mt-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .mt-perfil-info { min-width: 0; flex: 1; }
-    .mt-eyebrow {
-      display: block; margin-bottom: 4px;
-      font-size: 11px; font-weight: 700; letter-spacing: 1.4px;
-      text-transform: uppercase; color: #ff6b78;
-    }
+    .mt-perfil-info { min-width: 0; }
+    .mt-linea1 { display: flex; align-items: center; gap: 10px; min-width: 0; }
     .mt-perfil-info h2 {
-      margin: 0 0 8px 0; font-size: 26px; line-height: 1.2; color: #fff;
-      word-break: break-word;
+      margin: 0; padding: 0; font-size: 18px; line-height: 1.25; font-weight: 700;
+      color: inherit; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .mt-meta { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; }
     .mt-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: rgba(209, 26, 42, 0.18); color: #ff8a94;
-      border: 1px solid rgba(255, 107, 120, 0.45);
-      font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px;
-      padding: 5px 12px; border-radius: 999px;
+      flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(209, 26, 42, 0.1); color: var(--mt-rojo);
+      border: 1px solid rgba(209, 26, 42, 0.45);
+      font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px;
+      padding: 3px 9px; border-radius: 999px; white-space: nowrap;
     }
-    .mt-ubicacion { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; color: rgba(255, 255, 255, 0.72); }
-    .mt-ubicacion i { color: #ff6b78; }
-    .mt-bio { margin: 12px 0 0 0; font-size: 14px; line-height: 1.5; color: rgba(255, 255, 255, 0.82); max-width: 520px; }
-    .mt-redes { display: flex; gap: 8px; margin-top: 12px; }
-    .mt-redes a {
-      width: 32px; height: 32px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      background: rgba(255, 255, 255, 0.08); color: #fff; text-decoration: none; font-size: 15px;
-      border: 1px solid rgba(255, 255, 255, 0.22); transition: transform .15s, background .2s;
+    .mt-linea2 {
+      margin: 2px 0 0 0; font-size: 12.5px; line-height: 1.35; opacity: 0.75;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .mt-redes a:hover { transform: scale(1.1); background: rgba(209, 26, 42, 0.45); }
+    .mt-linea2 i { color: var(--mt-rojo); }
+    #mtUbicacion:not([hidden]) + .mt-bio::before { content: "·"; margin: 0 8px; }
 
-    /* ---- Tarjetas de resumen (seguidores, artículos; más en el futuro) ---- */
-    .mt-stats { display: flex; gap: 12px; flex-wrap: wrap; }
+    /* Resumen (compacto, una línea) */
+    .mt-stats { flex-shrink: 0; display: flex; gap: 8px; }
     .mt-stat {
-      display: flex; align-items: center; gap: 14px;
-      min-width: 190px; padding: 12px 18px; border-radius: 14px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex; align-items: center; gap: 10px;
+      padding: 6px 14px 6px 8px; border-radius: 12px;
+      background: rgba(128, 128, 128, 0.12);
+      border: 1px solid rgba(128, 128, 128, 0.25);
     }
     .mt-stat-icono {
-      width: 42px; height: 42px; flex-shrink: 0; border-radius: 12px;
+      width: 30px; height: 30px; flex-shrink: 0; border-radius: 9px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 17px; color: #fff;
+      font-size: 13px; color: #fff;
       background: linear-gradient(135deg, var(--mt-rojo), var(--mt-vino));
     }
-    .mt-stat-info { display: flex; flex-direction: column; min-width: 0; }
-    .mt-stat-num { font-size: 24px; font-weight: 800; line-height: 1.1; color: #fff; }
-    .mt-stat-label { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: rgba(255, 255, 255, 0.6); }
-    .mt-stat-sub { margin-top: 3px; font-size: 12px; color: rgba(255, 255, 255, 0.55); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+    .mt-stat-info { display: flex; flex-direction: column; line-height: 1.1; }
+    .mt-stat-num { font-size: 16px; font-weight: 800; color: inherit; }
+    .mt-stat-num small { font-size: 11px; font-weight: 600; opacity: .6; margin-left: 3px; }
+    .mt-stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: .7px; opacity: .65; margin-top: 2px; }
 
-    #miTiendaContainer #misProductosGrid { margin-top: 12px; }
+    /* Acciones */
+    .mt-acciones { flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
+    .mt-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid transparent;
+      font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;
+      transition: background .2s, border-color .2s, transform .2s, box-shadow .2s;
+    }
+    .mt-btn-sec { background: transparent; color: inherit; border-color: rgba(128, 128, 128, 0.5); }
+    .mt-btn-sec:hover { background: rgba(128, 128, 128, 0.18); border-color: rgba(128, 128, 128, 0.8); }
+    /* "Agregar producto": se mantiene el id (script.js lo usa) y se
+       sobreescribe el estilo viejo solo dentro del encabezado */
+    #miTiendaHeader #addProductButton.mt-btn-primary {
+      background: linear-gradient(135deg, var(--mt-rojo), var(--mt-vino));
+      color: #fff; border: none; padding: 0 18px;
+      box-shadow: 0 3px 10px rgba(209, 26, 42, 0.3);
+    }
+    #miTiendaHeader #addProductButton.mt-btn-primary:hover {
+      background: linear-gradient(135deg, #e5283a, #a00028);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(209, 26, 42, 0.4);
+    }
 
+    /* Compartir y QR pasan a solo ícono cuando falta espacio */
+    @media (max-width: 1220px) {
+      .mt-btn-sec { width: 40px; padding: 0; }
+      .mt-btn-txt { display: none; }
+    }
+    /* Dos filas: arriba Volver + acciones, abajo identidad + resumen */
+    @media (max-width: 1180px) {
+      .mt-header {
+        display: grid; grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px 14px; padding: 12px 14px;
+      }
+      .mt-volver { grid-column: 1; grid-row: 1; justify-self: start; }
+      .mt-acciones { grid-column: 2; grid-row: 1; }
+      .mt-perfil { grid-column: 1; grid-row: 2; }
+      .mt-stats { grid-column: 2; grid-row: 2; }
+    }
     @media (max-width: 640px) {
-      .mt-header { margin: 12px 10px 6px 10px; padding: 14px 14px 18px 14px; border-radius: 14px; }
-      .mt-header-top { flex-direction: column; align-items: stretch; }
-      .mt-volver { justify-content: center; }
-      .mt-acciones { width: 100%; }
-      .mt-acciones .mt-btn { flex: 1 1 0; padding-left: 10px; padding-right: 10px; white-space: nowrap; }
-      .mt-perfil { flex-direction: column; align-items: center; text-align: center; flex-basis: 100%; }
-      .mt-meta, .mt-redes { justify-content: center; }
-      .mt-bio { margin-left: auto; margin-right: auto; }
-      .mt-perfil-info h2 { font-size: 23px; }
-      .mt-stats { width: 100%; }
-      .mt-stat { flex: 1 1 140px; min-width: 0; padding: 10px 12px; gap: 10px; }
+      .mt-header { grid-template-columns: auto minmax(0, 1fr); }
+      .mt-volver { grid-column: 1; grid-row: 1; }
+      .mt-acciones { grid-column: 2; grid-row: 1; justify-self: end; width: 100%; }
+      #miTiendaHeader #addProductButton.mt-btn-primary { flex: 1; }
+      .mt-perfil { grid-column: 1 / -1; grid-row: 2; }
+      .mt-stats { grid-column: 1 / -1; grid-row: 3; }
+      .mt-stat { flex: 1 1 0; }
+    }
+    @media (max-width: 520px) {
+      .mt-volver span { display: none; }
+      .mt-volver { width: 40px; padding: 0; justify-content: center; }
+      .mt-badge { display: none; }
     }
 
     /* ---- Modal del QR (tarjeta clara, igual a la del perfil público) ---- */
@@ -7059,18 +7039,6 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
       return limpio.split(/\s+/).slice(0, 2).map((p) => p.charAt(0)).join("").toUpperCase();
     }
 
-    function enlaceRedSocial(red, valor) {
-      if (!valor) return null;
-      const v = String(valor).trim();
-      if (!v) return null;
-      if (/^https?:\/\//i.test(v)) return v;
-      const handle = v.replace(/^@/, "");
-      if (red === "instagram") return "https://instagram.com/" + handle;
-      if (red === "tiktok") return "https://tiktok.com/@" + handle;
-      if (red === "facebook") return "https://facebook.com/" + handle;
-      return null;
-    }
-
     // ---------- Volver a la tienda ----------
     function volverALaTienda() {
       // Mismo efecto que tocar "Todo": cierra el panel, quita el estado
@@ -7130,37 +7098,20 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
         av.textContent = iniciales(nombre);
       }
 
-      // Descripción: solo si la escribió
-      const elBio = $("mtBio");
-      const bio = perfil && perfil.descripcionVendedor ? String(perfil.descripcionVendedor).trim() : "";
-      elBio.textContent = bio;
-      elBio.hidden = !bio;
-
-      // Redes: solo las que llenó
-      const elRedes = $("mtRedes");
-      elRedes.textContent = "";
-      [
-        { red: "instagram", valor: perfil && perfil.instagram, icono: "fa-instagram" },
-        { red: "tiktok", valor: perfil && perfil.tiktok, icono: "fa-tiktok" },
-        { red: "facebook", valor: perfil && perfil.facebook, icono: "fa-facebook" },
-      ].forEach(({ red, valor, icono }) => {
-        const link = enlaceRedSocial(red, valor);
-        if (!link) return;
-        const a = document.createElement("a");
-        a.href = link;
-        a.target = "_blank";
-        a.rel = "noopener noreferrer";
-        a.setAttribute("aria-label", red);
-        a.innerHTML = '<i class="fa-brands ' + icono + '"></i>';
-        elRedes.appendChild(a);
-      });
-      elRedes.hidden = !elRedes.children.length;
-
       // Ubicación: "Ciudad, Provincia"
       const ubic = [contacto && contacto.ciudad, contacto && contacto.provincia]
         .map((v) => String(v || "").trim()).filter(Boolean).join(", ");
       $("mtUbicacionTexto").textContent = ubic;
       $("mtUbicacion").hidden = !ubic;
+
+      // Descripción corta (una línea; completa al pasar el mouse)
+      const bio = perfil && perfil.descripcionVendedor ? String(perfil.descripcionVendedor).trim() : "";
+      const elBio = $("mtBio");
+      elBio.textContent = bio;
+      elBio.hidden = !bio;
+      const linea2 = $("mtLinea2");
+      linea2.hidden = !ubic && !bio;
+      linea2.title = bio;
     }
 
     // ---------- Artículos ----------
@@ -7176,9 +7127,15 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
       $("mtArticulosNum").textContent = n.toLocaleString("es-CR");
       $("mtArticulosLabel").textContent = n === 1 ? "Artículo" : "Artículos";
       const info = limitePlan();
-      const sub = $("mtArticulosSub");
-      if (info) { sub.textContent = "Plan " + info.plan + ": máx. " + info.limite; sub.hidden = false; }
-      else { sub.hidden = true; }
+      const lim = $("mtArticulosLimite");
+      if (info) {
+        lim.textContent = "/ " + info.limite;
+        lim.hidden = false;
+        $("articulosMiTienda").title = "Plan " + info.plan + ": máximo " + info.limite + " artículos";
+      } else {
+        lim.hidden = true;
+        $("articulosMiTienda").title = "Artículos publicados";
+      }
     }
 
     // Se repinta cuando script.js agrega/edita/elimina productos. Además se
@@ -7198,20 +7155,20 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
       const muestra = Array.isArray(data.muestra) ? data.muestra.filter(Boolean) : [];
       const resto = total - muestra.length;
 
-      let sub;
+      let detalle = "";
       if (total <= 0) {
-        sub = "Comparte tu perfil para que te encuentren";
+        detalle = "Comparte tu perfil para que te encuentren";
       } else {
-        sub = listaDeNombres(muestra.map(esc));
-        if (resto > 0) sub += (sub ? " y " : "") + resto.toLocaleString("es-CR") + " más";
+        detalle = listaDeNombres(muestra);
+        if (resto > 0) detalle += (detalle ? " y " : "") + resto.toLocaleString("es-CR") + " más";
       }
 
+      tarjetaSeg.title = detalle;
       tarjetaSeg.innerHTML =
         '<div class="mt-stat-icono"><i class="fa-solid fa-users"></i></div>' +
         '<div class="mt-stat-info">' +
           '<span class="mt-stat-num">' + total.toLocaleString("es-CR") + '</span>' +
           '<span class="mt-stat-label">' + (total === 1 ? "Seguidor" : "Seguidores") + '</span>' +
-          (sub ? '<span class="mt-stat-sub" title="' + sub.replace(/<[^>]+>/g, "") + '">' + sub + '</span>' : '') +
         '</div>';
       tarjetaSeg.style.display = "flex";
     }
