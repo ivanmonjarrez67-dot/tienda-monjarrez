@@ -274,7 +274,7 @@ function cargarProductosMiTienda() {
       grid.innerHTML = "";
       productoSeleccionado = null;
       if (!productos || productos.length === 0) {
-        grid.innerHTML = '<p style="color:inherit;opacity:.7;text-align:center;padding:36px 0;">No tienes productos registrados.</p>';
+        grid.innerHTML = '<p style="color:white;">No tienes productos registrados.</p>';
         return;
       }
       productos.forEach(producto => {
@@ -2435,9 +2435,7 @@ if (solicitudFormEl) {
 }
 
 const productGridWrapper = document.getElementById('productGridWrapper');
-// 🔧 Ahora el tema (claro/oscuro/rosado/estrellado) se pinta en TODO el contenedor de
-// "Mi tienda" (encabezado + productos), para que el encabezado quede dentro del fondo.
-const misProductosGrid = document.getElementById('miTiendaContainer');
+const misProductosGrid = document.getElementById('misProductosGrid');
 function sincronizarFondoWrapper(color) {
   if (productGridWrapper) productGridWrapper.style.backgroundColor = color;
 }
@@ -2842,7 +2840,7 @@ if (welcomeContainer) {
               }).toString(),
             });
           }
-          // 🆕 Refresca el encabezado de "Mi tienda" (descripción, redes, nombre).
+          // 🆕 Refresca el encabezado de "Mi tienda" (descripción, nombre).
           if (window.MT && typeof window.MT.invalidarPerfil === "function") window.MT.invalidarPerfil();
           mostrarMensaje("✅ Cambios guardados correctamente.", "ok");
         }

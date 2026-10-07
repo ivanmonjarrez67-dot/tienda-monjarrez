@@ -2666,14 +2666,13 @@
       <i class="fa-solid fa-arrow-left"></i> <span>Volver a la tienda</span>
     </button>
 
-    <!-- Identidad del emprendimiento (logo, nombre, Emprendedor Nacional,
-         ubicación y descripción corta) -->
+    <!-- Identidad del emprendimiento -->
     <div class="mt-perfil">
       <div id="mtAvatar" class="mt-avatar" aria-hidden="true"></div>
       <div class="mt-perfil-info">
         <div class="mt-linea1">
           <h2 id="mtNombre">Mi tienda</h2>
-          <span class="mt-badge"><i class="fa-solid fa-seedling"></i> Emprendedor Nacional</span>
+          <span class="mt-badge" title="Emprendedor Nacional"><i class="fa-solid fa-seedling"></i><span class="mt-badge-txt"> Emprendedor Nacional</span></span>
         </div>
         <p class="mt-linea2" id="mtLinea2" hidden>
           <span id="mtUbicacion" hidden><i class="fa-solid fa-location-dot"></i> <span id="mtUbicacionTexto"></span></span><span class="mt-bio" id="mtBio" hidden></span>
@@ -2681,15 +2680,24 @@
       </div>
     </div>
 
-    <!-- Resumen: aquí se agregan tarjetas futuras (vistas, ventas, etc.) -->
+    <!-- Buscador de productos propios (útil con catálogos grandes) -->
+    <div class="mt-buscar">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="mtBuscar" placeholder="Busca entre tus productos" autocomplete="off"
+             aria-label="Buscar entre mis productos" />
+      <span class="mt-buscar-contador" id="mtBuscarContador" hidden></span>
+      <button type="button" class="mt-buscar-limpiar" id="mtBuscarLimpiar" hidden aria-label="Borrar búsqueda">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Resumen (datos secundarios, compactos). Aquí se agregan chips futuros -->
     <div id="miTiendaStats" class="mt-stats">
       <div id="seguidoresMiTienda" class="mt-stat" style="display:none;"></div>
       <div id="articulosMiTienda" class="mt-stat" title="Artículos publicados">
-        <div class="mt-stat-icono"><i class="fa-solid fa-box-open"></i></div>
-        <div class="mt-stat-info">
-          <span class="mt-stat-num"><span id="mtArticulosNum">0</span><small id="mtArticulosLimite" hidden></small></span>
-          <span class="mt-stat-label" id="mtArticulosLabel">Artículos</span>
-        </div>
+        <i class="fa-solid fa-box-open"></i>
+        <b id="mtArticulosNum">0</b><small id="mtArticulosLimite" hidden></small>
+        <span class="mt-stat-label" id="mtArticulosLabel">Artículos</span>
       </div>
     </div>
 
@@ -2716,6 +2724,10 @@
        div se oculta al entrar a "Mi tienda", así que los productos nunca
        se veían. Ahora se pintan aquí, dentro del contenedor visible. -->
   <div id="misProductosGrid" class="product-grid"></div>
+
+  <!-- Resultado vacío del buscador (no vive dentro del grid porque script.js
+       lo reconstruye al cargar productos) -->
+  <div id="mtSinResultados" class="mt-sin-resultados" hidden></div>
 
 </div>
 
@@ -6807,19 +6819,24 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
   </div>
 
   <style>
-    /* El encabezado vive DENTRO del fondo de "Mi tienda" (script.js pinta el tema
-       claro/oscuro/rosado/estrellado en #miTiendaContainer), así que hereda el
-       color de texto del tema y usa grises translúcidos: se ve bien en todos. */
+    /* Encabezado blanco, una sola línea (como el de la página principal, pero
+       claro para distinguirse). Colores fijos: no dependen del tema. */
     #miTiendaContainer { --mt-rojo: #d11a2a; --mt-vino: #800020; }
     #usuarioIdVisibleMitienda { display: none !important; }
-    .mt-header [hidden] { display: none !important; }
+    .mt-header [hidden], #mtSinResultados[hidden] { display: none !important; }
+
+    /* Mensaje de "sin productos": script.js lo pinta en blanco (invisible sobre
+       fondo claro). Aquí hereda el color del tema de la cuadrícula. */
+    #misProductosGrid > p { color: inherit !important; opacity: .7; text-align: center; padding: 36px 0; margin: 0; column-span: all; }
+    .mt-sin-resultados { padding: 40px 20px; text-align: center; font-size: 15px; opacity: .75; color: inherit; }
 
     .mt-header {
-      display: flex; align-items: center; gap: 16px;
+      display: flex; align-items: center; gap: 14px;
       box-sizing: border-box; width: 100%;
-      padding: 14px 20px;
-      color: inherit;
-      border-bottom: 1px solid rgba(128, 128, 128, 0.28);
+      padding: 12px 20px;
+      background: #fff; color: #1a1a1a;
+      border-bottom: 1px solid #e4e4e7;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
     }
     .mt-header * { box-sizing: border-box; }
 
@@ -6827,65 +6844,81 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
     .mt-volver {
       flex-shrink: 0; display: inline-flex; align-items: center; gap: 8px;
       height: 40px; padding: 0 16px; border-radius: 999px;
-      border: 1px solid rgba(128, 128, 128, 0.45);
-      background: rgba(128, 128, 128, 0.12);
-      color: inherit; font-family: inherit; font-size: 14px; font-weight: 600;
+      border: 1px solid #d4d4d8; background: #fff; color: #1a1a1a;
+      font-family: inherit; font-size: 14px; font-weight: 600;
       cursor: pointer; white-space: nowrap; transition: background .2s, border-color .2s;
     }
     .mt-volver i { transition: transform .2s; }
-    .mt-volver:hover { background: rgba(128, 128, 128, 0.24); border-color: rgba(128, 128, 128, 0.7); }
+    .mt-volver:hover { background: #f4f4f6; border-color: #a1a1aa; }
     .mt-volver:hover i { transform: translateX(-3px); }
     .mt-volver:focus-visible, .mt-btn:focus-visible { outline: 2px solid var(--mt-rojo); outline-offset: 2px; }
 
     /* Identidad */
-    .mt-perfil { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 12px; }
+    .mt-perfil { flex: 0 1 430px; min-width: 0; display: flex; align-items: center; gap: 12px; }
     .mt-avatar {
-      width: 48px; height: 48px; flex-shrink: 0; border-radius: 50%;
+      width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 17px; font-weight: 800; text-transform: uppercase; color: #fff;
+      font-size: 16px; font-weight: 800; text-transform: uppercase; color: #fff;
       background: linear-gradient(135deg, var(--mt-rojo), var(--mt-vino));
-      border: 2px solid rgba(209, 26, 42, 0.35);
+      border: 2px solid rgba(209, 26, 42, 0.3);
       overflow: hidden;
     }
     .mt-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .mt-perfil-info { min-width: 0; }
-    .mt-linea1 { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .mt-linea1 { display: flex; align-items: center; gap: 8px; min-width: 0; }
     .mt-perfil-info h2 {
-      margin: 0; padding: 0; font-size: 18px; line-height: 1.25; font-weight: 700;
-      color: inherit; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      margin: 0; padding: 0; font-size: 17px; line-height: 1.25; font-weight: 700;
+      color: #1a1a1a; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .mt-badge {
-      flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px;
-      background: rgba(209, 26, 42, 0.1); color: var(--mt-rojo);
-      border: 1px solid rgba(209, 26, 42, 0.45);
-      font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px;
-      padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+      flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px;
+      background: rgba(209, 26, 42, 0.08); color: var(--mt-rojo);
+      border: 1px solid rgba(209, 26, 42, 0.4);
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px;
+      padding: 3px 8px; border-radius: 999px; white-space: nowrap;
     }
     .mt-linea2 {
-      margin: 2px 0 0 0; font-size: 12.5px; line-height: 1.35; opacity: 0.75;
+      margin: 1px 0 0 0; font-size: 12px; line-height: 1.35; color: #6b6b73;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .mt-linea2 i { color: var(--mt-rojo); }
-    #mtUbicacion:not([hidden]) + .mt-bio::before { content: "·"; margin: 0 8px; }
+    #mtUbicacion:not([hidden]) + .mt-bio::before { content: "·"; margin: 0 7px; }
 
-    /* Resumen (compacto, una línea) */
-    .mt-stats { flex-shrink: 0; display: flex; gap: 8px; }
+    /* Buscador */
+    .mt-buscar { flex: 1 1 200px; min-width: 0; position: relative; display: flex; align-items: center; }
+    .mt-buscar > i { position: absolute; left: 14px; color: #8a8a92; font-size: 14px; pointer-events: none; }
+    .mt-buscar input {
+      width: 100%; height: 40px; padding: 0 44px 0 38px;
+      border-radius: 999px; border: 1px solid #d9d9de; background: #f4f4f6; color: #1a1a1a;
+      font-family: inherit; font-size: 14px; outline: none;
+      transition: border-color .2s, box-shadow .2s, background .2s;
+    }
+    .mt-buscar input::placeholder { color: #8a8a92; }
+    .mt-buscar input:focus {
+      border-color: var(--mt-rojo); background: #fff; box-shadow: 0 0 0 3px rgba(209, 26, 42, 0.14);
+    }
+    .mt-buscar input.con-texto { padding-right: 112px; }
+    .mt-buscar-contador {
+      position: absolute; right: 40px; font-size: 12px; color: #77777f; white-space: nowrap; pointer-events: none;
+    }
+    .mt-buscar-limpiar {
+      position: absolute; right: 6px; width: 28px; height: 28px; border-radius: 50%;
+      border: none; background: #e4e4e7; color: #55555d; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 12px;
+    }
+    .mt-buscar-limpiar:hover { background: #d4d4d8; }
+
+    /* Resumen: datos secundarios, chips pequeños */
+    .mt-stats { flex-shrink: 0; display: flex; gap: 6px; }
     .mt-stat {
-      display: flex; align-items: center; gap: 10px;
-      padding: 6px 14px 6px 8px; border-radius: 12px;
-      background: rgba(128, 128, 128, 0.12);
-      border: 1px solid rgba(128, 128, 128, 0.25);
+      display: inline-flex; align-items: center; gap: 6px;
+      height: 30px; padding: 0 11px; border-radius: 999px;
+      background: #f4f4f6; border: 1px solid #e4e4e7;
+      font-size: 12px; color: #55555d; white-space: nowrap;
     }
-    .mt-stat-icono {
-      width: 30px; height: 30px; flex-shrink: 0; border-radius: 9px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 13px; color: #fff;
-      background: linear-gradient(135deg, var(--mt-rojo), var(--mt-vino));
-    }
-    .mt-stat-info { display: flex; flex-direction: column; line-height: 1.1; }
-    .mt-stat-num { font-size: 16px; font-weight: 800; color: inherit; }
-    .mt-stat-num small { font-size: 11px; font-weight: 600; opacity: .6; margin-left: 3px; }
-    .mt-stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: .7px; opacity: .65; margin-top: 2px; }
+    .mt-stat i { color: var(--mt-rojo); font-size: 12px; }
+    .mt-stat b { font-size: 13px; font-weight: 800; color: #1a1a1a; }
+    .mt-stat small { font-size: 11px; opacity: .65; margin-left: -3px; }
 
     /* Acciones */
     .mt-acciones { flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
@@ -6895,8 +6928,8 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
       font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;
       transition: background .2s, border-color .2s, transform .2s, box-shadow .2s;
     }
-    .mt-btn-sec { background: transparent; color: inherit; border-color: rgba(128, 128, 128, 0.5); }
-    .mt-btn-sec:hover { background: rgba(128, 128, 128, 0.18); border-color: rgba(128, 128, 128, 0.8); }
+    .mt-btn-sec { background: #fff; color: #1a1a1a; border-color: #d4d4d8; }
+    .mt-btn-sec:hover { background: #f4f4f6; border-color: #a1a1aa; }
     /* "Agregar producto": se mantiene el id (script.js lo usa) y se
        sobreescribe el estilo viejo solo dentro del encabezado */
     #miTiendaHeader #addProductButton.mt-btn-primary {
@@ -6910,13 +6943,19 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
       box-shadow: 0 6px 14px rgba(209, 26, 42, 0.4);
     }
 
-    /* Compartir y QR pasan a solo ícono cuando falta espacio */
-    @media (max-width: 1220px) {
+    /* Pantallas medianas (una sola línea): Compartir/QR en ícono y la
+       insignia solo con el ícono de la plántula */
+    @media (max-width: 1500px) {
+      .mt-perfil { flex-basis: 330px; }
       .mt-btn-sec { width: 40px; padding: 0; }
       .mt-btn-txt { display: none; }
     }
-    /* Dos filas: arriba Volver + acciones, abajo identidad + resumen */
-    @media (max-width: 1180px) {
+    @media (min-width: 1241px) and (max-width: 1500px) {
+      .mt-badge-txt { display: none; }
+      .mt-badge { padding: 4px 7px; }
+    }
+    /* Dos/tres filas: Volver + acciones / identidad + resumen / buscador */
+    @media (max-width: 1240px) {
       .mt-header {
         display: grid; grid-template-columns: minmax(0, 1fr) auto;
         gap: 12px 14px; padding: 12px 14px;
@@ -6925,6 +6964,7 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
       .mt-acciones { grid-column: 2; grid-row: 1; }
       .mt-perfil { grid-column: 1; grid-row: 2; }
       .mt-stats { grid-column: 2; grid-row: 2; }
+      .mt-buscar { grid-column: 1 / -1; grid-row: 3; }
     }
     @media (max-width: 640px) {
       .mt-header { grid-template-columns: auto minmax(0, 1fr); }
@@ -6933,12 +6973,13 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
       #miTiendaHeader #addProductButton.mt-btn-primary { flex: 1; }
       .mt-perfil { grid-column: 1 / -1; grid-row: 2; }
       .mt-stats { grid-column: 1 / -1; grid-row: 3; }
-      .mt-stat { flex: 1 1 0; }
+      .mt-stat { flex: 1 1 0; justify-content: center; }
+      .mt-buscar { grid-row: 4; }
     }
     @media (max-width: 520px) {
       .mt-volver span { display: none; }
       .mt-volver { width: 40px; padding: 0; justify-content: center; }
-      .mt-badge { display: none; }
+      .mt-badge-txt { display: none; }
     }
 
     /* ---- Modal del QR (tarjeta clara, igual a la del perfil público) ---- */
@@ -7138,11 +7179,71 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
       }
     }
 
-    // Se repinta cuando script.js agrega/edita/elimina productos. Además se
-    // refrescan (con pausa) el nombre/ubicación, por si cambiaron al editar.
+    // ---------- Buscar entre mis productos ----------
+    const inputBuscar = $("mtBuscar");
+    const btnLimpiar = $("mtBuscarLimpiar");
+    const elContador = $("mtBuscarContador");
+    const elSinResultados = $("mtSinResultados");
+
+    function normalizar(t) {
+      return String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    }
+
+    // Texto buscable de una tarjeta: nombre, ID, precio, categoría y descripción
+    function textoDeTarjeta(card) {
+      const btn = card.querySelector(".more-info-btn");
+      const extra = btn ? [btn.dataset.nombre, btn.dataset.descripcion, btn.dataset.categoria].join(" ") : "";
+      const h3 = card.querySelector("h3");
+      const precio = card.querySelector(".producto-precio");
+      return normalizar((h3 ? h3.textContent : "") + " " + (precio ? precio.textContent : "") + " " + extra);
+    }
+
+    function aplicarFiltro() {
+      if (!grid || !inputBuscar) return;
+      const crudo = inputBuscar.value.trim();
+      const terminos = normalizar(crudo).split(/\s+/).filter(Boolean);
+      const tarjetas = grid.querySelectorAll(".producto");
+      let visibles = 0;
+      tarjetas.forEach((c) => {
+        if (c.dataset.mtq === undefined) c.dataset.mtq = textoDeTarjeta(c);
+        const ok = terminos.every((t) => c.dataset.mtq.includes(t));
+        c.style.display = ok ? "" : "none";
+        if (ok) visibles++;
+      });
+      inputBuscar.classList.toggle("con-texto", !!crudo);
+      btnLimpiar.hidden = !crudo;
+      elContador.hidden = !crudo;
+      elContador.textContent = visibles.toLocaleString("es-CR") + " de " + tarjetas.length.toLocaleString("es-CR");
+      const sinResultados = !!crudo && tarjetas.length > 0 && visibles === 0;
+      elSinResultados.hidden = !sinResultados;
+      if (sinResultados) elSinResultados.textContent = 'No encontramos productos que coincidan con "' + crudo + '".';
+    }
+
+    let temporizadorBusqueda = null;
+    if (inputBuscar) {
+      inputBuscar.addEventListener("input", () => {
+        clearTimeout(temporizadorBusqueda);
+        temporizadorBusqueda = setTimeout(aplicarFiltro, 120);
+      });
+      inputBuscar.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") e.preventDefault();
+        if (e.key === "Escape") { inputBuscar.value = ""; aplicarFiltro(); }
+      });
+    }
+    if (btnLimpiar) btnLimpiar.addEventListener("click", () => {
+      inputBuscar.value = "";
+      aplicarFiltro();
+      inputBuscar.focus();
+    });
+
+    // Se repinta cuando script.js agrega/edita/elimina productos (con pausa
+    // corta, porque con ~300 productos llegan muchos cambios seguidos). Además
+    // se refrescan nombre/ubicación, por si cambiaron al editar.
+    let temporizadorGrid = null;
     if (grid) {
       new MutationObserver(() => {
-        pintarArticulos();
+        clearTimeout(temporizadorGrid);
+        temporizadorGrid = setTimeout(() => { pintarArticulos(); aplicarFiltro(); }, 60);
         clearTimeout(temporizadorRefresco);
         temporizadorRefresco = setTimeout(() => { if (esVisible()) cargarDatos(); }, 700);
       }).observe(grid, { childList: true });
@@ -7165,12 +7266,9 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
 
       tarjetaSeg.title = detalle;
       tarjetaSeg.innerHTML =
-        '<div class="mt-stat-icono"><i class="fa-solid fa-users"></i></div>' +
-        '<div class="mt-stat-info">' +
-          '<span class="mt-stat-num">' + total.toLocaleString("es-CR") + '</span>' +
-          '<span class="mt-stat-label">' + (total === 1 ? "Seguidor" : "Seguidores") + '</span>' +
-        '</div>';
-      tarjetaSeg.style.display = "flex";
+        '<i class="fa-solid fa-users"></i><b>' + total.toLocaleString("es-CR") + '</b>' +
+        '<span class="mt-stat-label">' + (total === 1 ? "Seguidor" : "Seguidores") + '</span>';
+      tarjetaSeg.style.display = "inline-flex";
     }
 
     function cargarSeguidores() {
@@ -7339,6 +7437,7 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
       if (btnQr) btnQr.hidden = !hayId;
       if (!estabaVisible) {
         estabaVisible = true;
+        if (inputBuscar) inputBuscar.value = "";
         cargarDatos();
         cargarSeguidores();
         pintarArticulos();
