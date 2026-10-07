@@ -256,12 +256,53 @@ const MSG_FOTOS_PENDIENTES = "Hay fotos adicionales que aún se están subiendo 
   });
 })();
 
+// 🆕 "Mi tienda": tarjetas esqueleto (parpadean) mientras llegan los productos
+function mtMostrarEsqueleto(grid, cantidad = 8) {
+  if (!grid) return;
+  grid.classList.remove("mt-grid-estado");
+  grid.classList.add("mt-grid-cargando");
+  grid.setAttribute("aria-busy", "true");
+  let html = "";
+  for (let i = 0; i < cantidad; i++) {
+    html += `
+      <div class="mt-sk-card" aria-hidden="true">
+        <div class="mt-sk-img"></div>
+        <div class="mt-sk-line t"></div>
+        <div class="mt-sk-line p"></div>
+        <div class="mt-sk-btns"><div class="mt-sk-btn"></div><div class="mt-sk-btn"></div><div class="mt-sk-btn"></div></div>
+      </div>`;
+  }
+  grid.innerHTML = html;
+}
+
+// 🆕 "Mi tienda": mensaje centrado en el área completa (sin productos / error)
+function mtMostrarEstadoVacio(grid, titulo, detalle, conReintento = false) {
+  if (!grid) return;
+  grid.classList.remove("mt-grid-cargando");
+  grid.classList.add("mt-grid-estado");
+  grid.removeAttribute("aria-busy");
+  grid.innerHTML = `
+    <div class="mt-vacio">
+      <i class="fa-solid ${conReintento ? "fa-triangle-exclamation" : "fa-box-open"}"></i>
+      <h3>${titulo}</h3>
+      <p>${detalle}</p>
+      ${conReintento ? '<button type="button" class="mt-vacio-btn" id="mtReintentar">Reintentar</button>' : ""}
+    </div>`;
+  const btn = grid.querySelector("#mtReintentar");
+  if (btn) btn.addEventListener("click", () => cargarProductosMiTienda());
+}
+
 function cargarProductosMiTienda() {
   const idDiv = document.getElementById("usuarioIdVisibleMitienda");
   if (!idDiv) return;
   const idText = idDiv.textContent.trim();
   const usuarioId = idText.replace("ID de usuario:", "").trim();
   if (!usuarioId || isNaN(usuarioId)) return;
+
+  // 🆕 Solo la primera vez (o si no hay productos) se muestra el esqueleto;
+  // al refrescar después de editar/eliminar no se tapa la lista que ya se ve.
+  const gridCarga = document.getElementById("misProductosGrid");
+  if (gridCarga && !gridCarga.querySelector(".producto")) mtMostrarEsqueleto(gridCarga);
 
   fetch(`/MisProductosServlet?usuario_id=${usuarioId}`)
     .then(res => {
@@ -272,9 +313,11 @@ function cargarProductosMiTienda() {
       const grid = document.getElementById("misProductosGrid");
       if (!grid) return;
       grid.innerHTML = "";
+      grid.classList.remove("mt-grid-cargando", "mt-grid-estado");
+      grid.removeAttribute("aria-busy");
       productoSeleccionado = null;
       if (!productos || productos.length === 0) {
-        grid.innerHTML = '<p style="color:white;">No tienes productos registrados.</p>';
+        mtMostrarEstadoVacio(grid, "No tienes productos registrados.", "Cuando publiques tu primer producto aparecerá aquí.");
         return;
       }
       productos.forEach(producto => {
@@ -332,7 +375,13 @@ function cargarProductosMiTienda() {
         grid.appendChild(card);
       });
     })
-    .catch(err => console.error(err));
+    .catch(err => {
+      console.error(err);
+      const grid = document.getElementById("misProductosGrid");
+      if (grid && !grid.querySelector(".producto")) {
+        mtMostrarEstadoVacio(grid, "No pudimos cargar tus productos.", "Revisa tu conexión e inténtalo de nuevo.", true);
+      }
+    });
 }
 
   const menuBtn = document.getElementById('menuBtn');
