@@ -1524,8 +1524,8 @@ function elegirPedido(id){
   document.getElementById('pEstado').value = p.estado;
   document.getElementById('pMensaje').value = '';
   PED_PAGADO = p.pagado > 0 ? p.pagado : 0;
-  document.getElementById('pMonto').value = '';   // siempre limpio: nada por defecto
-  document.getElementById('pMonto').placeholder = PED_PAGADO > 0 ? 'Registrado: ' + crcPed(PED_PAGADO) + ' (escribe solo si cambió)' : 'Escribe cuánto pagó el cliente';
+  document.getElementById('pMonto').value = PED_PAGADO > 0 ? PED_PAGADO : '';   // si ya hay monto registrado se muestra; si no, queda vacío
+  document.getElementById('pMonto').placeholder = 'Escribe cuánto pagó el cliente';
   document.getElementById('pTotal').value = crcPed(p.total);
   calcPendiente();
   document.getElementById('pSinpe').value = p.sinpe || '';

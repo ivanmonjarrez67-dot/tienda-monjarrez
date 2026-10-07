@@ -51,6 +51,7 @@ h2{font-size:14.5px;font-weight:700;margin-bottom:14px}
 .sv .n{font-size:18px;font-weight:800;color:var(--ac)}
 .sec{margin:26px 0 12px;font-size:15px;font-weight:700}
 .tw{overflow-x:auto}
+.tw.sc{max-height:460px;overflow-y:auto}.sc th{position:sticky;top:0;background:#fff;z-index:1}
 table{width:100%;border-collapse:collapse;min-width:640px}
 th{text-align:left;color:var(--mut);font-weight:500;font-size:12px;padding:8px 10px;border-bottom:1px solid var(--line)}
 td{padding:11px 10px;border-bottom:1px solid var(--line);font-size:13px}
@@ -93,7 +94,7 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
   </section>
   <section class="grid row2">
     <div class="card top5"><h2>Productos más vendidos</h2><div id="top"></div></div>
-    <div class="card"><h2>Pedidos recientes</h2><div class="tw"><table><thead><tr><th>#</th><th>Cliente</th><th>Productos</th><th>Fecha</th><th>Estado</th><th>Total</th></tr></thead><tbody id="rec"></tbody></table></div></div>
+    <div class="card"><h2>Pedidos recientes</h2><div class="tw sc"><table><thead><tr><th>#</th><th>Cliente</th><th>Productos</th><th>Fecha</th><th>Estado</th><th>Total</th></tr></thead><tbody id="rec"></tbody></table></div></div>
   </section>
   <div class="sec">Vendedores</div>
   <section class="grid sellers" id="sellers"></section>
@@ -188,10 +189,12 @@ function pintar(data, esDemo){
   if(!VENTA_INICIAL.fecha){ const x = new Date(fr+'T12:00'); x.setDate(x.getDate()-1); VENTA_INICIAL.fecha = x.toISOString().slice(0,10); }
   peds.push(VENTA_INICIAL);
   peds.forEach(p => { p.items = p.items||[]; p.total = p.total ?? p.items.reduce((s,i)=>s+i.cantidad*i.precio,0); p.unidades = p.items.reduce((s,i)=>s+i.cantidad,0);
+    p.cobrado = (p.estado!=='pago_pendiente' && p.monto_pagado!=null) ? p.monto_pagado : 0;
     p.saldo = (p.estado!=='pago_pendiente' && p.estado!=='entregado' && p.monto_pagado!=null) ? Math.max(0, p.total - p.monto_pagado) : 0; });
 
     const ingresos = peds.reduce((s,p)=>s+p.total,0), unid = peds.reduce((s,p)=>s+p.unidades,0);
   const porCobrar = peds.filter(p=>p.estado==='pago_pendiente').reduce((s,p)=>s+p.total,0);
+  const cobrado = peds.reduce((s,p)=>s+p.cobrado,0);
   const saldo = peds.reduce((s,p)=>s+p.saldo,0), nSaldo = peds.filter(p=>p.saldo>0).length;
   const enCamino = peds.filter(p=>['en_camino','comprado','en_cr'].includes(p.estado)).length;
   const kp = [
@@ -200,6 +203,7 @@ function pintar(data, esDemo){
     ['Productos vendidos', unid, 'Unidades en total', '#8f63e0'],
     ['Ticket promedio', crc(ingresos/peds.length), 'Por pedido', '#2b9cc0'],
     ['Por cobrar (sin verificar)', crc(porCobrar), 'Pagos pendientes de verificar', '#e8a13a'],
+    ['Monto pagado (verificados)', crc(cobrado), 'Lo que ya pagaron los pedidos con pago verificado', '#1f9d6b'],
     ['Saldo pendiente', crc(saldo), nSaldo + ' pedido(s) verificados que aún deben dinero (pagó la mitad o es contra entrega)', '#d9831f'],
     ['En camino', enCamino, 'Comprados, en camino o en CR', '#1f9d6b']];
   document.getElementById('kpis').innerHTML = kp.map(k => `<div class="card kpi" style="--c:${k[3]}"><span>${k[0]}</span><b>${k[1]}</b><i>${k[2]}</i></div>`).join('');
@@ -222,11 +226,11 @@ function pintar(data, esDemo){
     <div style="text-align:right"><b>${o.c} u.</b><div class="mut">${crc(o.t)}</div></div></div>`).join('');
 
   /* pedidos recientes */
-  const rec = [...peds].sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)) || Number(b.id)-Number(a.id)).slice(0,8);
+  const rec = [...peds].sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)) || Number(b.id)-Number(a.id));
   document.getElementById('rec').innerHTML = rec.map(p => `<tr><td>${esc(p.id)}</td><td>${esc(p.cliente||'—')}</td>
     <td class="mut">${p.items.map(i=>i.cantidad+'× '+esc(i.nombre)).join(', ')}</td>
     <td class="mut">${new Date(String(p.fecha).slice(0,10)+'T12:00').toLocaleDateString('es-CR',{day:'numeric',month:'short'})}</td>
-    <td><span class="pill p-${p.estado}">${ETQ[p.estado]||p.estado}</span></td><td><b>${crc(p.total)}</b>${p.saldo>0?`<div class="mut" style="color:#d9831f">Falta ${crc(p.saldo)}</div>`:''}</td></tr>`).join('');
+    <td><span class="pill p-${p.estado}">${ETQ[p.estado]||p.estado}</span></td><td><b>${crc(p.total)}</b>${p.cobrado>0?`<div class="mut" style="color:#1f9d6b">Pagó ${crc(p.cobrado)}</div>`:''}${p.saldo>0?`<div class="mut" style="color:#d9831f">Falta ${crc(p.saldo)}</div>`:''}</td></tr>`).join('');
 
   /* vendedores: todos, con su número de pedidos */
   const sv = {};
