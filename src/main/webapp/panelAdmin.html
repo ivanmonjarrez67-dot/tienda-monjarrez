@@ -116,7 +116,8 @@
   }
   .archive-bar:hover{border-color:#394142;color:var(--text);}
   .archive-bar .archive-left{display:flex;align-items:center;gap:10px;}
-  .archive-bar .archive-icon{font-size:16px;}
+  .archive-bar .archive-icon{display:flex;}
+  .archive-bar .archive-icon svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
   .archive-bar .archive-count{
     font-family:var(--mono);
     font-size:12px;
@@ -324,6 +325,10 @@
     justify-content:center;
     transition:border-color .15s, color .15s;
   }
+  .gear-btn{position:relative;}
+  .gear-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  .gear-btn .badge{position:absolute;top:-7px;right:-7px;min-width:17px;height:17px;padding:0 4px;border-radius:99px;background:var(--danger);color:#fff;font-family:var(--mono);font-size:10px;font-weight:600;line-height:17px;text-align:center;}
+  .gear-btn .badge[hidden]{display:none;}
   .gear-btn:hover{border-color:var(--accent);color:var(--accent);}
   .gear-btn.salir:hover{border-color:var(--danger);color:var(--danger);}
 
@@ -444,13 +449,13 @@
     <span class="welcome" id="welcomeMsg"></span>
     <span class="stamp" id="clock"></span>
     <div class="divider"></div>
-    <button class="gear-btn" id="btnPedidos" onclick="abrirPedidos()" title="Pedidos">📋</button>
-    <button class="gear-btn" onclick="abrirModalPromo()" title="Cupón de promoción">🎁</button>
-    <button class="gear-btn" onclick="abrirModalUrgencia()" title="Estrategia de urgencia">🔥</button>
-    <button class="gear-btn" onclick="abrirModalImg()" title="Generar links de imágenes">🖼️</button>
-    <button class="gear-btn" onclick="abrirModalCJ()" title="Importar producto de CJ">📦</button>
-    <button class="gear-btn" onclick="abrirModal()" title="Gestión de admins">⚙</button>
-    <button class="gear-btn salir" onclick="cerrarSesion()" title="Cerrar sesión">⏻</button>
+    <button class="gear-btn" id="btnPedidos" onclick="abrirPedidos()" title="Pedidos" aria-label="Pedidos"><svg viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg><span class="badge" id="pedBadge" hidden></span></button>
+    <button class="gear-btn" onclick="abrirModalPromo()" title="Cupón de promoción" aria-label="Cupón de promoción"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9a3 3 0 1 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 1 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M9 9h.01"/><path d="m15 9-6 6"/><path d="M15 15h.01"/></svg></button>
+    <button class="gear-btn" onclick="abrirModalUrgencia()" title="Estrategia de urgencia" aria-label="Estrategia de urgencia"><svg viewBox="0 0 24 24" aria-hidden="true"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg></button>
+    <button class="gear-btn" onclick="abrirModalImg()" title="Generar links de imágenes" aria-label="Generar links de imágenes"><svg viewBox="0 0 24 24" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></button>
+    <button class="gear-btn" onclick="abrirModalCJ()" title="Importar producto de CJ" aria-label="Importar producto de CJ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></button>
+    <button class="gear-btn" onclick="abrirModal()" title="Gestión de admins" aria-label="Gestión de admins"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></button>
+    <button class="gear-btn salir" onclick="cerrarSesion()" title="Cerrar sesión" aria-label="Cerrar sesión"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg></button>
   </div>
 </header>
 
@@ -660,7 +665,7 @@
        la opción de "Desarchivar" en cada una. -->
   <div class="archive-bar" id="archiveBar" style="display:none" onclick="toggleArchivados()">
     <div class="archive-left">
-      <span class="archive-icon">🗄️</span>
+      <span class="archive-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg></span>
       <span>Archivados</span>
       <span class="archive-count" id="archiveCount">0</span>
     </div>
@@ -1482,7 +1487,10 @@ async function cargarPedidos(){
     if(r.status === 401){ window.location.href = 'adminLogin.html'; return; }
     PEDIDOS = await r.json();
     const viejos = PEDIDOS.filter(p => p.dias >= 7 && p.estado !== 'entregado').length;
-    document.getElementById('btnPedidos').textContent = viejos ? '📋 ' + viejos : '📋';
+    const badge = document.getElementById('pedBadge');
+    badge.textContent = viejos || '';
+    badge.hidden = !viejos;
+    badge.title = viejos ? viejos + ' pedido(s) sin novedad hace 7 días o más' : '';
     document.getElementById('pedidosLista').innerHTML = PEDIDOS.map(p =>
       `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12px;">
         <div>#${p.id} · ${esc(p.nombre)} · ₡${Math.round(p.total).toLocaleString('es-CR')} · ${p.origen}<br>
@@ -1536,7 +1544,7 @@ document.getElementById('formPedido').addEventListener('submit', async (e) => {
   if(r.ok){ toast('Novedad publicada'); volverListaPedidos(); }
   else { err.textContent = (await r.json()).error || 'Error'; err.classList.add('show'); }
 });
-cargarPedidos(); // deja el contador ⚠ del botón listo al abrir el panel
+cargarPedidos(); // deja la insignia del botón Pedidos lista al abrir el panel
 </script>
 
 </body>
