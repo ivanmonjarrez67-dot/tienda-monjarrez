@@ -6114,12 +6114,13 @@ botonesMiniLoader.forEach(btn => {
    llamada real, más abajo, basada en comprobarSesion(). */
 
 /* --------- CONFIG --------- */
-const DURACION_SESION = 30 * 60 * 1000; // 30 minutos en ms (vendedores)
-// 🆕 Los compradores mantienen la sesión en su dispositivo hasta que ellos
-// decidan cerrarla (el servidor guarda una cookie larga de 90 días).
+// 🆕 Compradores Y vendedores mantienen la sesión en su dispositivo hasta que
+// ellos decidan cerrarla (el servidor guarda una cookie larga de 90 días que
+// se renueva con cada uso).
 const DURACION_SESION_COMPRADOR = 90 * 24 * 60 * 60 * 1000;
+const DURACION_SESION = DURACION_SESION_COMPRADOR; // vendedores: igual que compradores
 function duracionPara(tipo) {
-  return tipo === "comprador" ? DURACION_SESION_COMPRADOR : DURACION_SESION;
+  return DURACION_SESION_COMPRADOR;
 }
 
 /* --------- FUNCIONES DE SESIÓN --------- */
@@ -6246,14 +6247,15 @@ window.addEventListener("load", async () => {
   let tipo = comprobarSesion();
 
   // 🆕 Sin sesión en el navegador, pero este dispositivo tiene sesión larga de
-  // comprador (cookie "rmt_ok"): el servidor la restaura y entra sin pedir nada.
+  // comprador o vendedor (cookie "rmt_ok"): el servidor la restaura y entra sin pedir nada.
   if (!tipo && document.cookie.includes("rmt_ok=1")) {
     try {
       const r = await fetch("SesionActualServlet", { cache: "no-store" });
       const d = await r.json();
       if (d.logueado) {
-        iniciarSesion("comprador");
-        tipo = "comprador";
+        // 🆕 El servidor dice si la sesión larga es de vendedor o de comprador
+        tipo = d.tipo === "vendedor" ? "vendedor" : "comprador";
+        iniciarSesion(tipo);
       }
     } catch (e) { /* sin conexión: se sigue como invitado */ }
   }

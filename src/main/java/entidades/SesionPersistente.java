@@ -18,9 +18,11 @@ import jakarta.servlet.http.HttpSession;
  * Sesión larga (cookie HttpOnly de 90 días) para COMPRADORES y VENDEDORES.
  *
  * - Comprador: se restaura con los mismos atributos que el login normal.
- * - Vendedor: se restaura una sesión LIMITADA (solo perfil): usuarioId, nombre y
- *   correo. NO se restauran vendedorId ni cedulaVendedor, y la sesión queda marcada
- *   con "sesionLimitada". "Mi tienda" siempre vuelve a pedir cédula y contraseña.
+ * - Vendedor: se restaura la sesión COMPLETA (usuarioId, vendedorId, cedulaVendedor,
+ *   nombreVendedor, correoVendedor). "Mi tienda" entra directo, sin pedir cédula ni
+ *   contraseña, hasta que la persona pulse "Cerrar sesión" (SesionPersistente.cerrar).
+ *   Si no se pueden leer los datos del vendedor en la tabla Vendedores, se cae al
+ *   modo anterior: sesión limitada ("sesionLimitada") y "Mi tienda" pide credenciales.
  */
 public final class SesionPersistente {
 
@@ -44,7 +46,7 @@ public final class SesionPersistente {
                     "DELETE FROM dbo.SesionPersistente WHERE expira_en < SYSUTCDATETIME()")) {
                 ps.executeUpdate(); // limpieza de vencidas
             }
-            // 🆕 Si este dispositivo ya tenía una sesión larga, se reemplaza (evita
+            // Si este dispositivo ya tenía una sesión larga, se reemplaza (evita
             // acumular filas cuando alguien vuelve a iniciar sesión en el mismo equipo).
             String anterior = leerCookie(req);
             if (anterior != null) {
@@ -68,7 +70,7 @@ public final class SesionPersistente {
         }
     }
 
-    /** Si la cookie es válida, deja la sesión iniciada (completa para comprador, limitada para vendedor). */
+    /** Si la cookie es válida, deja la sesión iniciada (completa para comprador y para vendedor). */
     public static boolean restaurar(HttpServletRequest req, HttpServletResponse resp) {
         String token = leerCookie(req);
         if (token == null) return false;
@@ -85,32 +87,47 @@ public final class SesionPersistente {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             String hash = sha256(token);
             ps.setString(1, hash);
+
+            // Se leen los datos primero y se cierra el ResultSet antes de hacer más consultas.
+            boolean encontrado = false;
+            int id = 0;
+            String nombre = null, correo = null, tipo = null;
+            boolean soloGoogle = false;
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    HttpSession session = req.getSession();
-                    session.setAttribute("usuarioId", rs.getInt("id"));
-
-                    if ("Vendedor".equalsIgnoreCase(rs.getString("tipo"))) {
-                        // 🆕 Sesión LIMITADA de vendedor: solo lo necesario para el perfil.
-                        session.setAttribute("nombreVendedor", rs.getString("nombre"));
-                        session.setAttribute("correoVendedor", rs.getString("correo"));
-                        session.setAttribute("sesionLimitada", true);
-                    } else {
-                        session.setAttribute("nombreUsuario", rs.getString("nombre"));
-                        session.setAttribute("correoUsuario", rs.getString("correo"));
-                        if (rs.getBoolean("solo_google")) session.setAttribute("cuentaGoogle", true);
-                    }
-
-                    // Renovar 90 días desde hoy
-                    try (PreparedStatement up = conn.prepareStatement(
-                            "UPDATE dbo.SesionPersistente SET ultimo_uso = SYSUTCDATETIME(), "
-                          + "expira_en = DATEADD(DAY, " + DIAS + ", SYSUTCDATETIME()) WHERE token_hash = ?")) {
-                        up.setString(1, hash);
-                        up.executeUpdate();
-                    }
-                    ponerCookie(resp, token, DIAS * 86400);
-                    return true;
+                    encontrado = true;
+                    id = rs.getInt("id");
+                    nombre = rs.getString("nombre");
+                    correo = rs.getString("correo");
+                    tipo = rs.getString("tipo");
+                    soloGoogle = rs.getBoolean("solo_google");
                 }
+            }
+
+            if (encontrado) {
+                HttpSession session = req.getSession();
+                session.setAttribute("usuarioId", id);
+
+                if ("Vendedor".equalsIgnoreCase(tipo)) {
+                    session.setAttribute("nombreVendedor", nombre);
+                    session.setAttribute("correoVendedor", correo);
+                    // 🆕 Sesión COMPLETA de vendedor (igual que tras el login normal)
+                    cargarDatosVendedor(conn, session, id);
+                } else {
+                    session.setAttribute("nombreUsuario", nombre);
+                    session.setAttribute("correoUsuario", correo);
+                    if (soloGoogle) session.setAttribute("cuentaGoogle", true);
+                }
+
+                // Renovar 90 días desde hoy
+                try (PreparedStatement up = conn.prepareStatement(
+                        "UPDATE dbo.SesionPersistente SET ultimo_uso = SYSUTCDATETIME(), "
+                      + "expira_en = DATEADD(DAY, " + DIAS + ", SYSUTCDATETIME()) WHERE token_hash = ?")) {
+                    up.setString(1, hash);
+                    up.executeUpdate();
+                }
+                ponerCookie(resp, token, DIAS * 86400);
+                return true;
             }
         } catch (Exception e) {
             // Error de BD: no se borra la cookie, puede ser algo temporal.
@@ -119,6 +136,25 @@ public final class SesionPersistente {
         }
         borrarCookie(resp); // cookie inválida o vencida
         return false;
+    }
+
+    /** Restaura vendedorId y cedulaVendedor. Si falla, deja la sesión limitada como antes. */
+    private static void cargarDatosVendedor(Connection conn, HttpSession session, int usuarioId) {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT TOP 1 id, cedula FROM dbo.Vendedores WHERE usuario_id = ?")) {
+            ps.setInt(1, usuarioId);
+            try (ResultSet r = ps.executeQuery()) {
+                if (r.next()) {
+                    session.setAttribute("vendedorId", r.getInt("id"));
+                    session.setAttribute("cedulaVendedor", r.getString("cedula"));
+                    session.removeAttribute("sesionLimitada");
+                    return;
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("[SesionPersistente] ⚠️ No se pudo cargar datos de vendedor: " + e.getMessage());
+        }
+        session.setAttribute("sesionLimitada", true); // respaldo: comportamiento anterior
     }
 
     /** Cerrar sesión: borra la fila y la cookie. */

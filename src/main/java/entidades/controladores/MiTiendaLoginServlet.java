@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import entidades.DatabaseConnection;
 import entidades.EmailService;
+import entidades.SesionPersistente;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -100,8 +101,14 @@ public class MiTiendaLoginServlet extends HttpServlet {
                             session.setAttribute("nombreVendedor", rs.getString("nombre_vendedor"));
                             session.setAttribute("correoVendedor", rs.getString("correo"));
                             session.setAttribute("cedulaVendedor", cedula);
+                            session.removeAttribute("sesionLimitada");
 
                             String tipoSuscripcion = rs.getString("tipo_suscripcion");
+
+                            // 🆕 Recordar este dispositivo (cookie larga de 90 días): la próxima vez
+                            // "Mi tienda" entra directo, hasta que la persona cierre sesión.
+                            // Va ANTES de escribir la respuesta para que las cookies se envíen.
+                            SesionPersistente.crear(conn, usuarioId, request, response);
 
                             response.setStatus(HttpServletResponse.SC_OK);
                             response.getWriter().write("OK:" + usuarioId + ":" + tipoSuscripcion);

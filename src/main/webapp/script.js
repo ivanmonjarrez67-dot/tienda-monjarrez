@@ -1191,7 +1191,24 @@ document.querySelectorAll(".filter").forEach((btn) => {
       if (wrapperCatalogo) wrapperCatalogo.style.display = "";
       if (miTiendaContainer) miTiendaContainer.style.display = "none";
       cargarProductos();
-      document.getElementById("miTiendaModal").style.display = "block";
+      // 🆕 Vendedor con sesión larga: entra directo; si no hay sesión, pide cédula y contraseña
+      const abrirLoginMiTienda = () => { document.getElementById("miTiendaModal").style.display = "block"; };
+      fetch("/api/mi-tienda-sesion", { cache: "no-store" })
+        .then(r => r.text().then(t => ({ ok: r.ok, status: r.status, t })))
+        .then(({ ok, status, t }) => {
+          if (ok && t.startsWith("OK:")) {
+            const p = t.split(":");
+            entrarMiTienda(p[1].trim(), p[2] ? p[2].trim() : null);
+          } else {
+            abrirLoginMiTienda();
+            // Suscripción vencida o pendiente: se muestra el mismo aviso del login
+            if (status === 403 && t) {
+              const errorMsg = document.getElementById("errorMsgMiTienda");
+              if (errorMsg) { errorMsg.textContent = t; errorMsg.style.display = "block"; }
+            }
+          }
+        })
+        .catch(abrirLoginMiTienda);
       return;
     }
     if (wrapperCatalogo) wrapperCatalogo.style.display = "";
@@ -1239,6 +1256,21 @@ document.getElementById("cerrarMiTiendaModal").addEventListener("click", () => {
   cargarProductos();
 });
 
+// 🆕 Entra al panel "Mi tienda" (lo usan el login con cédula y la sesión persistente)
+function entrarMiTienda(usuarioId, tipoSuscripcion) {
+  miTiendaTipoSuscripcion = tipoSuscripcion || null;
+  const idDiv = document.getElementById("usuarioIdVisibleMitienda");
+  if (idDiv) {
+    idDiv.textContent = `ID de usuario: ${usuarioId}`;
+    idDiv.style.display = "block";
+  }
+  document.getElementById("miTiendaModal").style.display = "none";
+  const wrapperCatalogo = document.getElementById("productGridWrapper");
+  if (wrapperCatalogo) wrapperCatalogo.style.display = "none";
+  document.getElementById("miTiendaContainer").style.display = "block";
+  cargarProductosMiTienda();
+}
+
 document.getElementById("miTiendaForm").addEventListener("submit", function (e) {
   e.preventDefault();
   const cedula = document.getElementById("miTiendaCedula").value;
@@ -1255,18 +1287,8 @@ document.getElementById("miTiendaForm").addEventListener("submit", function (e) 
     return response.text().then(text => {
       if (response.ok && text.startsWith("OK:")) {
         const partes = text.split(":");
-        const usuarioId = partes[1].trim();
-        miTiendaTipoSuscripcion = partes[2] ? partes[2].trim() : null;
-        const idDiv = document.getElementById("usuarioIdVisibleMitienda");
-        if (idDiv) {
-          idDiv.textContent = `ID de usuario: ${usuarioId}`;
-          idDiv.style.display = "block";
-        }
-        document.getElementById("miTiendaModal").style.display = "none";
-        const wrapperCatalogo = document.getElementById("productGridWrapper");
-        if (wrapperCatalogo) wrapperCatalogo.style.display = "none"; // 🆕 ahora que "Mi tienda" ya no oculta el catálogo al hacer clic, se oculta aquí recién al loguearse con éxito
-        document.getElementById("miTiendaContainer").style.display = "block";
-        cargarProductosMiTienda(cedula);
+        entrarMiTienda(partes[1].trim(), partes[2] ? partes[2].trim() : null);
+        if (typeof actualizarMiTienda === "function") actualizarMiTienda("vendedor"); // 🆕 el dispositivo queda recordado
       } else {
         errorMsg.textContent = text || "Credenciales inválidas";
         errorMsg.style.display = "block";

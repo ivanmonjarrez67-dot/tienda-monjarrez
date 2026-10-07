@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import entidades.DatabaseConnection;
 import entidades.EmailService;
+import entidades.SesionPersistente;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -89,12 +90,22 @@ public class LoginVendedorServlet extends HttpServlet {
                         intentosFallidos.remove(cedula);
                         bloqueadosHasta.remove(cedula);
 
+                        int idVendedor = rs.getInt("id_vendedor");
+                        int idUsuario = rs.getInt("id_usuario");
+                        String nombreVendedor = rs.getString("nombre_vendedor");
+                        String correoVendedor = rs.getString("correo");
+
                         HttpSession session = request.getSession();
-                        session.setAttribute("vendedorId", rs.getInt("id_vendedor"));
-                        session.setAttribute("usuarioId", rs.getInt("id_usuario")); // 🔧 nuevo — clave para /api/perfil
-                        session.setAttribute("nombreVendedor", rs.getString("nombre_vendedor"));
-                        session.setAttribute("correoVendedor", rs.getString("correo"));
+                        session.setAttribute("vendedorId", idVendedor);
+                        session.setAttribute("usuarioId", idUsuario); // 🔧 nuevo — clave para /api/perfil
+                        session.setAttribute("nombreVendedor", nombreVendedor);
+                        session.setAttribute("correoVendedor", correoVendedor);
                         session.setAttribute("cedulaVendedor", cedula); // 🔑 añadida para "Mi tienda"
+                        session.removeAttribute("sesionLimitada");
+
+                        // 🆕 Recordar este dispositivo (cookie larga de 90 días). Va ANTES de
+                        // escribir la respuesta para que las cookies se envíen.
+                        SesionPersistente.crear(conn, idUsuario, request, response);
 
                         response.setStatus(HttpServletResponse.SC_OK);
                         response.getWriter().write("OK");
