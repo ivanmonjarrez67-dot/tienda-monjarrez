@@ -2840,6 +2840,8 @@ if (welcomeContainer) {
               }).toString(),
             });
           }
+          // 🆕 Refresca el encabezado de "Mi tienda" (descripción, redes, nombre).
+          if (window.MT && typeof window.MT.invalidarPerfil === "function") window.MT.invalidarPerfil();
           mostrarMensaje("✅ Cambios guardados correctamente.", "ok");
         }
         else mostrarMensaje(texto || "No se pudo guardar. Intenta de nuevo.", "error");

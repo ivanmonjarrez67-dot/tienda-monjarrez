@@ -2650,19 +2650,71 @@
 <!-- 🔹 Contenedor de Mi Tienda -->
 <div id="miTiendaContainer">
 
- 
+  <!-- 🆕 Encabezado propio del panel "Mi tienda" (misma info que el perfil público:
+       logo, nombre del emprendimiento, Emprendedor Nacional, ubicación,
+       descripción, redes, seguidores y artículos, más Compartir y Código QR).
+       - Arriba a la izquierda: "Volver a la tienda" (siempre hay salida).
+       - Arriba a la derecha: #miTiendaAcciones → aquí se agregan las acciones
+         del vendedor (hoy: Compartir perfil y Agregar producto).
+       - Abajo: título del panel + #miTiendaStats → aquí se agregan tarjetas
+         de resumen (hoy: seguidores; mañana: vistas, ventas, etc.).
+       Para sumar una opción nueva basta con agregar un <button class="mt-btn">
+       dentro de #miTiendaAcciones o un <div class="mt-stat"> dentro de
+       #miTiendaStats. -->
+  <header id="miTiendaHeader" class="mt-header">
+    <div class="mt-header-top">
+      <button type="button" id="btnVolverTienda" class="mt-volver">
+        <i class="fa-solid fa-arrow-left"></i> Volver a la tienda
+      </button>
 
-  <!-- 🔹 Botones que ya se muestran bien -->
-  <div class="button-group">
-     <!-- ID de usuario: se mantiene en el DOM (se usa para las peticiones),
-          pero ya no debe verse. -->
-  <div id="usuarioIdVisibleMitienda"
-       style="font-size:14px; color:transparent; font-weight:bold; text-align:center; display:none;
-              background-color: rgba(0,0,0,0.1); padding:8px; margin-bottom:10px; border-radius:5px; user-select:none;">
-    ID de usuario: ---
-  </div>
-    <button id="addProductButton"><i class="fa-solid fa-plus"></i> Agregar Producto</button>
-  </div>
+      <div id="miTiendaAcciones" class="mt-acciones">
+        <button type="button" id="btnCompartirPerfil" class="mt-btn mt-btn-sec" hidden>
+          <i class="fa-solid fa-share-nodes"></i> Compartir
+        </button>
+        <button type="button" id="btnQrPerfil" class="mt-btn mt-btn-sec" hidden title="Código QR de tu perfil">
+          <i class="fa-solid fa-qrcode"></i> Código QR
+        </button>
+        <button id="addProductButton" class="mt-btn mt-btn-primary">
+          <i class="fa-solid fa-plus"></i> Agregar producto
+        </button>
+      </div>
+    </div>
+
+    <div class="mt-header-main">
+      <!-- Misma información que ve el público en el perfil del vendedor -->
+      <div class="mt-perfil">
+        <div id="mtAvatar" class="mt-avatar" aria-hidden="true"></div>
+        <div class="mt-perfil-info">
+          <span class="mt-eyebrow">Mi tienda · Panel del vendedor</span>
+          <h2 id="mtNombre">Mi tienda</h2>
+          <div class="mt-meta">
+            <span class="mt-badge"><i class="fa-solid fa-seedling"></i> Emprendedor Nacional</span>
+            <span class="mt-ubicacion" id="mtUbicacion" hidden>
+              <i class="fa-solid fa-location-dot"></i> <span id="mtUbicacionTexto"></span>
+            </span>
+          </div>
+          <p class="mt-bio" id="mtBio" hidden></p>
+          <div class="mt-redes" id="mtRedes" hidden></div>
+        </div>
+      </div>
+
+      <div id="miTiendaStats" class="mt-stats">
+        <div id="seguidoresMiTienda" class="mt-stat" style="display:none;"></div>
+        <div id="articulosMiTienda" class="mt-stat">
+          <div class="mt-stat-icono"><i class="fa-solid fa-box-open"></i></div>
+          <div class="mt-stat-info">
+            <span class="mt-stat-num" id="mtArticulosNum">0</span>
+            <span class="mt-stat-label" id="mtArticulosLabel">Artículos</span>
+            <span class="mt-stat-sub" id="mtArticulosSub" hidden></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ID de usuario: se mantiene en el DOM (se usa para las peticiones),
+         pero no debe verse. -->
+    <div id="usuarioIdVisibleMitienda" style="display:none;">ID de usuario: ---</div>
+  </header>
 
   <!-- 🆕 Contenedor dedicado para las tarjetas de "Mis Productos".
        Antes cargarProductosMiTienda() pintaba en #productGrid, pero ese
@@ -6724,58 +6776,269 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
     });
   </script>
 
-  <!-- 🆕 Seguidores dentro de "Mi tienda".
-       Script autónomo: no toca script.js ni el resto del panel. Cuando
-       #miTiendaContainer pasa a verse (después de un login correcto) pide
-       a /api/seguir?accion=mis_seguidores el total y una muestra pequeña
-       (primer nombre de los 5 más recientes) y pinta una tarjeta arriba del
-       panel. La identidad la toma el servidor de la sesión, así que solo
-       el propio vendedor ve a sus seguidores. Si el servidor no responde
-       (ej. sin sesión) la tarjeta simplemente no se muestra. -->
+  <!-- 🆕 Encabezado de "Mi tienda": QR, estilos y comportamiento.
+       Script autónomo (casi no toca script.js). Hace esto:
+       1) "Volver a la tienda": cierra el panel y regresa al catálogo.
+       2) Perfil: al abrirse el panel pide /api/perfil (logo, descripción,
+          redes) y /api/productos/datosContacto (nombre del emprendimiento,
+          ciudad y provincia) y los pinta igual que el perfil público.
+          Funciona aunque el vendedor aún no tenga productos.
+       3) Artículos: cuenta las tarjetas de #misProductosGrid y se actualiza
+          solo cuando se agrega, edita o elimina un producto.
+       4) Seguidores: /api/seguir?accion=mis_seguidores (solo el dueño los ve).
+       5) Compartir y Código QR (mismo QR y misma tarjeta descargable que el
+          perfil público; carga qrcode-generator.min.js solo al abrir el QR).
+       Expone window.MT.invalidarPerfil() (script.js ya lo llama al cambiar
+       el logo) para refrescar el encabezado. -->
+
+  <!-- Modal del Código QR del perfil (clases mtqr-* para no chocar con las
+       .qr-* del QR general del sitio) -->
+  <div id="mtqrOverlay" class="mtqr-overlay" aria-hidden="true">
+    <div class="mtqr-modal" role="dialog" aria-modal="true" aria-label="Código QR de tu perfil">
+      <button type="button" class="mtqr-cerrar" id="mtqrCerrar" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+      <div class="mtqr-tarjeta" id="mtqrTarjeta">
+        <img class="mtqr-logo" src="icon-512.png" alt="Tienda Monjarrez" />
+        <div class="mtqr-marca">Tienda <span>Monjarrez</span></div>
+        <h3 class="mtqr-empresa" id="mtqrEmpresa"></h3>
+        <img class="mtqr-img" id="mtqrImg" alt="Código QR de tu perfil" />
+        <p class="mtqr-frase">Escanea y mira mi catálogo</p>
+        <p class="mtqr-url">tiendamonjarrez.com</p>
+      </div>
+      <div class="mtqr-acciones">
+        <button type="button" class="mtqr-btn mtqr-btn-rojo" id="mtqrDescargar"><i class="fa-solid fa-download"></i> Descargar</button>
+        <button type="button" class="mtqr-btn" id="mtqrImprimir"><i class="fa-solid fa-print"></i> Imprimir</button>
+      </div>
+    </div>
+  </div>
+
   <style>
-    #seguidoresMiTienda {
-      display: none;
-      margin: 0 auto 16px auto;
-      max-width: 560px;
-      padding: 14px 16px;
-      border-radius: 12px;
-      border: 1px solid rgba(128, 128, 128, 0.3);
-      background: rgba(128, 128, 128, 0.1);
-      color: inherit;
-      font-size: 14px;
-      line-height: 1.45;
+    /* Colores propios (no dependen del tema claro/oscuro/rosado del sitio):
+       el encabezado se ve igual de profesional en todos. */
+    #miTiendaContainer { --mt-rojo: #d11a2a; --mt-vino: #800020; }
+    .mt-header [hidden] { display: none !important; }
+
+    .mt-header {
+      position: relative;
+      max-width: 1180px;
+      margin: 18px auto 8px auto;
+      padding: 18px 22px 24px 22px;
+      border-radius: 16px;
+      color: #fff;
+      background: linear-gradient(135deg, #1c1c20 0%, #101013 100%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+      overflow: hidden;
     }
-    #seguidoresMiTienda .seg-titulo { font-weight: 700; margin: 0 0 8px 0; }
-    #seguidoresMiTienda .seg-fila { display: flex; align-items: center; gap: 10px; }
-    #seguidoresMiTienda .seg-avatares { display: flex; flex-shrink: 0; }
-    #seguidoresMiTienda .seg-avatar {
-      width: 30px; height: 30px; border-radius: 50%;
-      background: #e9e9e9; color: #a5a5a5; border: 2px solid #fff;
+    .mt-header::before {
+      content: "";
+      position: absolute; left: 0; right: 0; top: 0; height: 3px;
+      background: linear-gradient(90deg, var(--mt-vino), var(--mt-rojo), var(--mt-vino));
+    }
+
+    .mt-header-top {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; flex-wrap: wrap;
+      padding-bottom: 16px; margin-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Botón "Volver a la tienda" */
+    .mt-volver {
+      display: inline-flex; align-items: center; gap: 9px;
+      padding: 9px 18px; border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.07);
+      color: #fff; font-family: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: background .2s, border-color .2s;
+    }
+    .mt-volver i { transition: transform .2s; }
+    .mt-volver:hover { background: rgba(255, 255, 255, 0.16); border-color: rgba(255, 255, 255, 0.45); }
+    .mt-volver:hover i { transform: translateX(-3px); }
+    .mt-volver:focus-visible, .mt-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+    /* Zona de acciones del vendedor (aquí se agregan opciones futuras) */
+    .mt-acciones { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .mt-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 9px 18px; border-radius: 999px; border: 1px solid transparent;
+      font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: background .2s, border-color .2s, transform .2s, box-shadow .2s;
+    }
+    .mt-btn-sec { background: transparent; color: #fff; border-color: rgba(255, 255, 255, 0.3); }
+    .mt-btn-sec:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.6); }
+
+    /* "Agregar producto": se mantiene el id (script.js lo usa) y se
+       sobreescribe el estilo viejo de styles.css solo dentro del encabezado */
+    #miTiendaHeader #addProductButton.mt-btn-primary {
+      background: linear-gradient(135deg, var(--mt-rojo), var(--mt-vino));
+      color: #fff; border: none; padding: 10px 20px;
+      box-shadow: 0 4px 12px rgba(209, 26, 42, 0.35);
+    }
+    #miTiendaHeader #addProductButton.mt-btn-primary:hover {
+      background: linear-gradient(135deg, #e5283a, #a00028);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px rgba(209, 26, 42, 0.45);
+    }
+
+    /* ---- Identidad del emprendimiento ---- */
+    .mt-header-main {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 24px; flex-wrap: wrap;
+    }
+    .mt-perfil { display: flex; align-items: flex-start; gap: 18px; flex: 1 1 420px; min-width: 0; }
+    .mt-avatar {
+      width: 88px; height: 88px; flex-shrink: 0; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 13px; margin-left: -9px;
+      font-size: 30px; font-weight: 800; text-transform: uppercase; color: #fff;
+      background: linear-gradient(135deg, var(--mt-rojo), var(--mt-vino));
+      border: 3px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
     }
-    #seguidoresMiTienda .seg-avatar:first-child { margin-left: 0; }
-    #seguidoresMiTienda .seg-texto { opacity: 0.9; }
-    #seguidoresMiTienda .seg-compartir {
-      margin-top: 10px; padding: 7px 14px; border-radius: 999px;
-      border: 1.5px solid rgba(128, 128, 128, 0.5); background: transparent;
-      color: inherit; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    .mt-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .mt-perfil-info { min-width: 0; flex: 1; }
+    .mt-eyebrow {
+      display: block; margin-bottom: 4px;
+      font-size: 11px; font-weight: 700; letter-spacing: 1.4px;
+      text-transform: uppercase; color: #ff6b78;
     }
-    #seguidoresMiTienda .seg-compartir:hover { border-color: currentColor; }
+    .mt-perfil-info h2 {
+      margin: 0 0 8px 0; font-size: 26px; line-height: 1.2; color: #fff;
+      word-break: break-word;
+    }
+    .mt-meta { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; }
+    .mt-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(209, 26, 42, 0.18); color: #ff8a94;
+      border: 1px solid rgba(255, 107, 120, 0.45);
+      font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px;
+      padding: 5px 12px; border-radius: 999px;
+    }
+    .mt-ubicacion { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; color: rgba(255, 255, 255, 0.72); }
+    .mt-ubicacion i { color: #ff6b78; }
+    .mt-bio { margin: 12px 0 0 0; font-size: 14px; line-height: 1.5; color: rgba(255, 255, 255, 0.82); max-width: 520px; }
+    .mt-redes { display: flex; gap: 8px; margin-top: 12px; }
+    .mt-redes a {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255, 255, 255, 0.08); color: #fff; text-decoration: none; font-size: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.22); transition: transform .15s, background .2s;
+    }
+    .mt-redes a:hover { transform: scale(1.1); background: rgba(209, 26, 42, 0.45); }
+
+    /* ---- Tarjetas de resumen (seguidores, artículos; más en el futuro) ---- */
+    .mt-stats { display: flex; gap: 12px; flex-wrap: wrap; }
+    .mt-stat {
+      display: flex; align-items: center; gap: 14px;
+      min-width: 190px; padding: 12px 18px; border-radius: 14px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .mt-stat-icono {
+      width: 42px; height: 42px; flex-shrink: 0; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; color: #fff;
+      background: linear-gradient(135deg, var(--mt-rojo), var(--mt-vino));
+    }
+    .mt-stat-info { display: flex; flex-direction: column; min-width: 0; }
+    .mt-stat-num { font-size: 24px; font-weight: 800; line-height: 1.1; color: #fff; }
+    .mt-stat-label { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: rgba(255, 255, 255, 0.6); }
+    .mt-stat-sub { margin-top: 3px; font-size: 12px; color: rgba(255, 255, 255, 0.55); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+
+    #miTiendaContainer #misProductosGrid { margin-top: 12px; }
+
+    @media (max-width: 640px) {
+      .mt-header { margin: 12px 10px 6px 10px; padding: 14px 14px 18px 14px; border-radius: 14px; }
+      .mt-header-top { flex-direction: column; align-items: stretch; }
+      .mt-volver { justify-content: center; }
+      .mt-acciones { width: 100%; }
+      .mt-acciones .mt-btn { flex: 1 1 0; padding-left: 10px; padding-right: 10px; white-space: nowrap; }
+      .mt-perfil { flex-direction: column; align-items: center; text-align: center; flex-basis: 100%; }
+      .mt-meta, .mt-redes { justify-content: center; }
+      .mt-bio { margin-left: auto; margin-right: auto; }
+      .mt-perfil-info h2 { font-size: 23px; }
+      .mt-stats { width: 100%; }
+      .mt-stat { flex: 1 1 140px; min-width: 0; padding: 10px 12px; gap: 10px; }
+    }
+
+    /* ---- Modal del QR (tarjeta clara, igual a la del perfil público) ---- */
+    .mtqr-overlay {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55);
+      display: none; align-items: center; justify-content: center;
+      z-index: 10060; padding: 16px; overflow-y: auto;
+    }
+    .mtqr-overlay.visible { display: flex; }
+    .mtqr-modal {
+      position: relative; background: #fff; color: #1a1a1a; border-radius: 14px;
+      width: min(360px, 100%); padding: 22px 20px 18px; margin: auto;
+      font-family: inherit;
+    }
+    .mtqr-cerrar {
+      position: absolute; top: 10px; right: 10px; width: 32px; height: 32px;
+      border: none; border-radius: 50%; background: #f0f0f0; color: #333; cursor: pointer; z-index: 1;
+    }
+    .mtqr-cerrar:hover { background: #e4e4e4; }
+    .mtqr-tarjeta {
+      text-align: center; background: #fff; border: 1px solid #ececec;
+      border-top: 5px solid #a13341; border-radius: 12px; padding: 18px 16px 16px;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    .mtqr-logo { width: 56px; height: 56px; object-fit: contain; display: block; margin: 0 auto 6px; }
+    .mtqr-marca { font-size: 1.05rem; font-weight: 700; color: #1a1a1a; }
+    .mtqr-marca span { color: #a13341; }
+    .mtqr-empresa { margin: 6px 0 12px; font-size: 1.05rem; font-weight: 600; line-height: 1.3; word-break: break-word; color: #1a1a1a; }
+    .mtqr-img { width: 220px; max-width: 100%; height: auto; display: block; margin: 0 auto; image-rendering: pixelated; }
+    .mtqr-frase { margin: 12px 0 2px; font-size: 0.95rem; font-weight: 600; color: #1a1a1a; }
+    .mtqr-url { margin: 0; font-size: 0.78rem; color: #777; }
+    .mtqr-acciones { display: flex; gap: 10px; margin-top: 14px; }
+    .mtqr-btn {
+      flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 10px 12px; border-radius: 999px; font-family: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer; background: #fff; color: #1a1a1a; border: 1.5px solid #cfcfcf;
+    }
+    .mtqr-btn:hover { border-color: #1a1a1a; }
+    .mtqr-btn-rojo { background: #a13341; border-color: #a13341; color: #fff; }
+    .mtqr-btn-rojo:hover { background: #8a2a36; border-color: #8a2a36; }
+
+    /* Al imprimir el QR solo sale la tarjeta (solo si se imprime desde este modal) */
+    @media print {
+      body.mt-imprimiendo-qr * { visibility: hidden !important; }
+      body.mt-imprimiendo-qr #mtqrTarjeta, body.mt-imprimiendo-qr #mtqrTarjeta * { visibility: visible !important; }
+      body.mt-imprimiendo-qr #mtqrTarjeta {
+        position: fixed; top: 15mm; left: 50%; transform: translateX(-50%);
+        width: 120mm; padding: 10mm 8mm; border: 1px solid #ccc; border-top: 3mm solid #a13341;
+      }
+      body.mt-imprimiendo-qr #mtqrTarjeta .mtqr-logo { width: 22mm; height: 22mm; }
+      body.mt-imprimiendo-qr #mtqrTarjeta .mtqr-marca,
+      body.mt-imprimiendo-qr #mtqrTarjeta .mtqr-empresa { font-size: 18pt; }
+      body.mt-imprimiendo-qr #mtqrTarjeta .mtqr-img { width: 90mm; }
+      body.mt-imprimiendo-qr #mtqrTarjeta .mtqr-frase { font-size: 15pt; }
+      body.mt-imprimiendo-qr #mtqrTarjeta .mtqr-url { font-size: 11pt; }
+    }
   </style>
   <script>
   (function () {
     const cont = document.getElementById("miTiendaContainer");
     if (!cont) return;
+    const $ = (id) => document.getElementById(id);
 
-    const ID_BLOQUE = "seguidoresMiTienda";
+    const tarjetaSeg = $("seguidoresMiTienda");
+    const grid = $("misProductosGrid");
+    const btnVolver = $("btnVolverTienda");
+    const btnCompartir = $("btnCompartirPerfil");
+    const btnQr = $("btnQrPerfil");
+
     let estabaVisible = false;
-    let ultimo = null; // último dato recibido, por si otro script limpia el contenedor
+    let perfil = null;      // /api/perfil
+    let contacto = null;    // /api/productos/datosContacto
+    let empresaActual = "";
+    let qrDataUrl = "";
+    let temporizadorRefresco = null;
 
     function esVisible() { return getComputedStyle(cont).display !== "none"; }
 
     function idVendedor() {
-      const m = (document.getElementById("usuarioIdVisibleMitienda")?.textContent || "").match(/\d+/);
+      const m = ($("usuarioIdVisibleMitienda")?.textContent || "").match(/\d+/);
       return m ? m[0] : "";
     }
 
@@ -6785,54 +7048,196 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
       return d.innerHTML;
     }
 
-    function crearBloque() {
-      const b = document.createElement("div");
-      b.id = ID_BLOQUE;
-      return b;
-    }
-
     function listaDeNombres(nombres) {
       if (nombres.length <= 1) return nombres.join("");
       return nombres.slice(0, -1).join(", ") + " y " + nombres[nombres.length - 1];
     }
 
-    function pintar(b, data) {
+    function iniciales(nombre) {
+      const limpio = String(nombre || "").trim();
+      if (!limpio) return "?";
+      return limpio.split(/\s+/).slice(0, 2).map((p) => p.charAt(0)).join("").toUpperCase();
+    }
+
+    function enlaceRedSocial(red, valor) {
+      if (!valor) return null;
+      const v = String(valor).trim();
+      if (!v) return null;
+      if (/^https?:\/\//i.test(v)) return v;
+      const handle = v.replace(/^@/, "");
+      if (red === "instagram") return "https://instagram.com/" + handle;
+      if (red === "tiktok") return "https://tiktok.com/@" + handle;
+      if (red === "facebook") return "https://facebook.com/" + handle;
+      return null;
+    }
+
+    // ---------- Volver a la tienda ----------
+    function volverALaTienda() {
+      // Mismo efecto que tocar "Todo": cierra el panel, quita el estado
+      // activo de "Mi tienda" y recarga el catálogo público.
+      const todo = document.querySelector('.filter[data-category="Todo"]');
+      if (todo) {
+        todo.click();
+      } else if (typeof window.mostrarCatalogoPublico === "function") {
+        window.mostrarCatalogoPublico();
+      } else {
+        cont.style.display = "none";
+      }
+      // Por si otro script dejó el catálogo oculto al entrar a "Mi tienda".
+      const gridPublico = $("productGrid");
+      if (gridPublico) gridPublico.style.removeProperty("display");
+      const wrapper = $("productGridWrapper");
+      if (wrapper) wrapper.style.display = "";
+      document.querySelectorAll(".filter-mi-tienda").forEach((b) => b.classList.remove("active"));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    if (btnVolver) btnVolver.addEventListener("click", volverALaTienda);
+
+    // ---------- Datos del emprendimiento (igual que el perfil público) ----------
+    function getJson(url) {
+      return fetch(url, { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null);
+    }
+
+    function cargarDatos() {
+      const id = idVendedor();
+      Promise.all([
+        getJson("/api/perfil"),
+        id ? getJson("/api/productos/datosContacto?usuario_id=" + encodeURIComponent(id)) : Promise.resolve(null),
+      ]).then(([p, c]) => {
+        if (p) perfil = p;
+        if (c) contacto = c;
+        pintarPerfil();
+      });
+    }
+
+    function pintarPerfil() {
+      const nombre = String((contacto && contacto.empresa) || (perfil && perfil.nombre) || "").trim();
+      empresaActual = nombre;
+      $("mtNombre").textContent = nombre || "Mi tienda";
+
+      // Logo (o iniciales si no subió ninguno)
+      const av = $("mtAvatar");
+      av.textContent = "";
+      if (perfil && perfil.iconoUrl) {
+        const img = new Image();
+        img.alt = "";
+        img.onerror = () => { av.textContent = iniciales(nombre); };
+        img.src = perfil.iconoUrl;
+        av.appendChild(img);
+      } else {
+        av.textContent = iniciales(nombre);
+      }
+
+      // Descripción: solo si la escribió
+      const elBio = $("mtBio");
+      const bio = perfil && perfil.descripcionVendedor ? String(perfil.descripcionVendedor).trim() : "";
+      elBio.textContent = bio;
+      elBio.hidden = !bio;
+
+      // Redes: solo las que llenó
+      const elRedes = $("mtRedes");
+      elRedes.textContent = "";
+      [
+        { red: "instagram", valor: perfil && perfil.instagram, icono: "fa-instagram" },
+        { red: "tiktok", valor: perfil && perfil.tiktok, icono: "fa-tiktok" },
+        { red: "facebook", valor: perfil && perfil.facebook, icono: "fa-facebook" },
+      ].forEach(({ red, valor, icono }) => {
+        const link = enlaceRedSocial(red, valor);
+        if (!link) return;
+        const a = document.createElement("a");
+        a.href = link;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.setAttribute("aria-label", red);
+        a.innerHTML = '<i class="fa-brands ' + icono + '"></i>';
+        elRedes.appendChild(a);
+      });
+      elRedes.hidden = !elRedes.children.length;
+
+      // Ubicación: "Ciudad, Provincia"
+      const ubic = [contacto && contacto.ciudad, contacto && contacto.provincia]
+        .map((v) => String(v || "").trim()).filter(Boolean).join(", ");
+      $("mtUbicacionTexto").textContent = ubic;
+      $("mtUbicacion").hidden = !ubic;
+    }
+
+    // ---------- Artículos ----------
+    function limitePlan() {
+      try {
+        const lim = LIMITE_PRODUCTOS[miTiendaTipoSuscripcion];
+        return lim ? { limite: lim, plan: miTiendaTipoSuscripcion } : null;
+      } catch (e) { return null; }
+    }
+
+    function pintarArticulos() {
+      const n = grid ? grid.querySelectorAll(".producto").length : 0;
+      $("mtArticulosNum").textContent = n.toLocaleString("es-CR");
+      $("mtArticulosLabel").textContent = n === 1 ? "Artículo" : "Artículos";
+      const info = limitePlan();
+      const sub = $("mtArticulosSub");
+      if (info) { sub.textContent = "Plan " + info.plan + ": máx. " + info.limite; sub.hidden = false; }
+      else { sub.hidden = true; }
+    }
+
+    // Se repinta cuando script.js agrega/edita/elimina productos. Además se
+    // refrescan (con pausa) el nombre/ubicación, por si cambiaron al editar.
+    if (grid) {
+      new MutationObserver(() => {
+        pintarArticulos();
+        clearTimeout(temporizadorRefresco);
+        temporizadorRefresco = setTimeout(() => { if (esVisible()) cargarDatos(); }, 700);
+      }).observe(grid, { childList: true });
+    }
+
+    // ---------- Seguidores ----------
+    function pintarSeguidores(data) {
+      if (!tarjetaSeg) return;
       const total = Number(data.total) || 0;
       const muestra = Array.isArray(data.muestra) ? data.muestra.filter(Boolean) : [];
       const resto = total - muestra.length;
-      let html = '<p class="seg-titulo"><i class="fa-solid fa-users"></i> Tus seguidores: ' +
-                 total.toLocaleString("es-CR") + '</p>';
 
+      let sub;
       if (total <= 0) {
-        html += '<div class="seg-texto">Aún nadie sigue tu emprendimiento. Comparte tu perfil para que te encuentren.</div>';
+        sub = "Comparte tu perfil para que te encuentren";
       } else {
-        let avatares = "";
-        for (let i = 0; i < Math.min(total, 5); i++) {
-          avatares += '<div class="seg-avatar"><i class="fa-solid fa-user"></i></div>';
-        }
-        let texto = listaDeNombres(muestra.map(esc));
-        if (resto > 0) texto += (texto ? " y " : "") + resto.toLocaleString("es-CR") + " más";
-        else if (texto) texto += ".";
-        html += '<div class="seg-fila"><div class="seg-avatares">' + avatares +
-                '</div><div class="seg-texto">' + texto + '</div></div>';
+        sub = listaDeNombres(muestra.map(esc));
+        if (resto > 0) sub += (sub ? " y " : "") + resto.toLocaleString("es-CR") + " más";
       }
 
-      if (idVendedor()) {
-        html += '<button type="button" class="seg-compartir"><i class="fa-solid fa-share-nodes"></i> Compartir mi perfil</button>';
-      }
-      b.innerHTML = html;
-      b.style.display = "block";
+      tarjetaSeg.innerHTML =
+        '<div class="mt-stat-icono"><i class="fa-solid fa-users"></i></div>' +
+        '<div class="mt-stat-info">' +
+          '<span class="mt-stat-num">' + total.toLocaleString("es-CR") + '</span>' +
+          '<span class="mt-stat-label">' + (total === 1 ? "Seguidor" : "Seguidores") + '</span>' +
+          (sub ? '<span class="mt-stat-sub" title="' + sub.replace(/<[^>]+>/g, "") + '">' + sub + '</span>' : '') +
+        '</div>';
+      tarjetaSeg.style.display = "flex";
+    }
 
-      const btn = b.querySelector(".seg-compartir");
-      if (btn) btn.addEventListener("click", compartirPerfil);
+    function cargarSeguidores() {
+      fetch("/api/seguir?accion=mis_seguidores", { cache: "no-store" })
+        .then((res) => { if (!res.ok) throw new Error("respuesta " + res.status); return res.json(); })
+        .then(pintarSeguidores)
+        .catch((err) => {
+          console.warn("[Seguidores] No se pudo cargar:", err.message);
+          if (tarjetaSeg) tarjetaSeg.style.display = "none";
+        });
+    }
+
+    // ---------- Compartir ----------
+    function enlacePerfil() {
+      const id = idVendedor();
+      return id ? location.origin + "/vendedor?id=" + encodeURIComponent(id) : "";
     }
 
     function compartirPerfil() {
-      const id = idVendedor();
-      if (!id) return;
-      const url = location.origin + "/vendedor?id=" + encodeURIComponent(id);
+      const url = enlacePerfil();
+      if (!url) return;
+      const titulo = empresaActual || "Mi emprendimiento";
       if (navigator.share) {
-        navigator.share({ title: "Mi catálogo en Tienda Monjarrez", text: "Mira mi catálogo en Tienda Monjarrez", url })
+        navigator.share({ title: titulo, text: "Mira el catálogo de " + titulo + " en Tienda Monjarrez", url })
           .catch(() => {});
         return;
       }
@@ -6843,39 +7248,156 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
         window.prompt("Copia el enlace de tu perfil:", url);
       }
     }
+    if (btnCompartir) btnCompartir.addEventListener("click", compartirPerfil);
 
-    function cargar() {
-      fetch("/api/seguir?accion=mis_seguidores", { cache: "no-store" })
-        .then((res) => { if (!res.ok) throw new Error("respuesta " + res.status); return res.json(); })
-        .then((data) => {
-          ultimo = data;
-          const b = document.getElementById(ID_BLOQUE);
-          if (b) pintar(b, data);
-        })
-        .catch((err) => {
-          console.warn("[Seguidores] No se pudo cargar:", err.message);
-          const b = document.getElementById(ID_BLOQUE);
-          if (b) b.style.display = "none";
-        });
+    // ---------- Código QR ----------
+    const elQrOverlay = $("mtqrOverlay");
+    const elQrImg = $("mtqrImg");
+
+    function cargarLibQr() {
+      return new Promise((resolve, reject) => {
+        if (typeof qrcode === "function") return resolve();
+        const s = document.createElement("script");
+        s.src = "qrcode-generator.min.js";
+        s.onload = () => (typeof qrcode === "function" ? resolve() : reject(new Error("qr")));
+        s.onerror = () => reject(new Error("qr"));
+        document.head.appendChild(s);
+      });
     }
 
+    function urlParaQr() {
+      const base = enlacePerfil();
+      return base + (base.indexOf("?") >= 0 ? "&" : "?") + "ref=qr";
+    }
+
+    function abrirQr() {
+      if (!enlacePerfil()) return;
+      cargarLibQr().then(() => {
+        const qr = qrcode(0, "M");
+        qr.addData(urlParaQr());
+        qr.make();
+        qrDataUrl = qr.createDataURL(12, 4);
+        elQrImg.src = qrDataUrl;
+        $("mtqrEmpresa").textContent = empresaActual || "Emprendimiento";
+        elQrOverlay.classList.add("visible");
+        elQrOverlay.setAttribute("aria-hidden", "false");
+      }).catch(() => alert("No se pudo generar el código QR."));
+    }
+
+    function cerrarQr() {
+      elQrOverlay.classList.remove("visible");
+      elQrOverlay.setAttribute("aria-hidden", "true");
+    }
+
+    function cargarImagen(src) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = src;
+      });
+    }
+
+    // Tarjeta PNG lista para guardar o mandar por WhatsApp (igual a la del perfil público)
+    async function descargarQr() {
+      try { await document.fonts.load("700 40px Poppins"); } catch (e) { /* usa la fuente de respaldo */ }
+      const [qrImg, logo] = await Promise.all([cargarImagen(qrDataUrl), cargarImagen("icon-512.png")]);
+      if (!qrImg) { alert("No se pudo crear la imagen."); return; }
+
+      const W = 900, H = 1240;
+      const canvas = document.createElement("canvas");
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext("2d");
+      const fuente = (peso, px) => peso + " " + px + "px Poppins, sans-serif";
+
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "#a13341"; ctx.fillRect(0, 0, W, 22);
+
+      let y = 80;
+      if (logo) { ctx.drawImage(logo, W / 2 - 75, y, 150, 150); y += 150 + 30; }
+
+      ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
+      ctx.font = fuente(700, 52);
+      const w1 = ctx.measureText("Tienda ").width;
+      const w2 = ctx.measureText("Monjarrez").width;
+      const x0 = (W - (w1 + w2)) / 2;
+      y += 40;
+      ctx.fillStyle = "#1a1a1a"; ctx.fillText("Tienda ", x0, y);
+      ctx.fillStyle = "#a13341"; ctx.fillText("Monjarrez", x0 + w1, y);
+
+      const original = empresaActual || "Emprendimiento";
+      let nombre = original;
+      let tam = 60;
+      ctx.font = fuente(600, tam);
+      while (ctx.measureText(nombre).width > W - 120 && tam > 30) { tam -= 2; ctx.font = fuente(600, tam); }
+      while (ctx.measureText(nombre).width > W - 120 && nombre.length > 3) { nombre = nombre.slice(0, -2); }
+      if (nombre !== original) nombre = nombre.trimEnd() + "…";
+      ctx.textAlign = "center"; ctx.fillStyle = "#1a1a1a";
+      y += 30 + tam;
+      ctx.fillText(nombre, W / 2, y);
+
+      const lado = 660;
+      y += 40;
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(qrImg, (W - lado) / 2, y, lado, lado);
+      y += lado + 70;
+
+      ctx.font = fuente(600, 46); ctx.fillStyle = "#1a1a1a";
+      ctx.fillText("Escanea y mira mi catálogo", W / 2, y);
+      y += 56;
+      ctx.font = fuente(400, 34); ctx.fillStyle = "#777777";
+      ctx.fillText("tiendamonjarrez.com", W / 2, y);
+
+      const slug = original
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "perfil";
+      canvas.toBlob((blob) => {
+        if (!blob) { alert("No se pudo crear la imagen."); return; }
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = "qr-" + slug + ".png";
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }, "image/png");
+    }
+
+    function imprimirQr() {
+      document.body.classList.add("mt-imprimiendo-qr");
+      window.addEventListener("afterprint", () => document.body.classList.remove("mt-imprimiendo-qr"), { once: true });
+      window.print();
+    }
+
+    if (btnQr) btnQr.addEventListener("click", abrirQr);
+    $("mtqrCerrar").addEventListener("click", cerrarQr);
+    $("mtqrDescargar").addEventListener("click", descargarQr);
+    $("mtqrImprimir").addEventListener("click", imprimirQr);
+    elQrOverlay.addEventListener("click", (e) => { if (e.target === elQrOverlay) cerrarQr(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") cerrarQr(); });
+
+    // ---------- Ciclo de vida ----------
     function revisar() {
-      if (!esVisible()) { estabaVisible = false; return; }
-      let b = document.getElementById(ID_BLOQUE);
-      if (!b) {
-        b = crearBloque();
-        cont.insertBefore(b, cont.firstChild);
-        if (ultimo) pintar(b, ultimo);
+      if (!esVisible()) { estabaVisible = false; cerrarQr(); return; }
+      const hayId = !!idVendedor();
+      if (btnCompartir) btnCompartir.hidden = !hayId;
+      if (btnQr) btnQr.hidden = !hayId;
+      if (!estabaVisible) {
+        estabaVisible = true;
+        cargarDatos();
+        cargarSeguidores();
+        pintarArticulos();
       }
-      if (!estabaVisible) { estabaVisible = true; cargar(); }
     }
 
-    new MutationObserver(revisar).observe(cont, { attributes: true, attributeFilter: ["style", "class"], childList: true });
+    // script.js llama a esto cuando el vendedor cambia su logo en "Mi perfil".
+    window.MT = Object.assign(window.MT || {}, { invalidarPerfil: cargarDatos });
+
+    new MutationObserver(revisar).observe(cont, { attributes: true, attributeFilter: ["style", "class"] });
     revisar();
   })();
   </script>
 
-    <!-- 🆕 Datos de entrega del perfil (teléfono + dirección).
+    
+<!-- 🆕 Datos de entrega del perfil (teléfono + dirección).
          Independiente de script.js: escucha el botón "Guardar cambios" existente. -->
     <script>
     (function () {
