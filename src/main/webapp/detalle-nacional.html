@@ -981,14 +981,22 @@
     const id = parseInt(idProducto, 10) || 0;
     return pseudoAleatorio(id * 7.9218 + dia * 31.415);
   }
-  // 🆕 Los servicios (categoría "Servicios") NO llevan estrategia de urgencia.
-  function esProductoServicio(producto) {
-    return String((producto && producto.categoria) || "").trim().toLowerCase() === "servicios";
+  // 🆕 Urgencia SOLO para los vendedores/categorías que el admin elija en el
+  // panel (🔥). Igual que script.js: el servidor devuelve en /api/urgencia-config
+  // los IDs de producto a los que SÍ les toca (vendedor elegido Y categoría
+  // elegida). Si la configuración no carga, por seguridad NO se muestra urgencia.
+  let urgenciaIds = new Set();
+  const urgenciaConfigPromise = fetch("/api/urgencia-config", { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : { ids: [] }))
+    .then((d) => { urgenciaIds = new Set((d.ids || []).map(String)); })
+    .catch(() => { urgenciaIds = new Set(); });
+  function aplicaUrgencia(producto) {
+    return !!producto && urgenciaIds.has(String(producto.id ?? ""));
   }
   function calcularBestsellersDelDia(productos) {
     const dia = Math.floor(Date.now() / MS_DIA_URGENCIA);
     const conPuntaje = (productos || [])
-      .filter((p) => p && p.id !== undefined && p.id !== null && p.id !== "" && !esProductoServicio(p))
+      .filter((p) => p && p.id !== undefined && p.id !== null && p.id !== "" && aplicaUrgencia(p))
       .map((p) => ({ id: String(p.id), puntaje: puntajeBestsellerProducto(p.id, dia) }));
     conPuntaje.sort((a, b) => b.puntaje - a.puntaje);
     const mapa = new Map();
@@ -1056,7 +1064,7 @@
   }
 
   function construirPrecio(producto, puestoBestseller) {
-    const esServicio = esProductoServicio(producto);
+    const esServicio = !aplicaUrgencia(producto); // true = este producto NO lleva urgencia
     if (esServicio) puestoBestseller = null;
     const precioNum = parseFloat(producto.precio);
     const precioAnteriorNum = parseFloat(producto.precio_anterior);
@@ -1619,12 +1627,14 @@
     elCarga.style.display = "none";
     elError.style.display = "block";
   } else {
-    fetch("/api/productos")
-      .then((res) => {
+    Promise.all([
+      fetch("/api/productos").then((res) => {
         if (!res.ok) throw new Error("respuesta " + res.status);
         return res.json();
-      })
-      .then((productos) => {
+      }),
+      urgenciaConfigPromise,
+    ])
+      .then(([productos]) => {
         const producto = (productos || []).find((p) => String(p.id) === String(productoId));
         if (!producto) throw new Error("producto no encontrado");
         const mapaBestsellerHoy = calcularBestsellersDelDia(productos);
