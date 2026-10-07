@@ -59,6 +59,12 @@ tr:last-child td{border:0}
 .p-pago_pendiente{background:#fdeed8;color:var(--warn)}.p-pago_verificado{background:#dcf3ea;color:var(--ok)}
 .p-comprado{background:#e3e6fb;color:var(--ac)}.p-en_camino{background:#dff1f6;color:#1e86a3}
 .p-en_cr{background:#e9e3f8;color:#7a4bd1}.p-entregado{background:#d9f2e1;color:#157a45}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tabs button{border:1px solid var(--line);background:#fff;padding:6px 12px;border-radius:20px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;color:var(--mut)}
+.tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.bd{font-size:10.5px;padding:2px 8px;border-radius:12px;font-weight:700;margin-left:6px;vertical-align:middle}
+.socio{background:#fdf0c9;color:#9a6a00}.pago{background:#e3e6fb;color:var(--ac)}
+.sv .big{font-size:22px;font-weight:800;color:var(--ac);display:block;line-height:1.1}
 @media(max-width:900px){.row,.row2{grid-template-columns:1fr}.top{padding:16px}}
 @media(prefers-reduced-motion:reduce){.dot{animation:none}}
 button:focus-visible{outline:2px solid #fff;outline-offset:2px}
@@ -74,7 +80,7 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
   <div class="banner" id="banner" hidden></div>
   <section class="grid kpis" id="kpis"></section>
   <section class="grid row">
-    <div class="card"><h2>Ventas por día (₡)</h2><div class="cv"><canvas id="cVentas"></canvas></div></div>
+    <div class="card"><h2 id="tTitulo">Evolución</h2><div class="tabs" id="tabs"></div><div class="cv"><canvas id="cVentas"></canvas></div></div>
     <div class="card"><h2>Estado de los pedidos</h2><div class="cv" style="height:190px"><canvas id="cEstado"></canvas></div><div class="leg" id="leg"></div></div>
   </section>
   <section class="grid row2">
@@ -95,21 +101,35 @@ const CANCELADOS = [17, 19, 25];          // pedidos cancelados (por si el servi
 /* Primera venta de la web, sin registro en la base de datos.
    ⚠ Pon el precio real de cada producto en "precio" (en colones). */
 const VENTA_INICIAL = {
-  id: 'Inicial', fecha: '2026-01-01', estado: 'entregado', cliente: 'Primera venta', vendedor_id: 'joshua',
+  id: 'Inicial', fecha: '2026-08-23',   // fecha real de la primera venta
+  estado: 'entregado', cliente: 'Primera venta (sin registro)', vendedor_id: 19,
   items: [
-    {nombre: 'Máquina cortadora de pelo', cantidad: 1, precio: 0},
-    {nombre: 'Reloj smartwatch táctil',   cantidad: 2, precio: 0},
-    {nombre: 'Afilador de cuchillos',     cantidad: 1, precio: 0},
-    {nombre: 'Lámpara de 3 cabezas',      cantidad: 1, precio: 0}
+    {nombre: 'Máquina cortadora de pelo', cantidad: 1, precio: 11995},
+    {nombre: 'Reloj smartwatch táctil',   cantidad: 2, precio: 6995},
+    {nombre: 'Afilador de cuchillos',     cantidad: 1, precio: 3995},
+    {nombre: 'Reflector solar 3 cabezales', cantidad: 1, precio: 12000}  // costaba ₡12 000 en esa fecha
   ]
 };
-const VENDEDOR_INICIAL = {id: 'joshua', nombre: 'Joshua Store', icono: ''};
+const VENDEDOR_INICIAL = {id: 19, nombre: 'Joshua Store', icono: ''};
+const SOCIOS = [19];   // usuario_id de los vendedores "Socio"; los demás se muestran como plan pagado
 
 const ETQ = {pago_pendiente:'Pago pendiente',pago_verificado:'Pago verificado',comprado:'Comprado',en_camino:'En camino',en_cr:'En Costa Rica',entregado:'Entregado'};
 const COL = {pago_pendiente:'#e8a13a',pago_verificado:'#2fb784',comprado:'#4f46e5',en_camino:'#2b9cc0',en_cr:'#8f63e0',entregado:'#157a45'};
 const crc = n => '₡' + Math.round(Number(n)||0).toLocaleString('es-CR');
 const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let chV, chE;
+let chV, chE, SERIES = {}, TAB = 'ventas';
+function dibujar(){
+  const s = SERIES[TAB]; if(!s) return;
+  document.getElementById('tTitulo').textContent = s.n + (s.money ? ' (₡)' : '');
+  const lab = s.raw ? s.l : s.l.map(x => new Date(x+'T12:00').toLocaleDateString('es-CR',{day:'numeric',month:'short'}));
+  chV && chV.destroy();
+  chV = new Chart(document.getElementById('cVentas'), {type:s.type,
+    data:{labels:lab, datasets:[s.type==='line'
+      ? {data:s.d,borderColor:'#4f46e5',backgroundColor:'#4f46e51a',fill:true,tension:.3,pointRadius:s.d.length>25?0:4,pointBackgroundColor:'#fff',pointBorderWidth:2}
+      : {data:s.d,backgroundColor:'#4f46e5',borderRadius:6,maxBarThickness:42}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>s.money?crc(c.raw):c.raw}}},
+      scales:{y:{beginAtZero:true,ticks:{precision:0,callback:v=>s.money?crc(v):v},grid:{color:'#eef0f7'}},x:{grid:{display:false}}}}});
+}
 
 /* ===== DATOS DE EJEMPLO (solo si el servidor no responde) ===== */
 function demo(){
@@ -139,6 +159,8 @@ function pintar(data, esDemo){
   const vend = {}; (data.vendedores||[]).forEach(v => vend[v.id] = v);
   vend[VENDEDOR_INICIAL.id] ||= VENDEDOR_INICIAL;  // si pones su usuario_id real, se junta con su tarjeta
   const peds = (data.pedidos||[]).filter(p => Number(p.id) >= PEDIDO_DESDE && !CANCELADOS.includes(Number(p.id)) && !/cancel/i.test(p.estado));
+  const fr = peds.map(p=>String(p.fecha).slice(0,10)).sort()[0] || new Date().toISOString().slice(0,10);
+  if(!VENTA_INICIAL.fecha){ const x = new Date(fr+'T12:00'); x.setDate(x.getDate()-1); VENTA_INICIAL.fecha = x.toISOString().slice(0,10); }
   peds.push(VENTA_INICIAL);
   peds.forEach(p => { p.items = p.items||[]; p.total = p.total ?? p.items.reduce((s,i)=>s+i.cantidad*i.precio,0); p.unidades = p.items.reduce((s,i)=>s+i.cantidad,0); });
 
@@ -153,16 +175,6 @@ function pintar(data, esDemo){
     ['Por cobrar', crc(porCobrar), 'Pagos pendientes', '#e8a13a'],
     ['En camino', enCamino, 'Comprados, en camino o en CR', '#1f9d6b']];
   document.getElementById('kpis').innerHTML = kp.map(k => `<div class="card kpi" style="--c:${k[3]}"><span>${k[0]}</span><b>${k[1]}</b><i>${k[2]}</i></div>`).join('');
-
-  /* ventas por día */
-  const dias = {}; peds.forEach(p => { const d = String(p.fecha).slice(0,10); dias[d] = (dias[d]||0) + p.total; });
-  const ks = Object.keys(dias).sort();
-  chV && chV.destroy();
-  chV = new Chart(document.getElementById('cVentas'), {type:'line',
-    data:{labels:ks.map(d=>new Date(d+'T12:00').toLocaleDateString('es-CR',{day:'numeric',month:'short'})),
-      datasets:[{data:ks.map(k=>dias[k]),borderColor:'#4f46e5',backgroundColor:'#4f46e51a',fill:true,tension:.35,pointRadius:4,pointBackgroundColor:'#fff',pointBorderWidth:2}]},
-    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>crc(c.raw)}}},
-      scales:{y:{ticks:{callback:v=>crc(v)},grid:{color:'#eef0f7'}},x:{grid:{display:false}}}}});
 
   /* estados */
   const est = {}; peds.forEach(p => est[p.estado] = (est[p.estado]||0)+1);
@@ -188,13 +200,37 @@ function pintar(data, esDemo){
     <td class="mut">${new Date(String(p.fecha).slice(0,10)+'T12:00').toLocaleDateString('es-CR',{day:'numeric',month:'short'})}</td>
     <td><span class="pill p-${p.estado}">${ETQ[p.estado]||p.estado}</span></td><td><b>${crc(p.total)}</b></td></tr>`).join('');
 
-  /* vendedores */
+  /* vendedores: todos, con su número de pedidos */
   const sv = {};
-  peds.forEach(p => p.items.forEach(i => { const id = i.vendedor_id ?? p.vendedor_id; const o = sv[id] ||= {id,u:0,t:0,ps:new Set()}; o.u += i.cantidad; o.t += i.cantidad*i.precio; o.ps.add(p.id); }));
-  document.getElementById('sellers').innerHTML = Object.values(sv).sort((a,b)=>b.t-a.t).map(o => {
-    const v = vend[o.id] || {nombre:'Vendedor '+o.id}, ini = esc((v.nombre||'?').trim().slice(0,2).toUpperCase());
+  peds.forEach(p => p.items.forEach(i => { const id = i.vendedor_id ?? p.vendedor_id; const o = sv[id] ||= {u:0,t:0,ps:new Set()}; o.u += i.cantidad; o.t += i.cantidad*i.precio; o.ps.add(p.id); }));
+  const ids = [...new Set([...Object.keys(vend), ...Object.keys(sv)])];
+  const lista = ids.map(id => ({id, v: vend[id]||{nombre:'Vendedor '+id}, o: sv[id]||{u:0,t:0,ps:new Set()}}))
+    .sort((a,b)=> b.o.ps.size-a.o.ps.size || b.o.t-a.o.t);
+  document.getElementById('sellers').innerHTML = lista.map(({id,v,o}) => {
+    const ini = esc((v.nombre||'?').trim().slice(0,2).toUpperCase()), socio = SOCIOS.includes(Number(id));
     return `<div class="card sv">${v.icono?`<img class="av" src="${esc(v.icono)}" alt="">`:`<div class="av">${ini}</div>`}
-      <div><b>${esc(v.nombre)}</b><span class="n">${crc(o.t)}</span><div class="mut">${o.ps.size} pedido(s) · ${o.u} producto(s)</div></div></div>`; }).join('');
+      <div><b>${esc(v.nombre)}<span class="bd ${socio?'socio':'pago'}">${socio?'Socio':'Plan pagado'}</span></b>
+      <span class="big">${o.ps.size} pedido${o.ps.size===1?'':'s'}</span><div class="mut">${crc(o.t)} · ${o.u} producto(s)</div></div></div>`; }).join('');
+
+  /* evolución día a día (incluye días sin ventas) */
+  const f = peds.map(p=>String(p.fecha).slice(0,10)).sort();
+  const hoy = new Date(); hoy.setHours(12,0,0,0);
+  const fin = new Date(Math.max(hoy, new Date(f[f.length-1]+'T12:00')));
+  const dk = []; for(let x=new Date(f[0]+'T12:00'); x<=fin; x.setDate(x.getDate()+1)) dk.push(x.toISOString().slice(0,10));
+  const dv = dk.map(()=>0), dp = dk.map(()=>0);
+  peds.forEach(p => { const i = dk.indexOf(String(p.fecha).slice(0,10)); if(i>=0){ dv[i]+=p.total; dp[i]++; } });
+  const acum = a => { let s=0; return a.map(v => s+=v); };
+  const av_ = acum(dv), ap_ = acum(dp);
+  SERIES = {
+    ventas:   {n:'Ventas por día',        l:dk, d:dv, money:1, type:'bar'},
+    vacum:    {n:'Total de ventas',       l:dk, d:av_, money:1, type:'line'},
+    pedidos:  {n:'Pedidos por día',       l:dk, d:dp, type:'bar'},
+    pacum:    {n:'Total de pedidos',      l:dk, d:ap_, type:'line'},
+    ticket:   {n:'Ticket promedio',       l:dk, d:av_.map((v,i)=>ap_[i]?Math.round(v/ap_[i]):0), money:1, type:'line'},
+    vend:     {n:'Ventas por vendedor',   l:lista.filter(x=>x.o.t>0).map(x=>x.v.nombre), d:lista.filter(x=>x.o.t>0).map(x=>x.o.t), money:1, type:'bar', raw:1}
+  };
+  document.getElementById('tabs').innerHTML = Object.entries(SERIES).map(([k,s]) => `<button class="${k===TAB?'on':''}" onclick="TAB='${k}';dibujar();document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b===this))">${s.n}</button>`).join('');
+  dibujar();
 
   const sinPrecio = VENTA_INICIAL.items.some(i=>!i.precio);
   const bn = document.getElementById('banner');
