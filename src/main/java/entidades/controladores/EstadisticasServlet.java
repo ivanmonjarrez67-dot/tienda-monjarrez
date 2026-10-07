@@ -53,9 +53,10 @@ public class EstadisticasServlet extends HttpServlet {
         // de PedidoActualizaciones; si no tiene, el de Pedidos.
         String sqlPedidos =
               "SELECT pe.id, pe.fecha, pe.usuario_id AS comprador, "
-            + "ISNULL(ult.estado, pe.estado) AS estado, "
+            + "ISNULL(ult.estado, pe.estado) AS estado, ps.monto_pagado, "
             + "dp.nombre_producto, dp.imagen_producto, dp.cantidad, dp.precio_unitario, dp.usuario_id_vendedor "
             + "FROM Pedidos pe "
+            + "LEFT JOIN PedidoSeguimiento ps ON ps.pedido_id = pe.id "
             + "LEFT JOIN DetallePedido dp ON dp.pedido_id = pe.id "
             + "OUTER APPLY (SELECT TOP 1 estado FROM PedidoActualizaciones a "
             + "             WHERE a.pedido_id = pe.id ORDER BY a.fecha DESC, a.id DESC) ult "
@@ -101,9 +102,12 @@ public class EstadisticasServlet extends HttpServlet {
                         primerPedido = false;
                         primerItem = true;
                         actual = id;
+                        double mp = rs.getDouble("monto_pagado");
+                        boolean mpNulo = rs.wasNull();
                         out.print("{\"id\":" + id
                                 + ",\"fecha\":" + str(String.valueOf(rs.getTimestamp("fecha")))
                                 + ",\"estado\":" + str(rs.getString("estado"))
+                                + ",\"monto_pagado\":" + (mpNulo ? "null" : String.valueOf(mp))
                                 + ",\"cliente\":\"Cliente #" + rs.getInt("comprador") + "\""
                                 + ",\"items\":[");
                     }

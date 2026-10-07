@@ -1453,10 +1453,11 @@ async function imgCopiar(tipo, btn){
 cargarPerfil();
 cargar();
 
-let PEDIDOS = [], PED_ACTUAL = null, PED_TOTAL = 0;
+let PEDIDOS = [], PED_ACTUAL = null, PED_TOTAL = 0, PED_PAGADO = 0;
 const crcPed = n => '₡' + Math.round(Number(n) || 0).toLocaleString('es-CR');
 function calcPendiente(){
-  const pagado = parseFloat(document.getElementById('pMonto').value) || 0;
+  const raw = document.getElementById('pMonto').value;
+  const pagado = raw !== '' ? (parseFloat(raw) || 0) : PED_PAGADO;
   document.getElementById('pPendiente').value = crcPed(Math.max(0, PED_TOTAL - pagado));
 }
 // Abre en otra pestaña cómo verá el cliente su pedido con lo que hay ahora en el formulario (sin guardar nada)
@@ -1522,7 +1523,9 @@ function elegirPedido(id){
   document.getElementById('pedTitulo').textContent = `Pedido #${id} — ${p.nombre} (${p.correo}) · ${p.metodo_pago}${p.referencia ? ' · comprobante ' + p.referencia : ''}`;
   document.getElementById('pEstado').value = p.estado;
   document.getElementById('pMensaje').value = '';
-  document.getElementById('pMonto').value = p.pagado > 0 ? p.pagado : Math.round(p.total / 2); // sugiere el 50%
+  PED_PAGADO = p.pagado > 0 ? p.pagado : 0;
+  document.getElementById('pMonto').value = '';   // siempre limpio: nada por defecto
+  document.getElementById('pMonto').placeholder = PED_PAGADO > 0 ? 'Registrado: ' + crcPed(PED_PAGADO) + ' (escribe solo si cambió)' : 'Escribe cuánto pagó el cliente';
   document.getElementById('pTotal').value = crcPed(p.total);
   calcPendiente();
   document.getElementById('pSinpe').value = p.sinpe || '';
@@ -1538,7 +1541,7 @@ document.getElementById('formPedido').addEventListener('submit', async (e) => {
   e.preventDefault();
   const err = document.getElementById('errorPedido'); err.classList.remove('show');
   if(!pRastreo.value.trim() && pGuia.value.trim()) pRastreo.value = rastreoAuto();
-  const d = new URLSearchParams({accion:'novedad', pedido_id:PED_ACTUAL, estado:pEstado.value, mensaje:pMensaje.value, monto_pagado:pMonto.value,
+  const d = new URLSearchParams({accion:'novedad', pedido_id:PED_ACTUAL, estado:pEstado.value, mensaje:pMensaje.value, monto_pagado:(pMonto.value !== '' ? pMonto.value : PED_PAGADO),
     sinpe_numero:pSinpe.value, fecha_est_desde:pDesde.value, fecha_est_hasta:pHasta.value, numero_guia:pGuia.value, url_rastreo:pRastreo.value,
     notificar: pNotificar.checked ? '1' : '0'});
   const r = await fetch('/admin/pedidos', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:d});

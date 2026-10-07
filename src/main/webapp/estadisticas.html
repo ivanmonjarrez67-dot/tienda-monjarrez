@@ -60,6 +60,12 @@ tr:last-child td{border:0}
 .p-comprado{background:#e3e6fb;color:var(--ac)}.p-en_camino{background:#dff1f6;color:#1e86a3}
 .p-en_cr{background:#e9e3f8;color:#7a4bd1}.p-entregado{background:#d9f2e1;color:#157a45}
 .crec{display:flex;gap:28px;flex-wrap:wrap;margin:2px 0 12px;font-size:22px}.crec small{display:block;color:var(--mut);font-size:11.5px;font-weight:500}
+.hero{display:grid;grid-template-columns:minmax(220px,1fr) 1.4fr;gap:18px 28px;align-items:center;margin-bottom:16px;padding:22px 26px}
+.hero h2{font-size:15px;margin-bottom:4px}.hero-pct{font-size:44px;font-weight:800;letter-spacing:-1px;line-height:1.1}
+.hero small{color:var(--mut);font-size:12.5px;display:block;margin-top:4px}
+.minis{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;border-top:1px solid var(--line);padding-top:16px}
+.mini{background:#f7f8fd;border-radius:12px;padding:10px 14px}.mini span{font-size:12px;color:var(--mut);display:block;margin-bottom:4px}.mini b{font-size:15px;display:block;margin-top:4px}
+@media(max-width:700px){.hero{grid-template-columns:1fr}}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .tabs button{border:1px solid var(--line);background:#fff;padding:6px 12px;border-radius:20px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;color:var(--mut)}
 .tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
@@ -79,9 +85,10 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 </header>
 <main>
   <div class="banner" id="banner" hidden></div>
+  <section class="card hero" id="hero"></section>
   <section class="grid kpis" id="kpis"></section>
   <section class="grid row">
-    <div class="card"><h2 id="tTitulo">Evolución</h2><div class="tabs" id="tabs"></div><div id="crecBox" class="crec" hidden></div><div class="cv"><canvas id="cVentas"></canvas></div></div>
+    <div class="card"><h2 id="tTitulo">Evolución</h2><div class="tabs" id="tabs"></div><div class="cv"><canvas id="cVentas"></canvas></div></div>
     <div class="card"><h2>Estado de los pedidos</h2><div class="cv" style="height:190px"><canvas id="cEstado"></canvas></div><div class="leg" id="leg"></div></div>
   </section>
   <section class="grid row2">
@@ -119,26 +126,25 @@ const COL = {pago_pendiente:'#e8a13a',pago_verificado:'#2fb784',comprado:'#4f46e
 const crc = n => '₡' + Math.round(Number(n)||0).toLocaleString('es-CR');
 const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let chV, chE, SERIES = {}, TAB = 'ventas';
-/* Últimos 7 días contra los 7 anteriores */
-function ventana(peds){
-  const h = new Date(); h.setHours(12,0,0,0); const r = {vc:0,vp:0,pc:0,pp:0};
-  peds.forEach(p => { const df = Math.round((h - new Date(String(p.fecha).slice(0,10)+'T12:00'))/864e5);
-    if(df>=0 && df<7){ r.vc += p.total; r.pc++; } else if(df>=7 && df<14){ r.vp += p.total; r.pp++; } });
-  return r;
+/* Flecha en zigzag con la punta al final (como un gráfico de crecimiento) */
+function zigArrow(vals,w,h,col,sw){
+  if(vals.length<2) vals=[0,0];
+  const mn=Math.min(...vals), mx=Math.max(...vals), pad=sw*3+3, n=vals.length;
+  const X=i=>pad+i*(w-2*pad)/(n-1), Y=v=>mx===mn?h/2:h-pad-(v-mn)/(mx-mn)*(h-2*pad);
+  const P=vals.map((v,i)=>[X(i),Y(v)]), [x1,y1]=P[n-2], [x2,y2]=P[n-1];
+  const a=Math.atan2(y2-y1,x2-x1), L=sw*4.4, bx=x2-L*Math.cos(a), by=y2-L*Math.sin(a), k=L*.55;
+  const line=P.slice(0,-1).concat([[bx,by]]).map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const head=[[x2,y2],[bx-k*Math.sin(a),by+k*Math.cos(a)],[bx+k*Math.sin(a),by-k*Math.cos(a)]].map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" style="max-width:${w}px;display:block" aria-hidden="true"><polyline points="${line}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linejoin="miter" stroke-linecap="butt"/><polygon points="${head}" fill="${col}"/></svg>`;
 }
-function flecha(cur, prev, money){
-  const f = money ? crc : (n => n);
-  let ar = '▲', col = '#1f9d6b', txt;
-  if(!prev && !cur){ ar='—'; col='#8087a2'; txt='Sin movimiento'; }
-  else if(!prev){ txt='Nuevo: '+f(cur); }
-  else { const p = (cur-prev)/prev*100; if(p<0){ ar='▼'; col='#d64545'; } else if(p===0){ ar='▶'; col='#8087a2'; } txt=(p>0?'+':'')+p.toFixed(0)+'%'; }
-  return `<span style="color:${col};font-weight:800">${ar} ${txt}</span>`;
-}
+/* Cambio de la última semana contra la anterior */
+function chg(a){ const c=a[a.length-1]||0, p=a[a.length-2]||0;
+  if(!p&&!c) return {d:0,t:'Sin cambios'}; if(!p) return {d:1,t:'Nuevo'};
+  const x=(c-p)/p*100; return {d:x>0?1:x<0?-1:0, t:(x>0?'+':'')+x.toFixed(0)+'%'}; }
+const COLD={1:'#1f77d0',0:'#8087a2','-1':'#d64545'}, SIGNO={1:'▲',0:'▶','-1':'▼'};
+const sem7 = a => { const r=[]; for(let e=a.length;e>0;e-=7) r.unshift(a.slice(Math.max(0,e-7),e).reduce((x,y)=>x+y,0)); return r; };
 function dibujar(){
   const s = SERIES[TAB]; if(!s) return;
-  const cb = document.getElementById('crecBox'); cb.hidden = !s.crec;
-  if(s.crec){ const w = ventana(window.__peds||[]);
-    cb.innerHTML = `<div>${flecha(w.vc,w.vp,true)}<small>Ventas (7 días vs. 7 anteriores)</small></div><div>${flecha(w.pc,w.pp,false)}<small>Pedidos (7 días vs. 7 anteriores)</small></div>`; }
   document.getElementById('tTitulo').textContent = s.n + (s.money ? ' (₡)' : '');
   const lab = (s.raw || s.crec) ? s.l : s.l.map(x => new Date(x+'T12:00').toLocaleDateString('es-CR',{day:'numeric',month:'short'}));
   chV && chV.destroy();
@@ -181,20 +187,21 @@ function pintar(data, esDemo){
   const fr = peds.map(p=>String(p.fecha).slice(0,10)).sort()[0] || new Date().toISOString().slice(0,10);
   if(!VENTA_INICIAL.fecha){ const x = new Date(fr+'T12:00'); x.setDate(x.getDate()-1); VENTA_INICIAL.fecha = x.toISOString().slice(0,10); }
   peds.push(VENTA_INICIAL);
-  peds.forEach(p => { p.items = p.items||[]; p.total = p.total ?? p.items.reduce((s,i)=>s+i.cantidad*i.precio,0); p.unidades = p.items.reduce((s,i)=>s+i.cantidad,0); });
+  peds.forEach(p => { p.items = p.items||[]; p.total = p.total ?? p.items.reduce((s,i)=>s+i.cantidad*i.precio,0); p.unidades = p.items.reduce((s,i)=>s+i.cantidad,0);
+    p.saldo = (p.estado!=='pago_pendiente' && p.estado!=='entregado' && p.monto_pagado!=null) ? Math.max(0, p.total - p.monto_pagado) : 0; });
 
-  window.__peds = peds;
-  const ingresos = peds.reduce((s,p)=>s+p.total,0), unid = peds.reduce((s,p)=>s+p.unidades,0);
+    const ingresos = peds.reduce((s,p)=>s+p.total,0), unid = peds.reduce((s,p)=>s+p.unidades,0);
   const porCobrar = peds.filter(p=>p.estado==='pago_pendiente').reduce((s,p)=>s+p.total,0);
+  const saldo = peds.reduce((s,p)=>s+p.saldo,0), nSaldo = peds.filter(p=>p.saldo>0).length;
   const enCamino = peds.filter(p=>['en_camino','comprado','en_cr'].includes(p.estado)).length;
   const kp = [
     ['Total de todos los pedidos', crc(ingresos), 'Suma de ventas (no es ganancia)', '#4f46e5'],
     ['Pedidos', peds.length, 'Incluye la primera venta', '#22b8a5'],
     ['Productos vendidos', unid, 'Unidades en total', '#8f63e0'],
     ['Ticket promedio', crc(ingresos/peds.length), 'Por pedido', '#2b9cc0'],
-    ['Por cobrar', crc(porCobrar), 'Pagos pendientes', '#e8a13a'],
-    ['En camino', enCamino, 'Comprados, en camino o en CR', '#1f9d6b'],
-    ['Crecimiento de la web', flecha(ventana(peds).vc, ventana(peds).vp, true), 'Ventas: últimos 7 días vs. 7 anteriores', '#1f9d6b']];
+    ['Por cobrar (sin verificar)', crc(porCobrar), 'Pagos pendientes de verificar', '#e8a13a'],
+    ['Saldo pendiente', crc(saldo), nSaldo + ' pedido(s) verificados que aún deben dinero (pagó la mitad o es contra entrega)', '#d9831f'],
+    ['En camino', enCamino, 'Comprados, en camino o en CR', '#1f9d6b']];
   document.getElementById('kpis').innerHTML = kp.map(k => `<div class="card kpi" style="--c:${k[3]}"><span>${k[0]}</span><b>${k[1]}</b><i>${k[2]}</i></div>`).join('');
 
   /* estados */
@@ -219,7 +226,7 @@ function pintar(data, esDemo){
   document.getElementById('rec').innerHTML = rec.map(p => `<tr><td>${esc(p.id)}</td><td>${esc(p.cliente||'—')}</td>
     <td class="mut">${p.items.map(i=>i.cantidad+'× '+esc(i.nombre)).join(', ')}</td>
     <td class="mut">${new Date(String(p.fecha).slice(0,10)+'T12:00').toLocaleDateString('es-CR',{day:'numeric',month:'short'})}</td>
-    <td><span class="pill p-${p.estado}">${ETQ[p.estado]||p.estado}</span></td><td><b>${crc(p.total)}</b></td></tr>`).join('');
+    <td><span class="pill p-${p.estado}">${ETQ[p.estado]||p.estado}</span></td><td><b>${crc(p.total)}</b>${p.saldo>0?`<div class="mut" style="color:#d9831f">Falta ${crc(p.saldo)}</div>`:''}</td></tr>`).join('');
 
   /* vendedores: todos, con su número de pedidos */
   const sv = {};
@@ -238,13 +245,19 @@ function pintar(data, esDemo){
   const hoy = new Date(); hoy.setHours(12,0,0,0);
   const fin = new Date(Math.max(hoy, new Date(f[f.length-1]+'T12:00')));
   const dk = []; for(let x=new Date(f[0]+'T12:00'); x<=fin; x.setDate(x.getDate()+1)) dk.push(x.toISOString().slice(0,10));
-  const dv = dk.map(()=>0), dp = dk.map(()=>0);
-  peds.forEach(p => { const i = dk.indexOf(String(p.fecha).slice(0,10)); if(i>=0){ dv[i]+=p.total; dp[i]++; } });
+  const dv = dk.map(()=>0), dp = dk.map(()=>0), du = dk.map(()=>0);
+  peds.forEach(p => { const i = dk.indexOf(String(p.fecha).slice(0,10)); if(i>=0){ dv[i]+=p.total; dp[i]++; du[i]+=p.unidades; } });
   const acum = a => { let s=0; return a.map(v => s+=v); };
   const av_ = acum(dv), ap_ = acum(dp);
   /* semanas de 7 días contando hacia atrás desde hoy */
   const semL = [], semV = [];
   for(let e = dk.length; e > 0; e -= 7){ const s = Math.max(0, e-7); semL.unshift(new Date(dk[s]+'T12:00').toLocaleDateString('es-CR',{day:'numeric',month:'short'})); semV.unshift(dv.slice(s,e).reduce((a,b)=>a+b,0)); }
+  /* Flechas de crecimiento: la de la web es la protagonista */
+  const sv_ = sem7(dv), sp_ = sem7(dp), su_ = sem7(du), st_ = sv_.map((v,i)=>sp_[i]?v/sp_[i]:0);
+  const cw = chg(sv_), minis = [['Ventas',sv_],['Pedidos',sp_],['Productos vendidos',su_],['Ticket promedio',st_]].map(([n,a])=>{ const c=chg(a), col=COLD[c.d];
+    return `<div class="mini"><span>${n}</span>${zigArrow(a,110,46,col,3)}<b style="color:${col}">${SIGNO[c.d]} ${c.t}</b></div>`; }).join('');
+  document.getElementById('hero').innerHTML = `<div><h2>Crecimiento de la web</h2><div class="hero-pct" style="color:${COLD[cw.d]}">${SIGNO[cw.d]} ${cw.t}</div><small>Ventas de los últimos 7 días comparadas con los 7 anteriores</small></div>
+    <div>${zigArrow(sv_,420,150,COLD[cw.d],7)}</div><div class="minis">${minis}</div>`;
   SERIES = {
     ventas:   {n:'Ventas por día',        l:dk, d:dv, money:1, type:'bar'},
     vacum:    {n:'Total de ventas',       l:dk, d:av_, money:1, type:'line'},

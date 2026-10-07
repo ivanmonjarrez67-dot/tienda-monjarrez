@@ -7923,6 +7923,11 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 #estVend .ev-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 #estVend .ev-x{border:0;background:#eef0f7;border-radius:50%;width:34px;height:34px;font-size:16px;cursor:pointer}
 #estVend .ev-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+#estVend .ev-hero{display:grid;grid-template-columns:1fr 1.2fr;gap:14px;align-items:center;background:#f4f5fb;border-radius:14px;padding:16px;margin-bottom:12px}
+#estVend .ev-pct{font-size:36px;font-weight:800;line-height:1.1}
+#estVend .ev-hl{font-size:13px;font-weight:700}
+#estVend .ev-hero small{color:#8087a2;font-size:12px;display:block;margin-top:4px}
+@media(max-width:480px){#estVend .ev-hero{grid-template-columns:1fr}}
 #estVend .ev-k{background:#f4f5fb;border-radius:12px;padding:12px}
 #estVend .ev-k span{font-size:12px;color:#8087a2;display:block}
 #estVend .ev-k b{font-size:20px;display:block;margin-top:2px}
@@ -7977,13 +7982,22 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       DATA = await r.json(); await cargarChart(); pintar();
     }catch(e){ body.innerHTML = '<div class="ev-msg">No se pudieron cargar tus estadísticas. Intenta de nuevo.</div>'; }
   }
-  function flecha(cur, prev, money){
-    var ar = '▲', col = '#1f9d6b', txt;
-    if(!prev && !cur){ ar = '—'; col = '#8087a2'; txt = 'Sin movimiento'; }
-    else if(!prev){ txt = 'Nuevo: ' + (money ? crc(cur) : cur); }
-    else { var p = (cur-prev)/prev*100; if(p < 0){ ar = '▼'; col = '#d64545'; } else if(p === 0){ ar = '▶'; col = '#8087a2'; } txt = (p > 0 ? '+' : '') + p.toFixed(0) + '%'; }
-    return '<span style="color:' + col + ';font-weight:800">' + ar + ' ' + txt + '</span>';
+  function zig(vals,w,h,col,sw){
+    if(vals.length < 2) vals = [0,0];
+    var mn = Math.min.apply(null,vals), mx = Math.max.apply(null,vals), pad = sw*3+3, n = vals.length;
+    var X = function(i){ return pad + i*(w-2*pad)/(n-1); }, Y = function(v){ return mx === mn ? h/2 : h-pad-(v-mn)/(mx-mn)*(h-2*pad); };
+    var P = vals.map(function(v,i){ return [X(i),Y(v)]; }), a1 = P[n-2], a2 = P[n-1];
+    var a = Math.atan2(a2[1]-a1[1], a2[0]-a1[0]), L = sw*4.4, bx = a2[0]-L*Math.cos(a), by = a2[1]-L*Math.sin(a), k = L*.55;
+    var f = function(q){ return q[0].toFixed(1) + ',' + q[1].toFixed(1); };
+    var line = P.slice(0,-1).concat([[bx,by]]).map(f).join(' ');
+    var head = [[a2[0],a2[1]],[bx-k*Math.sin(a),by+k*Math.cos(a)],[bx+k*Math.sin(a),by-k*Math.cos(a)]].map(f).join(' ');
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" style="max-width:' + w + 'px;display:block" aria-hidden="true"><polyline points="' + line + '" fill="none" stroke="' + col + '" stroke-width="' + sw + '"/><polygon points="' + head + '" fill="' + col + '"/></svg>';
   }
+  function chg(a){ var c = a[a.length-1] || 0, p = a[a.length-2] || 0;
+    if(!p && !c) return {d:0, t:'Sin cambios'}; if(!p) return {d:1, t:'Nuevo'};
+    var x = (c-p)/p*100; return {d: x > 0 ? 1 : x < 0 ? -1 : 0, t: (x > 0 ? '+' : '') + x.toFixed(0) + '%'}; }
+  var COLD = {'1':'#1f77d0','0':'#8087a2','-1':'#d64545'}, SIG = {'1':'▲','0':'▶','-1':'▼'};
+  function sem7(a){ var r = []; for(var e = a.length; e > 0; e -= 7) r.unshift(a.slice(Math.max(0,e-7), e).reduce(function(x,y){ return x+y; }, 0)); return r; }
   function pintar(){
     var peds = (DATA.pedidos || []).map(function(p){ return {id:p.id, fecha:String(p.fecha).slice(0,10), items:p.items||[]}; });
     if(DATA.usuario_id === PRIMERA.usuario) peds.push({id:'Inicial', fecha:PRIMERA.fecha, items:PRIMERA.items});
@@ -7995,18 +8009,18 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     // días continuos
     var f = peds.map(function(p){ return p.fecha; }).sort(), dk = [], fin = new Date(Math.max(h, new Date(f[f.length-1] + 'T12:00')));
     for(var x = new Date(f[0] + 'T12:00'); x <= fin; x.setDate(x.getDate()+1)) dk.push(x.toISOString().slice(0,10));
-    var dv = dk.map(function(){ return 0; }), dp = dk.map(function(){ return 0; });
-    peds.forEach(function(p){ var i = dk.indexOf(p.fecha); if(i >= 0){ dv[i] += p.total; dp[i]++; } });
+    var dv = dk.map(function(){ return 0; }), dp = dk.map(function(){ return 0; }), du = dk.map(function(){ return 0; });
+    peds.forEach(function(p){ var i = dk.indexOf(p.fecha); if(i >= 0){ dv[i] += p.total; dp[i]++; du[i] += p.u; } });
     var s = 0, ac = dv.map(function(v){ return s += v; });
     var lab = dk.map(function(d){ return new Date(d + 'T12:00').toLocaleDateString('es-CR',{day:'numeric',month:'short'}); });
     DATA._s = {acum:{l:lab, d:ac, money:1, type:'line'}, dia:{l:lab, d:dv, money:1, type:'bar'}, ped:{l:lab, d:dp, type:'bar'}};
     var pr = {}; peds.forEach(function(p){ p.items.forEach(function(i){ var o = pr[i.nombre] = pr[i.nombre] || {n:i.nombre, c:0, t:0}; o.c += i.cantidad; o.t += i.cantidad*i.precio; }); });
     var top = Object.keys(pr).map(function(k){ return pr[k]; }).sort(function(a,b){ return b.c - a.c; }).slice(0,5);
+    var sv_ = sem7(dv), cw = chg(sv_);
+    var minis = [['Pedidos', sem7(dp)], ['Productos vendidos', sem7(du)]].map(function(m){ var c = chg(m[1]); return '<div class="ev-k"><span>' + m[0] + '</span>' + zig(m[1], 110, 44, COLD[c.d], 3) + '<b style="color:' + COLD[c.d] + ';font-size:15px">' + SIG[c.d] + ' ' + c.t + '</b></div>'; }).join('');
     body.innerHTML =
-      '<div class="ev-g"><div class="ev-k"><span>Crecimiento (7 días)</span><b style="font-size:24px">' + flecha(w.vc, w.vp, true) + '</b></div>' +
-      '<div class="ev-k"><span>Total vendido</span><b>' + crc(tot) + '</b></div>' +
-      '<div class="ev-k"><span>Pedidos</span><b>' + peds.length + ' <small style="font-size:13px">' + flecha(w.pc, w.pp, false) + '</small></b></div>' +
-      '<div class="ev-k"><span>Productos vendidos</span><b>' + uni + '</b></div></div>' +
+      '<div class="ev-hero"><div><span class="ev-hl">Crecimiento de tu tienda</span><div class="ev-pct" style="color:' + COLD[cw.d] + '">' + SIG[cw.d] + ' ' + cw.t + '</div><small>Ventas de los últimos 7 días vs. los 7 anteriores</small></div><div>' + zig(sv_, 300, 120, COLD[cw.d], 6) + '</div></div>' +
+      '<div class="ev-g"><div class="ev-k"><span>Total vendido</span><b>' + crc(tot) + '</b></div>' + minis + '</div>' +
       '<div class="ev-tabs" id="evTabs"><button data-t="acum" class="on">Crecimiento</button><button data-t="dia">Ventas por día</button><button data-t="ped">Pedidos por día</button></div>' +
       '<div class="ev-cv"><canvas id="evCv"></canvas></div>' +
       '<h3 style="font-size:14px;margin:16px 0 4px">Tus más vendidos</h3>' +
