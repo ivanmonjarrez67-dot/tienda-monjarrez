@@ -143,7 +143,14 @@ public class LimpiarCloudinaryServlet extends HttpServlet {
                 out.println("<p><b>Listo. Enviadas a borrar: " + borradas + "</b></p>");
             } else {
                 out.println("<ol style='font-size:13px'>");
-                for (String id : huerfanas) out.println("<li>" + esc(id) + "</li>");
+                String base = "https://res.cloudinary.com/" + cloud + "/image/upload/";
+                for (String id : huerfanas) {
+                    String ruta = id.replace(" ", "%20");
+                    out.println("<li style='margin:6px 0'><a href='" + esc(base + ruta) + "' target='_blank'>"
+                            + "<img loading='lazy' src='" + esc(base + "c_fill,w_140,h_140,q_auto,f_auto/" + ruta) + "' "
+                            + "width='70' height='70' style='object-fit:cover;vertical-align:middle;margin-right:10px;border:1px solid #ccc'></a>"
+                            + esc(id) + "</li>");
+                }
                 out.println("</ol>");
                 if (!huerfanas.isEmpty()) {
                     out.println("<form method='POST' onsubmit=\"return confirm('Esto borra " + huerfanas.size()
