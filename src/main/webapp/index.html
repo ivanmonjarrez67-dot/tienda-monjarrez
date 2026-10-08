@@ -7032,7 +7032,7 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
 
     @media (max-width: 640px) {
       .mt-header {
-        grid-template-columns: auto minmax(0, 1fr) auto auto;
+        grid-template-columns: auto minmax(0, 1fr) auto auto auto;
         gap: 14px 8px; padding: 14px 16px 18px;
       }
       /* Las acciones se reparten por la cuadrícula: cada botón en su lugar */
@@ -7046,8 +7046,9 @@ document.getElementById("miTiendaForm").addEventListener("submit", () => {
         font-size: 17px; font-weight: 700; color: #1a1a1a;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       }
-      #btnCompartirPerfil { grid-column: 3; grid-row: 1; }
-      #btnQrPerfil { grid-column: 4; grid-row: 1; }
+      #btnEstadisticasVendedor { grid-column: 3; grid-row: 1; }
+      #btnCompartirPerfil { grid-column: 4; grid-row: 1; }
+      #btnQrPerfil { grid-column: 5; grid-row: 1; }
 
       /* Fila 2: identidad (logo grande, nombre, insignia y ubicación/descripción) */
       .mt-perfil { grid-column: 1 / -1; grid-row: 2; flex: none; gap: 14px; padding: 4px 0 2px; }
