@@ -19,6 +19,7 @@
     { nombre: "Tecnología y Electrónica", icono: "fa-laptop", ejemplos: ["Audífonos", "Cargadores", "Fundas", "Smartwatch", "Parlantes", "Cables"] },
     { nombre: "Joyería y Accesorios", icono: "fa-gem", ejemplos: ["Anillos", "Pulseras", "Collares", "Aretes", "Relojes", "Cadenas"] },
     { nombre: "Deportes", icono: "fa-dumbbell", ejemplos: ["Gimnasio", "Ciclismo", "Camping", "Fútbol", "Yoga", "Binoculares"] },
+    { nombre: "Libros", icono: "fa-book", ejemplos: ["Novelas", "Infantiles", "Escolares", "Autoayuda", "Religiosos", "Cómics"] },
     { nombre: "Servicios", icono: "fa-screwdriver-wrench", ejemplos: ["Diseño", "Reparaciones", "Limpieza", "Transporte", "Clases", "Eventos"] },
     { nombre: "Alimentos", icono: "fa-utensils", ejemplos: ["Snacks", "Dulces", "Café", "Salsas", "Postres", "Bebidas"] }
   ];
