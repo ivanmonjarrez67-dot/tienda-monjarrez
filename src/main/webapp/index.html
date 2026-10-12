@@ -2,6 +2,19 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
+    <!-- 🚀 Enlace de producto compartido (?producto=ID): se redirige al detalle
+         ANTES de cargar el resto de la página (CSS, scripts y catálogo completo),
+         para que llegue al producto al instante. -->
+    <script>
+      (function () {
+        try {
+          var id = new URLSearchParams(window.location.search).get("producto");
+          if (id && /^\d+$/.test(id)) {
+            window.location.replace("/detalle-nacional.html?id=" + encodeURIComponent(id));
+          }
+        } catch (e) {}
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tienda Monjarrez</title>
     <!-- 🆕 Favicon con fondo transparente (logo recortado y sin el
@@ -4462,7 +4475,7 @@ async function cargarMisProductos(usuarioId) {
   .google-aviso { font-size: 12px; text-align: center; margin: 6px 0 0; opacity: .85; }
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="script.js?v=3"></script>
+<script src="script.js?v=4"></script>
 <script src="carrito.js?v=8"></script>
 
 <script>

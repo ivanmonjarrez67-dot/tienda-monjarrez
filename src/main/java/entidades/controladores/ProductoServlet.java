@@ -79,13 +79,11 @@ public class ProductoServlet extends HttpServlet {
                 ? imagen
                 : (DOMINIO + "/logo-tienda.png"));
 
-        // A donde se manda a la persona real (no al bot de vista previa).
-        // TODO: si tu script.js aún no lee ?producto=ID al cargar para
-        // abrir automáticamente el panel "Ver detalles" de ese producto,
-        // esta redirección de todos modos deja al usuario en la tienda;
-        // solo no abrirá el panel solo. Es un ajuste pequeño de agregar
-        // después si lo quieres.
-        String urlSpaConProducto = DOMINIO + "/index.html?producto=" + id;
+        // 🚀 A donde se manda a la persona real (no al bot de vista previa):
+        // directo a la página de detalle del producto. Antes pasaba por
+        // index.html?producto=ID, que cargaba toda la tienda y el catálogo
+        // completo antes de redirigir al detalle (por eso tardaba tanto).
+        String urlDetalle = DOMINIO + "/detalle-nacional.html?id=" + id;
 
         try (PrintWriter out = response.getWriter()) {
             out.println("<!DOCTYPE html>");
@@ -100,10 +98,15 @@ public class ProductoServlet extends HttpServlet {
             out.println("<meta property=\"og:type\" content=\"product\">");
             out.println("<meta property=\"og:site_name\" content=\"Tienda Monjarrez\">");
             out.println("<meta name=\"twitter:card\" content=\"summary_large_image\">");
-            out.println("<meta http-equiv=\"refresh\" content=\"0; url=" + urlSpaConProducto + "\">");
+            // Personas reales: el JavaScript redirige al instante (sin dejar esta
+            // página en el historial). Los bots de vista previa no ejecutan JS y
+            // solo leen las etiquetas Open Graph de arriba. El meta refresh queda
+            // como respaldo por si el navegador tiene JavaScript desactivado.
+            out.println("<script>window.location.replace(\"" + urlDetalle + "\");</script>");
+            out.println("<meta http-equiv=\"refresh\" content=\"0; url=" + urlDetalle + "\">");
             out.println("</head>");
             out.println("<body>");
-            out.println("<p>Redirigiendo a <a href=\"" + urlSpaConProducto + "\">" + titulo + "</a>...</p>");
+            out.println("<p>Redirigiendo a <a href=\"" + urlDetalle + "\">" + titulo + "</a>...</p>");
             out.println("</body></html>");
         }
     }

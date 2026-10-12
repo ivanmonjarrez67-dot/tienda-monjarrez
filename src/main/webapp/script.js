@@ -7,6 +7,16 @@
 // de index.html), podría ya no estar el parámetro.
 window.__llegaDesdeProductoCompartido = new URLSearchParams(window.location.search).has("producto");
 
+// 🚀 Respaldo: si por algún motivo no actuó la redirección rápida del <head> de
+// index.html, se redirige acá de inmediato, sin esperar a que cargue el catálogo
+// completo (/api/productos) como hacía antes abrirProductoDesdeUrl().
+(function () {
+  var idCompartido = new URLSearchParams(window.location.search).get("producto");
+  if (idCompartido && /^\d+$/.test(idCompartido)) {
+    window.location.replace("/detalle-nacional.html?id=" + encodeURIComponent(idCompartido));
+  }
+})();
+
 document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("addProductButton").onclick = function () {
     document.getElementById("addProductModal").style.display = "block";
