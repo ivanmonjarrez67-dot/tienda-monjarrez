@@ -37,8 +37,14 @@ public class ActualizarPerfilServlet extends HttpServlet {
 
     // categorías válidas — cualquier otra cosa que llegue en el parámetro
     // "intereses" se ignora, para no guardar basura en la base de datos.
+    // 🔧 FIX: antes solo tenía Damas, Caballeros, Niños y Servicios, así que
+    // los intereses de las demás categorías se descartaban en silencio.
+    // 🆕 Se agrega "Libros". Los textos deben coincidir exactamente con el
+    // value de los checkboxes de intereses en index.html.
     private static final Set<String> CATEGORIAS_VALIDAS = new LinkedHashSet<>(
-            Arrays.asList("Damas", "Caballeros", "Niños", "Servicios"));
+            Arrays.asList("Damas", "Caballeros", "Niños", "Hogar y Decoración",
+                    "Tecnología y Electrónica", "Joyería y Accesorios",
+                    "Deportes", "Libros", "Servicios", "Alimentos"));
 
     // 🆕 provincias válidas — mismo criterio, deben coincidir exactamente
     // con las opciones del <select> de provincia al agregar un producto.
