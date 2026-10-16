@@ -23,6 +23,11 @@
   const UMBRAL_ARRASTRE = 6;
   const CLAVE_POSICION = "monji-posicion";
 
+  // 📱 Teléfono: el tamaño de Monji se ajusta en mascota.css (media queries).
+  const MQ_MOVIL = window.matchMedia("(max-width: 768px)");
+  // Espacio mínimo (px) entre Monji y la barra inferior, donde está el carrito.
+  const MARGEN_BARRA = 12;
+
   // ============================================================
   // PREGUNTAS FRECUENTES — edita aquí los textos.
   // Si "respuestas" tiene varias frases, Monji elige una al azar
@@ -183,6 +188,25 @@
     }
 
     restaurarPosicion(widget);
+
+    // --- Teléfono: Monji más pequeño y siempre POR ENCIMA de la barra inferior ---
+    // (la barra con "Carrito" la crea encabezado-movil.js, que puede cargar después
+    // que Monji; por eso se vuelve a revisar al cargar, al girar y cuando la barra cambia).
+    const refrescarMovil = () => {
+      mantenerSobreBarra(widget);
+      const barra = document.getElementById("mtNav");
+      if (barra && window.ResizeObserver && !barra._monjiVigilada) {
+        barra._monjiVigilada = true;
+        new ResizeObserver(refrescarMovil).observe(barra);
+      }
+    };
+    refrescarMovil();
+    window.addEventListener("load", refrescarMovil);
+    window.addEventListener("resize", refrescarMovil);
+    window.addEventListener("orientationchange", () => setTimeout(refrescarMovil, 300));
+    if (window.visualViewport) window.visualViewport.addEventListener("resize", refrescarMovil);
+    if (MQ_MOVIL.addEventListener) MQ_MOVIL.addEventListener("change", refrescarMovil);
+    [300, 1000, 2500].forEach((ms) => setTimeout(refrescarMovil, ms));
 
     // --- Arrastre (mouse + touch) ---
     let arrastrando = false;
@@ -471,11 +495,61 @@
     widget._monjiChat = { agregarBurbuja, mostrarEscribiendo, quitarEscribiendo, abrirChat, reaccionar };
   }
 
+  // Hasta dónde puede llegar Monji por abajo. En teléfono, la barra inferior
+  // (#mtNav, con el carrito en la esquina derecha) queda fuera de su alcance.
+  // Se usa el alto "en reposo" de la barra, así que sigue valiendo aunque la
+  // barra se esconda al hacer scroll y luego reaparezca.
+  function limiteInferiorUtil() {
+    const barra = document.getElementById("mtNav");
+    if (!barra || !document.body.classList.contains("mt-on")) return window.innerHeight;
+    if (getComputedStyle(barra).display === "none") return window.innerHeight;
+    const alto = barra.offsetHeight;
+    if (!alto) return window.innerHeight;
+    return window.innerHeight - alto - MARGEN_BARRA;
+  }
+
+  // Sube a Monji si quedó encima de la barra inferior (nunca tapa el carrito).
+  function mantenerSobreBarra(widget) {
+    const boton = widget.querySelector("#monji-boton");
+    if (!boton) return;
+
+    const limite = limiteInferiorUtil();
+    const exceso = boton.getBoundingClientRect().bottom - limite;
+
+    if (exceso <= 0) {
+      // Ya no hay barra (ej. se pasó a pantalla ancha): quita el ajuste de "bottom".
+      if (limite >= window.innerHeight && widget.dataset.monjiSubido) {
+        widget.style.removeProperty("bottom");
+        delete widget.dataset.monjiSubido;
+      }
+      return;
+    }
+
+    const cs = getComputedStyle(widget);
+    if (widget.style.top || cs.bottom === "auto") {
+      // Posición libre (ya lo arrastraron): lo subimos tal cual.
+      const r = widget.getBoundingClientRect();
+      moverWidgetA(widget, r.left, r.top - exceso);
+    } else {
+      // Posición por defecto (esquina): conserva el ancla abajo-derecha y solo lo eleva.
+      const bottomActual = parseFloat(cs.bottom) || 0;
+      widget.style.setProperty("bottom", bottomActual + exceso + "px", "important");
+      widget.dataset.monjiSubido = "1";
+    }
+  }
+
   function moverWidgetA(widget, x, y) {
     const anchoWidget = widget.offsetWidth;
     const altoWidget = widget.offsetHeight;
     const maxX = window.innerWidth - anchoWidget;
-    const maxY = window.innerHeight - altoWidget;
+    // En teléfono, Monji no puede bajar más allá de la barra inferior (carrito).
+    const boton = widget.querySelector("#monji-boton");
+    const limite = limiteInferiorUtil();
+    let maxY = window.innerHeight - altoWidget;
+    if (boton && limite < window.innerHeight) {
+      const bajoBoton = boton.getBoundingClientRect().bottom - widget.getBoundingClientRect().top;
+      maxY = limite - bajoBoton;
+    }
 
     x = Math.min(Math.max(x, 0), Math.max(maxX, 0));
     y = Math.min(Math.max(y, 0), Math.max(maxY, 0));

@@ -299,12 +299,22 @@
 .monji-opcion-btn:active { transform: scale(0.98); }
 
 /* --- Responsive --- */
+/* Teléfonos grandes / tablets pequeñas */
+@media (max-width: 768px) {
+  #monji-widget {
+    width: 84px;
+    height: 114px;
+  }
+}
+
+/* Teléfonos (Monji más pequeño). mascota.js además lo mantiene por
+   encima de la barra inferior para que nunca tape el carrito. */
 @media (max-width: 480px) {
   #monji-widget {
     bottom: 14px;
     right: 14px;
-    width: 84px;
-    height: 114px;
+    width: 66px;
+    height: 90px;
   }
 
   .monji-chat {
