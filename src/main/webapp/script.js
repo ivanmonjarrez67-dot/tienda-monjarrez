@@ -880,21 +880,29 @@ function formatearCuentaRegresiva(ms) {
 }
 // 🆕 ===================== Fin del motor de urgencia =====================
 
-// 🆕 ============= "ARTÍCULO MÁS VENDIDO #N" (top 20 del día) =============
-// Cada día (mismo criterio de "día" que el motor de urgencia: bloques
-// de 24h desde el epoch) se eligen 20 productos distintos del catálogo
-// COMPLETO y se les reparte, sin repetir, un puesto del #1 al #20. Es
-// determinístico (misma semilla = mismo resultado para todos), así que
-// no cambia solo con recargar la página, y sí cambia al día siguiente.
-// mapaBestsellerHoy se llena una sola vez con el catálogo COMPLETO
-// (nunca con un subconjunto filtrado/buscado) para que el puesto de un
-// producto no cambie según qué filtro esté viendo el comprador.
-let mapaBestsellerHoy = new Map();
+// 🆕 ======= "ARTÍCULO MÁS VENDIDO #N" + "YA LO COMPRARON" (ventas REALES) =======
+// Ya NO es decorativo. Se usa el historial real de pedidos:
+//  - Los 20 productos DISTINTOS vendidos más recientemente (el último
+//    vendido es el #1) llevan "Artículo más vendido #N".
+//  - Los 20 vendidos justo antes llevan una insignia discreta
+//    ("Ya lo compraron"): demuestran que se han comprado sin ser
+//    "los más vendidos".
+// Los ids vienen de /api/vendidos-recientes (más reciente primero).
+// Si ese endpoint falla NO se muestra ninguna insignia (no se inventan ventas).
+// Se calcula con el catálogo COMPLETO (nunca con un subconjunto
+// filtrado) para que el puesto no cambie según el filtro del comprador.
+let mapaBestsellerHoy = new Map();      // id -> puesto 1..20
+let setVendidosSecundarios = new Set(); // ids vendidos puestos 21..40
 
-function puntajeBestsellerProducto(idProducto, dia) {
-  const id = parseInt(idProducto, 10) || 0;
-  return pseudoAleatorio(id * 7.9218 + dia * 31.415);
-}
+// Primera venta de la web (sin registro en la BD): productos 68, 106, 63 y 56
+// (ver VENTA_INICIAL en estadisticas.html). Es la más antigua: va al final.
+const IDS_VENTA_INICIAL = ["68", "106", "63", "56"];
+
+let idsVendidosRecientes = [];
+const vendidosRecientesPromise = fetch("/api/vendidos-recientes", { cache: "no-store" })
+  .then((r) => (r.ok ? r.json() : { ids: [] }))
+  .then((d) => { idsVendidosRecientes = (d.ids || []).map(String); })
+  .catch(() => { idsVendidosRecientes = []; });
 
 // 🆕 ===== Urgencia SOLO para los vendedores/categorías que el admin elija =====
 // El panel de administrador (🔥) guarda qué vendedores y qué categorías llevan
@@ -918,13 +926,21 @@ function esProductoServicio(producto) {
 }
 
 function calcularBestsellersDelDia(productos) {
-  const dia = Math.floor(Date.now() / MS_DIA_URGENCIA);
-  const conPuntaje = (productos || [])
-    .filter((p) => p && p.id !== undefined && p.id !== null && p.id !== "" && aplicaUrgencia(p))
-    .map((p) => ({ id: String(p.id), puntaje: puntajeBestsellerProducto(p.id, dia) }));
-  conPuntaje.sort((a, b) => b.puntaje - a.puntaje);
+  // Solo cuentan productos que SIGUEN en el catálogo (si borraste uno
+  // vendido se salta y entra el siguiente: siempre salen 20 + 20).
+  const enCatalogo = new Set(
+    (productos || [])
+      .filter((p) => p && p.id !== undefined && p.id !== null && p.id !== "")
+      .map((p) => String(p.id))
+  );
+  const vistos = new Set();
+  const ordenados = [];
+  [...idsVendidosRecientes, ...IDS_VENTA_INICIAL].forEach((id) => {
+    if (enCatalogo.has(id) && !vistos.has(id)) { vistos.add(id); ordenados.push(id); }
+  });
   const mapa = new Map();
-  conPuntaje.slice(0, 20).forEach((item, idx) => mapa.set(item.id, idx + 1));
+  ordenados.slice(0, 20).forEach((id, idx) => mapa.set(id, idx + 1));
+  setVendidosSecundarios = new Set(ordenados.slice(20, 40));
   return mapa;
 }
 // 🆕 ========= Fin de "ARTÍCULO MÁS VENDIDO #N" =========
@@ -988,17 +1004,20 @@ function construirTarjetaProductoHTML(producto) {
     ? `<div class="producto-franja-urgencia">${urgencia.fraseSecundaria}</div>`
     : "";
 
-  // 🆕 "Artículo más vendido #N": solo para los 20 productos que le
-  // tocaron hoy (ver mapaBestsellerHoy más arriba). Va en el mismo
-  // lugar donde iría "Solo quedan X" / "Último día", debajo del
-  // nombre, y le gana ese lugar: si el producto es uno de los 20 del
-  // día se muestra ESTO en vez de "Solo quedan X".
-  const puestoBestseller = esServicio ? undefined : mapaBestsellerHoy.get(String(producto.id ?? ""));
+  // 🆕 Ventas REALES: #1..#20 = los 20 productos vendidos más
+  // recientemente; los 20 anteriores llevan "Ya lo compraron". Va debajo
+  // del nombre y le gana el lugar a "Solo quedan X". Independiente de la
+  // estrategia de urgencia (una venta real se muestra siempre).
+  const idTarjeta = String(producto.id ?? "");
+  const puestoBestseller = mapaBestsellerHoy.get(idTarjeta);
+  const esVendidoSecundario = !puestoBestseller && setVendidosSecundarios.has(idTarjeta);
   const quedanBadgeHtml = puestoBestseller
     ? `<div class="producto-bestseller-badge">Artículo más vendido #${puestoBestseller}</div>`
-    : urgencia.mostrarFranja
-      ? `<div class="producto-quedan-badge">${urgencia.frase}</div>`
-      : "";
+    : esVendidoSecundario
+      ? `<div class="producto-vendido-badge"><i class="fa-solid fa-circle-check"></i> Ya lo compraron</div>`
+      : urgencia.mostrarFranja
+        ? `<div class="producto-quedan-badge">${urgencia.frase}</div>`
+        : "";
 
   const galeriaHtml = construirGaleriaHTML(
     [producto.imagen, producto.imagen2, producto.imagen3],
@@ -1125,7 +1144,7 @@ function abrirProductoDesdeUrl() {
 const gridProductosInicial = document.getElementById("productGrid");
 mostrarEsqueletoCarga(gridProductosInicial);
 
-Promise.all([fetch("/api/productos").then((response) => response.json()), urgenciaConfigPromise])
+Promise.all([fetch("/api/productos").then((response) => response.json()), urgenciaConfigPromise, vendidosRecientesPromise])
   .then(([productos]) => {
     const grid = document.getElementById("productGrid");
     grid.classList.remove("skeleton-grid");
@@ -1280,7 +1299,7 @@ function cargarProductos() {
   const params = new URLSearchParams();
   if (filtroPrincipal) params.append("filtro", filtroPrincipal);
   if (categoriaSeleccionada) params.append("categoria", categoriaSeleccionada);
-  urgenciaConfigPromise.then(() => fetch(`/api/productos-filtrados?${params.toString()}`))
+  Promise.all([urgenciaConfigPromise, vendidosRecientesPromise]).then(() => fetch(`/api/productos-filtrados?${params.toString()}`))
     .then((response) => response.json())
     .then((productos) => {
       const grid = document.getElementById("productGrid");
