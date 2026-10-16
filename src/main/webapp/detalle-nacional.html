@@ -501,6 +501,21 @@
     letter-spacing: 0.3px;
   }
 
+  /* 🆕 "Vendido recientemente": insignia discreta (sin fondo oscuro) para
+     los otros 20 productos con ventas reales; no compite con "más vendido". */
+  .producto-vendido-badge {
+    display: inline-block;
+    margin: 8px 0 0;
+    color: #7a1414;
+    border: 1px solid #7a1414;
+    font-size: 0.78rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    padding: 2px 9px;
+    border-radius: 4px;
+    letter-spacing: 0.3px;
+  }
+
   /* 🆕 "Solo quedan X" / "Casi agotados" / "Último día": rojo vino de
      la marca, mayúscula sin negrita. */
   .producto-quedan-badge {
@@ -594,6 +609,15 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
     flex: 1;
+  }
+  /* Insignias de ventas reales dentro de la tarjeta (más pequeñas) */
+  .rel-card-body .producto-bestseller-badge,
+  .rel-card-body .producto-vendido-badge {
+    align-self: flex-start;
+    margin: 0 0 6px;
+    font-size: 0.62rem;
+    padding: 2px 6px;
+    line-height: 1.3;
   }
   .rel-card-precio { font-size: 0.95rem; font-weight: 700; color: var(--text); margin: 0; }
   .rel-card-precio-anterior {
@@ -973,14 +997,32 @@
   }, 1000);
   // 🆕 ================= Fin del motor de urgencia =================
 
-  // 🆕 ========= "Artículo más vendido #N" (igual que en script.js) =========
-  // Se calcula sobre el catálogo COMPLETO que ya se pide más abajo
-  // (fetch a /api/productos) para decidir si ESTE producto es uno de
-  // los 20 que le tocaron hoy, y con qué puesto.
-  function puntajeBestsellerProducto(idProducto, dia) {
-    const id = parseInt(idProducto, 10) || 0;
-    return pseudoAleatorio(id * 7.9218 + dia * 31.415);
-  }
+  // 🆕 ========= "Artículo más vendido #N" / "Vendido recientemente" =========
+  // IGUAL que en script.js (ventas REALES, ya no es decorativo):
+  //  - Los 20 con más unidades vendidas (mismo orden del panel de
+  //    estadísticas) llevan "Artículo más vendido #N".
+  //  - Otros 20 vendidos recientemente llevan "Vendido recientemente".
+  // Los datos vienen de /api/vendidos-recientes. Si falla, no se muestra nada.
+  const VENTA_INICIAL_UNIDADES = [
+    { id: "56", u: 1 },
+    { id: "63", u: 2 },
+    { id: "106", u: 1 },
+    { id: "68", u: 1 }
+  ];
+  let rankingVendidos = [];
+  let idsVendidosRecientes = [];
+  let vendidosCargo = false;
+  const vendidosRecientesPromise = fetch("/api/vendidos-recientes", { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
+    .then((d) => {
+      rankingVendidos = (d.ranking || []).map((x) => ({ id: String(x.id), u: Number(x.u) || 0 }));
+      idsVendidosRecientes = (d.recientes || d.ids || []).map(String);
+      vendidosCargo = true;
+    })
+    .catch((e) => {
+      console.warn("No se pudo cargar /api/vendidos-recientes:", e);
+      rankingVendidos = []; idsVendidosRecientes = []; vendidosCargo = false;
+    });
   // 🆕 Urgencia SOLO para los vendedores/categorías que el admin elija en el
   // panel (🔥). Igual que script.js: el servidor devuelve en /api/urgencia-config
   // los IDs de producto a los que SÍ les toca (vendedor elegido Y categoría
@@ -993,17 +1035,34 @@
   function aplicaUrgencia(producto) {
     return !!producto && urgenciaIds.has(String(producto.id ?? ""));
   }
-  function calcularBestsellersDelDia(productos) {
-    const dia = Math.floor(Date.now() / MS_DIA_URGENCIA);
-    const conPuntaje = (productos || [])
-      .filter((p) => p && p.id !== undefined && p.id !== null && p.id !== "" && aplicaUrgencia(p))
-      .map((p) => ({ id: String(p.id), puntaje: puntajeBestsellerProducto(p.id, dia) }));
-    conPuntaje.sort((a, b) => b.puntaje - a.puntaje);
-    const mapa = new Map();
-    conPuntaje.slice(0, 20).forEach((item, idx) => mapa.set(item.id, idx + 1));
-    return mapa;
+  // Devuelve { puestos: Map id->1..20, recientes: Set de otros 20 ids }.
+  // Mismo cálculo que calcularBestsellersDelDia() de script.js.
+  function calcularVentasReales(productos) {
+    const enCatalogo = new Set(
+      (productos || [])
+        .filter((p) => p && p.id !== undefined && p.id !== null && p.id !== "")
+        .map((p) => String(p.id))
+    );
+    const unidades = new Map();
+    rankingVendidos.concat(vendidosCargo ? VENTA_INICIAL_UNIDADES : []).forEach(({ id, u }) => {
+      unidades.set(id, (unidades.get(id) || 0) + u);
+    });
+    const top = [...unidades.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([id]) => id)
+      .filter((id) => enCatalogo.has(id))
+      .slice(0, 20);
+    const puestos = new Map();
+    top.forEach((id, idx) => puestos.set(id, idx + 1));
+    const enTop = new Set(top);
+    const vistos = new Set();
+    const recientes = [];
+    idsVendidosRecientes.concat(vendidosCargo ? VENTA_INICIAL_UNIDADES.map((x) => x.id) : []).forEach((id) => {
+      if (enCatalogo.has(id) && !enTop.has(id) && !vistos.has(id)) { vistos.add(id); recientes.push(id); }
+    });
+    return { puestos, recientes: new Set(recientes.slice(0, 20)) };
   }
-  // 🆕 ========= Fin de "Artículo más vendido #N" =========
+  // 🆕 ========= Fin de ventas reales =========
 
   // Pinta la foto principal + miniaturas con la lista de imágenes dada.
   // "activa" (opcional) es la URL que debe quedar seleccionada.
@@ -1063,9 +1122,9 @@
       .catch((err) => console.warn("No se pudieron cargar las fotos adicionales:", err));
   }
 
-  function construirPrecio(producto, puestoBestseller) {
+  function construirPrecio(producto, puestoBestseller, esReciente) {
     const esServicio = !aplicaUrgencia(producto); // true = este producto NO lleva urgencia
-    if (esServicio) puestoBestseller = null;
+    // Las ventas reales se muestran siempre, aunque el producto no lleve urgencia.
     const precioNum = parseFloat(producto.precio);
     const precioAnteriorNum = parseFloat(producto.precio_anterior);
     const tieneDescuentoReal = !isNaN(precioAnteriorNum) && !isNaN(precioNum) && precioAnteriorNum > precioNum;
@@ -1103,6 +1162,8 @@
     // "Último día" cuando el producto es uno de los 20 elegidos hoy.
     const quedanBadgeHtml = puestoBestseller
       ? `<div class="producto-bestseller-badge">Artículo más vendido #${puestoBestseller}</div>`
+      : esReciente
+        ? `<div class="producto-vendido-badge"><i class="fa-solid fa-bag-shopping"></i> Vendido recientemente</div>`
       : urgencia.mostrarFranja
         ? `<div class="producto-quedan-badge">${urgencia.frase}</div>`
         : "";
@@ -1263,7 +1324,18 @@
     });
   }
 
+  // Ventas reales del catálogo completo (se llena al cargar el producto);
+  // las tarjetas de "Más productos en esta categoría" la usan para sus insignias.
+  let ventasReales = { puestos: new Map(), recientes: new Set() };
+
   function construirTarjetaRelacionada(p) {
+    const idRel = String(p.id);
+    const puestoRel = ventasReales.puestos.get(idRel);
+    const insigniaRel = puestoRel
+      ? `<div class="producto-bestseller-badge">Artículo más vendido #${puestoRel}</div>`
+      : ventasReales.recientes.has(idRel)
+        ? `<div class="producto-vendido-badge"><i class="fa-solid fa-bag-shopping"></i> Vendido recientemente</div>`
+        : "";
     const precioNum = parseFloat(p.precio);
     const precioAnteriorNum = parseFloat(p.precio_anterior);
     let precioHtml = precioNum ? fmtCrc(precioNum) : "";
@@ -1280,6 +1352,7 @@
       </div>
       <div class="rel-card-body">
         <p class="rel-card-nombre">${esc(p.nombre)}</p>
+        ${insigniaRel}
         <p class="rel-card-precio">${precioHtml}</p>
       </div>
     `;
@@ -1600,7 +1673,7 @@
     });
   }
 
-  function renderizar(producto, puestoBestseller) {
+  function renderizar(producto, puestoBestseller, esReciente) {
     document.getElementById("tituloProducto").textContent = producto.nombre || "";
     construirVendedor(producto);
     document.getElementById("breadcrumb").textContent =
@@ -1610,7 +1683,7 @@
     construirDescripcion(producto);
     // 🆕 "Artículo más vendido #N" (si aplica) se pinta junto al
     // precio, en el mismo lugar que "Solo quedan X".
-    construirPrecio(producto, puestoBestseller);
+    construirPrecio(producto, puestoBestseller, esReciente);
     construirUbicacion(producto);
     construirContactoVendedor(producto);
     configurarCompartir(producto);
@@ -1633,12 +1706,15 @@
         return res.json();
       }),
       urgenciaConfigPromise,
+      vendidosRecientesPromise,
     ])
       .then(([productos]) => {
         const producto = (productos || []).find((p) => String(p.id) === String(productoId));
         if (!producto) throw new Error("producto no encontrado");
-        const mapaBestsellerHoy = calcularBestsellersDelDia(productos);
-        renderizar(producto, mapaBestsellerHoy.get(String(producto.id)));
+        const ventas = calcularVentasReales(productos);
+        ventasReales = ventas;
+        const idStr = String(producto.id);
+        renderizar(producto, ventas.puestos.get(idStr), !ventas.puestos.has(idStr) && ventas.recientes.has(idStr));
       })
       .catch((err) => {
         console.error("Error al cargar el detalle del producto:", err);

@@ -882,27 +882,47 @@ function formatearCuentaRegresiva(ms) {
 
 // 🆕 ======= "ARTÍCULO MÁS VENDIDO #N" + "YA LO COMPRARON" (ventas REALES) =======
 // Ya NO es decorativo. Se usa el historial real de pedidos:
-//  - Los 20 productos DISTINTOS vendidos más recientemente (el último
-//    vendido es el #1) llevan "Artículo más vendido #N".
-//  - Los 20 vendidos justo antes llevan una insignia discreta
-//    ("Ya lo compraron"): demuestran que se han comprado sin ser
+//  - Los 20 productos con más unidades vendidas (mismo orden del panel
+//    "Productos más vendidos") llevan "Artículo más vendido #N".
+//  - Otros 20 vendidos recientemente llevan una insignia discreta
+//    ("Vendido recientemente"): demuestran que se han comprado sin ser
 //    "los más vendidos".
-// Los ids vienen de /api/vendidos-recientes (más reciente primero).
+// El servidor (/api/vendidos-recientes) devuelve:
+//   ranking:   [{id, u}] = productos con sus unidades vendidas, en el MISMO
+//              orden en que los pone el panel de estadísticas
+//              ("Productos más vendidos": más unidades primero).
+//   recientes: [id, ...] = productos distintos vendidos, el último vendido primero.
+// Aquí se le suma la primera venta de la web (que no está en la BD), igual
+// que hace estadisticas.html con VENTA_INICIAL.
 // Si ese endpoint falla NO se muestra ninguna insignia (no se inventan ventas).
 // Se calcula con el catálogo COMPLETO (nunca con un subconjunto
 // filtrado) para que el puesto no cambie según el filtro del comprador.
 let mapaBestsellerHoy = new Map();      // id -> puesto 1..20
-let setVendidosSecundarios = new Set(); // ids vendidos puestos 21..40
+let setVendidosSecundarios = new Set(); // ids "ventas recientes" (otros 20)
 
-// Primera venta de la web (sin registro en la BD): productos 68, 106, 63 y 56
-// (ver VENTA_INICIAL en estadisticas.html). Es la más antigua: va al final.
-const IDS_VENTA_INICIAL = ["68", "106", "63", "56"];
+// Primera venta de la web (sin registro en la BD): misma lista y cantidades
+// que VENTA_INICIAL en estadisticas.html. Es la más antigua: va al final.
+const VENTA_INICIAL_UNIDADES = [
+  { id: "56", u: 1 },
+  { id: "63", u: 2 },
+  { id: "106", u: 1 },
+  { id: "68", u: 1 }
+];
 
-let idsVendidosRecientes = [];
+let rankingVendidos = [];      // [{id, u}] orden del panel (sin la venta inicial)
+let idsVendidosRecientes = []; // más reciente primero
+let vendidosCargo = false;
 const vendidosRecientesPromise = fetch("/api/vendidos-recientes", { cache: "no-store" })
-  .then((r) => (r.ok ? r.json() : { ids: [] }))
-  .then((d) => { idsVendidosRecientes = (d.ids || []).map(String); })
-  .catch(() => { idsVendidosRecientes = []; });
+  .then((r) => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
+  .then((d) => {
+    rankingVendidos = (d.ranking || []).map((x) => ({ id: String(x.id), u: Number(x.u) || 0 }));
+    idsVendidosRecientes = (d.recientes || d.ids || []).map(String);
+    vendidosCargo = true;
+  })
+  .catch((e) => {
+    console.warn("No se pudo cargar /api/vendidos-recientes:", e);
+    rankingVendidos = []; idsVendidosRecientes = []; vendidosCargo = false;
+  });
 
 // 🆕 ===== Urgencia SOLO para los vendedores/categorías que el admin elija =====
 // El panel de administrador (🔥) guarda qué vendedores y qué categorías llevan
@@ -933,14 +953,33 @@ function calcularBestsellersDelDia(productos) {
       .filter((p) => p && p.id !== undefined && p.id !== null && p.id !== "")
       .map((p) => String(p.id))
   );
-  const vistos = new Set();
-  const ordenados = [];
-  [...idsVendidosRecientes, ...IDS_VENTA_INICIAL].forEach((id) => {
-    if (enCatalogo.has(id) && !vistos.has(id)) { vistos.add(id); ordenados.push(id); }
+
+  // 1) Ranking por unidades, igual que el panel: ventas de la BD (en el
+  //    orden que manda el servidor) + la primera venta al final, ordenado
+  //    por unidades (sort estable: los empates conservan ese orden).
+  const unidades = new Map();
+  rankingVendidos.concat(vendidosCargo ? VENTA_INICIAL_UNIDADES : []).forEach(({ id, u }) => {
+    unidades.set(id, (unidades.get(id) || 0) + u);
   });
+  const porUnidades = [...unidades.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([id]) => id)
+    .filter((id) => enCatalogo.has(id));
+
+  // 2) Los 20 primeros = "Artículo más vendido #N" (mismo orden del panel).
+  const top = porUnidades.slice(0, 20);
   const mapa = new Map();
-  ordenados.slice(0, 20).forEach((id, idx) => mapa.set(id, idx + 1));
-  setVendidosSecundarios = new Set(ordenados.slice(20, 40));
+  top.forEach((id, idx) => mapa.set(id, idx + 1));
+
+  // 3) Otros 20 = "Vendido recientemente": las ventas más recientes que NO están
+  //    ya en el top (la primera venta es la más antigua, va al final).
+  const enTop = new Set(top);
+  const recientes = [];
+  const vistos = new Set();
+  idsVendidosRecientes.concat(vendidosCargo ? VENTA_INICIAL_UNIDADES.map((x) => x.id) : []).forEach((id) => {
+    if (enCatalogo.has(id) && !enTop.has(id) && !vistos.has(id)) { vistos.add(id); recientes.push(id); }
+  });
+  setVendidosSecundarios = new Set(recientes.slice(0, 20));
   return mapa;
 }
 // 🆕 ========= Fin de "ARTÍCULO MÁS VENDIDO #N" =========
@@ -1005,7 +1044,7 @@ function construirTarjetaProductoHTML(producto) {
     : "";
 
   // 🆕 Ventas REALES: #1..#20 = los 20 productos vendidos más
-  // recientemente; los 20 anteriores llevan "Ya lo compraron". Va debajo
+  // recientemente; los 20 anteriores llevan "Vendido recientemente". Va debajo
   // del nombre y le gana el lugar a "Solo quedan X". Independiente de la
   // estrategia de urgencia (una venta real se muestra siempre).
   const idTarjeta = String(producto.id ?? "");
@@ -1014,7 +1053,7 @@ function construirTarjetaProductoHTML(producto) {
   const quedanBadgeHtml = puestoBestseller
     ? `<div class="producto-bestseller-badge">Artículo más vendido #${puestoBestseller}</div>`
     : esVendidoSecundario
-      ? `<div class="producto-vendido-badge"><i class="fa-solid fa-circle-check"></i> Ya lo compraron</div>`
+      ? `<div class="producto-vendido-badge"><i class="fa-solid fa-bag-shopping"></i> Vendido recientemente</div>`
       : urgencia.mostrarFranja
         ? `<div class="producto-quedan-badge">${urgencia.frase}</div>`
         : "";
