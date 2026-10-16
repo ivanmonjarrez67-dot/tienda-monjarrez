@@ -353,6 +353,7 @@
   .img-box .acc{display:flex;justify-content:space-between;}
   .img-box .acc button{flex:1;background:#151a19;border:0;border-top:1px solid var(--line);color:var(--text);cursor:pointer;padding:3px 0;font-size:12px;}
   .img-box .acc button:hover{color:var(--accent);}
+  .img-temu{border:1px dashed var(--accent);border-radius:8px;padding:10px;margin-bottom:12px;}
   .img-out{width:100%;min-height:160px;background:#0d1010;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:9px 11px;font-family:var(--mono);font-size:11.5px;white-space:pre;}
 
   .modal-overlay{
@@ -608,6 +609,20 @@
   <div class="modal" style="max-width:720px;max-height:92vh;overflow-y:auto;">
     <h2>Links de imágenes para productos nuevos</h2>
     <div class="hint" style="margin-bottom:10px;">Un bloque por producto: nombre, precio y sus fotos. Elige todas las fotos de una vez: la <b>primera es la principal</b> y las demás son adicionales (máximo 8). Reordénalas con ‹ ›. Se suben a Cloudinary y abajo se generan los links listos para copiar.</div>
+    <div class="img-temu">
+      <div style="font-weight:600;margin-bottom:6px;">⚡ Importar desde Temu (sin capturas)</div>
+      <div class="hint" style="margin-bottom:8px;">
+        <b>1.</b> Una sola vez: arrastra este botón a tu barra de favoritos
+        <a id="imgBookmarklet" class="btn aprobar" style="text-decoration:none;display:inline-block;padding:3px 10px;margin:0 4px;" href="#" onclick="alert('No lo abras aquí: arrástralo a la barra de favoritos de tu navegador.');return false;">📥 Copiar de Temu</a>
+        <button type="button" class="btn secondary" style="padding:3px 10px;" onclick="imgCopiarBookmarklet(this)">Copiar código</button><br>
+        <b>2.</b> Abre el producto en Temu y toca ese favorito: copia el nombre y todas las fotos.<br>
+        <b>3.</b> Vuelve aquí y pega abajo (Ctrl+V) o toca el botón: se crea el producto y las fotos se suben solas a Cloudinary. Solo te falta poner el precio.
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <textarea id="imgTemuPegar" rows="2" style="flex:1;min-width:200px;" placeholder="Pega aquí lo copiado de Temu (también sirve una lista de links de fotos, uno por línea)" onpaste="setTimeout(imgImportarPegado,50)"></textarea>
+        <button type="button" class="btn aprobar" onclick="imgPegarPortapapeles()">📋 Pegar y crear</button>
+      </div>
+    </div>
     <div id="imgProductos"></div>
     <div class="modal-actions" style="justify-content:flex-start;flex-wrap:wrap;">
       <button type="button" class="btn secondary" onclick="imgAgregarProducto()">+ Otro producto</button>
@@ -1354,11 +1369,21 @@ async function imgSubir(p, f){
   if(!p.fotos.includes(f)) return;        // la quitaron antes de que le tocara
   f.estado = 'subiendo'; imgPintar();
   try{
-    const lista = await imgComprimir(f.file);
-    const fd = new FormData(); fd.append('imagenProducto', lista);
-    const r = await fetch(IMG_UPLOAD_ENDPOINT, {method:'POST', body: fd});
-    if(!r.ok) throw new Error((await r.text()) || ('Error ' + r.status));
-    f.url = (await r.text()).trim();
+    if(f.remote){
+      // Foto con link (Temu): Cloudinary la descarga directo, sin pasar por tu navegador
+      const fd = new FormData();
+      fd.append('file', f.remote); fd.append('upload_preset', CLD_PRESET);
+      const r = await fetch('https://api.cloudinary.com/v1_1/' + CLD_CLOUD + '/image/upload', {method:'POST', body: fd});
+      const j = await r.json().catch(() => ({}));
+      if(!r.ok) throw new Error((j.error && j.error.message) || ('Error ' + r.status));
+      f.url = (j.secure_url || '').trim();
+    }else{
+      const lista = await imgComprimir(f.file);
+      const fd = new FormData(); fd.append('imagenProducto', lista);
+      const r = await fetch(IMG_UPLOAD_ENDPOINT, {method:'POST', body: fd});
+      if(!r.ok) throw new Error((await r.text()) || ('Error ' + r.status));
+      f.url = (await r.text()).trim();
+    }
     f.estado = f.url ? 'ok' : 'error';
   }catch(e){ f.estado = 'error'; f.msg = e.message; }
   imgPintar();
@@ -1399,6 +1424,58 @@ document.addEventListener('keydown', (e) => {
   else if(e.key === 'ArrowLeft') imgVisorMover(-1);
   else if(e.key === 'ArrowRight') imgVisorMover(1);
 });
+
+// --- Importar desde Temu: bookmarklet + pegado ---
+const CLD_CLOUD = 'pl6m9vhb', CLD_PRESET = 'proyecto_web_unsigned';
+const IMG_BOOKMARKLET = "javascript:(function(){var s={},o=[];document.querySelectorAll('img').forEach(function(i){var u=i.currentSrc||i.src||'';if(!/kwcdn\\.com|temu/.test(u)||(i.naturalWidth||0)<350)return;u=u.split('?')[0];if(!s[u]){s[u]=1;o.push(u)}});var t=((document.querySelector('h1')||{}).innerText||document.title||'').trim().slice(0,120);var j=JSON.stringify({temu:1,nombre:t,imagenes:o.slice(0,9),origen:location.href});(navigator.clipboard?navigator.clipboard.writeText(j):Promise.reject()).then(function(){alert('Copiado: '+o.length+' fotos. Pégalo en el panel.')},function(){prompt('Copia esto:',j)})})();";
+document.getElementById('imgBookmarklet').setAttribute('href', IMG_BOOKMARKLET);
+
+async function imgCopiarBookmarklet(btn){
+  try{ await navigator.clipboard.writeText(IMG_BOOKMARKLET); toast('Código copiado'); }
+  catch(e){ prompt('Copia este código:', IMG_BOOKMARKLET); }
+}
+function imgImportarTexto(txt){
+  txt = (txt || '').trim(); if(!txt) return 0;
+  let items = [];
+  try{
+    const j = JSON.parse(txt);
+    items = Array.isArray(j) ? j : [j];
+  }catch(e){
+    const urls = txt.split(/\s+/).filter(u => /^https?:\/\//i.test(u));
+    if(urls.length) items = [{nombre:'', imagenes:urls}];
+  }
+  let creados = 0;
+  items.forEach(it => {
+    const urls = [...new Set((it.imagenes || []).filter(u => /^https?:\/\//i.test(u)))].slice(0, 1 + IMG_MAX_EXTRA);
+    if(!urls.length) return;
+    // Reutiliza el primer bloque si está vacío, si no crea uno nuevo
+    let p = IMG_PRODS.length === 1 && !IMG_PRODS[0].fotos.length && !IMG_PRODS[0].nombre.trim() ? IMG_PRODS[0] : null;
+    if(!p){ p = imgNuevoProducto(); IMG_PRODS.push(p); }
+    p.nombre = String(it.nombre || '').replace(/\s+/g, ' ').trim();
+    urls.forEach(u => {
+      const f = {id: ++IMG_SEQ, url:'', preview:u, remote:u, estado:'subiendo'};
+      p.fotos.push(f);
+      IMG_COLA = IMG_COLA.then(() => imgSubir(p, f));
+    });
+    creados++;
+  });
+  if(creados) imgPintar();
+  return creados;
+}
+function imgImportarPegado(){
+  const t = document.getElementById('imgTemuPegar');
+  const n = imgImportarTexto(t.value);
+  if(n){ t.value = ''; toast(n + ' producto' + (n === 1 ? '' : 's') + ' creado' + (n === 1 ? '' : 's') + ' · subiendo fotos…'); }
+  else if(t.value.trim()){ errorImg.textContent = 'No encontré fotos en lo que pegaste.'; errorImg.classList.add('show'); }
+}
+async function imgPegarPortapapeles(){
+  try{
+    const txt = await navigator.clipboard.readText();
+    const n = imgImportarTexto(txt);
+    if(n) toast(n + ' producto' + (n === 1 ? '' : 's') + ' creado' + (n === 1 ? '' : 's') + ' · subiendo fotos…');
+    else toast('El portapapeles no tiene datos de Temu', true);
+  }catch(e){ toast('Tu navegador no deja leer el portapapeles: pega en el cuadro (Ctrl+V)', true); }
+}
 
 function imgGenerar(){
   errorImg.classList.remove('show');
