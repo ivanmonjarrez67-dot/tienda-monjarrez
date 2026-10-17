@@ -49,11 +49,13 @@ public class EstadisticasServlet extends HttpServlet {
             return;
         }
 
-        // Una fila por producto de cada pedido. El estado es la última novedad
-        // de PedidoActualizaciones; si no tiene, el de Pedidos.
+        // Una fila por producto de cada pedido. 🆕 El estado es el real de
+        // PedidoSeguimiento (el mismo que usa el panel de pedidos), así no depende
+        // de que se haya escrito un mensaje. Si no hay fila de seguimiento, se usa
+        // la última novedad y, en último caso, el de Pedidos.
         String sqlPedidos =
               "SELECT pe.id, pe.fecha, pe.usuario_id AS comprador, "
-            + "ISNULL(ult.estado, pe.estado) AS estado, ps.monto_pagado, "
+            + "COALESCE(ps.estado, ult.estado, pe.estado) AS estado, ps.monto_pagado, "
             + "dp.nombre_producto, dp.imagen_producto, dp.cantidad, dp.precio_unitario, dp.usuario_id_vendedor "
             + "FROM Pedidos pe "
             + "LEFT JOIN PedidoSeguimiento ps ON ps.pedido_id = pe.id "

@@ -11,7 +11,9 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 
 // GET  /admin/pedidos                 -> pedidos activos (o ?todos=1) con días sin novedad
-// POST /admin/pedidos accion=novedad  -> cambia estado/fechas/pago, publica novedad y (opcional) avisa por correo
+// POST /admin/pedidos accion=novedad  -> cambia estado/fechas/pago, registra la novedad en el historial
+//                                        (con el mensaje si lo hay, o con el nombre del estado si no)
+//                                        y (opcional) avisa por correo si hay mensaje y notificar=1
 @WebServlet("/admin/pedidos")
 public class PedidosAdminServlet extends HttpServlet {
 
@@ -136,18 +138,26 @@ public class PedidosAdminServlet extends HttpServlet {
                 st.setString(6, vacioNull(req.getParameter("numero_guia"))); st.setString(7, vacioNull(req.getParameter("url_rastreo")));
                 st.setInt(8, pid); st.executeUpdate();
             }
-            if (mensaje != null) {
-                try (PreparedStatement st = c.prepareStatement("INSERT INTO PedidoActualizaciones(pedido_id,estado,mensaje) VALUES(?,?,?)")) {
-                    st.setInt(1, pid); st.setString(2, estado); st.setString(3, mensaje.length() > 600 ? mensaje.substring(0, 600) : mensaje); st.executeUpdate();
-                }
+
+            // Etiqueta legible del estado (se usa en el historial y en el correo).
+            String etq = estado;
+            for (String[] e : ETQ) if (e[0].equals(estado)) etq = e[1];
+
+            // 🆕 Cada cambio de estado deja rastro en el historial, aunque no se escriba mensaje.
+            // Si no hay mensaje, se registra el nombre del estado (ej. "Entregado").
+            String textoHistorial = (mensaje != null) ? mensaje : etq;
+            try (PreparedStatement st = c.prepareStatement("INSERT INTO PedidoActualizaciones(pedido_id,estado,mensaje) VALUES(?,?,?)")) {
+                st.setInt(1, pid); st.setString(2, estado);
+                st.setString(3, textoHistorial.length() > 600 ? textoHistorial.substring(0, 600) : textoHistorial);
+                st.executeUpdate();
             }
+
+            // El correo al cliente sigue siendo opcional: solo sale si hay mensaje y notificar=1.
             if (mensaje != null && "1".equals(req.getParameter("notificar"))) {
                 try (PreparedStatement st = c.prepareStatement("SELECT u.nombre, u.correo FROM Pedidos p JOIN Usuarios u ON u.id=p.usuario_id WHERE p.id=?")) {
                     st.setInt(1, pid);
                     try (ResultSet rs = st.executeQuery()) {
                         if (rs.next() && rs.getString(2) != null) {
-                            String etq = estado;
-                            for (String[] e : ETQ) if (e[0].equals(estado)) etq = e[1];
                             EmailService.enviarNovedadPedido(rs.getString(2), rs.getString(1), String.valueOf(pid), etq, mensaje);
                         }
                     }
