@@ -501,7 +501,7 @@
     letter-spacing: 0.3px;
   }
 
-  /* 🆕 "Vendido recientemente": insignia discreta (sin fondo oscuro) para
+  /* 🆕 "Una venta reciente": insignia discreta (sin fondo oscuro) para
      los otros 20 productos con ventas reales; no compite con "más vendido". */
   .producto-vendido-badge {
     display: inline-block;
@@ -993,11 +993,11 @@
   }, 1000);
   // 🆕 ================= Fin del motor de urgencia =================
 
-  // 🆕 ========= "Artículo más vendido #N" / "Vendido recientemente" =========
+  // 🆕 ========= "Artículo más vendido #N" / "Una venta reciente" =========
   // IGUAL que en script.js (ventas REALES, ya no es decorativo):
   //  - Los 20 con más unidades vendidas (mismo orden del panel de
   //    estadísticas) llevan "Artículo más vendido #N".
-  //  - Otros 20 vendidos recientemente llevan "Vendido recientemente".
+  //  - Otros 20 vendidos recientemente llevan "Una venta reciente".
   // Los datos vienen de /api/vendidos-recientes. Si falla, no se muestra nada.
   const VENTA_INICIAL_UNIDADES = [
     { id: "56", u: 1 },
@@ -1159,7 +1159,7 @@
     const quedanBadgeHtml = puestoBestseller
       ? `<div class="producto-bestseller-badge">Artículo más vendido #${puestoBestseller}</div>`
       : esReciente
-        ? `<div class="producto-vendido-badge"><i class="fa-solid fa-bag-shopping"></i> Vendido recientemente</div>`
+        ? `<div class="producto-vendido-badge"><i class="fa-solid fa-bag-shopping"></i> Una venta reciente</div>`
       : urgencia.mostrarFranja
         ? `<div class="producto-quedan-badge">${urgencia.frase}</div>`
         : "";
@@ -1298,7 +1298,7 @@
     const insigniaRel = puestoRel
       ? `<div class="producto-bestseller-badge">Artículo más vendido #${puestoRel}</div>`
       : ventasReales.recientes.has(idRel)
-        ? `<div class="producto-vendido-badge"><i class="fa-solid fa-bag-shopping"></i> Vendido recientemente</div>`
+        ? `<div class="producto-vendido-badge"><i class="fa-solid fa-bag-shopping"></i> Una venta reciente</div>`
         : "";
     const precioNum = parseFloat(p.precio);
     const precioAnteriorNum = parseFloat(p.precio_anterior);
