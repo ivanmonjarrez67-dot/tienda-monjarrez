@@ -4905,47 +4905,6 @@ async function cargarMisProductos(usuarioId) {
               </a>`;
             }
 
-            // 🆕 Botón de WhatsApp a partir del teléfono: se limpia el
-            // número (solo dígitos) y, si viene sin código de país (8
-            // dígitos, formato típico de Costa Rica), se le antepone 506.
-            // Además se precarga un mensaje profesional con el nombre del
-            // producto, para que el vendedor sepa de dónde le escriben.
-            // El comprador puede seguir escribiendo o editando el mensaje
-            // antes de enviarlo; solo queda precargado, no bloqueado.
-            let telefonoHtml = telefono;
-            if (telefono && telefono !== "—") {
-              const soloDigitos = telefono.replace(/\D/g, "");
-              if (soloDigitos) {
-                const numeroWhatsapp =
-                  soloDigitos.length === 8 ? `506${soloDigitos}` : soloDigitos;
-                const mensajeWhatsapp = encodeURIComponent(
-                  `Hola, le escribo desde *Tienda Monjarrez* por el producto "${nombre}". Vi su publicacion y me intereso mucho, me gustaria conocer mas detalles antes de decidir mi compra. Quedo atento a su respuesta, muchas gracias!`
-                );
-                telefonoHtml = `<a class="contacto-btn contacto-whatsapp" href="https://wa.me/${numeroWhatsapp}?text=${mensajeWhatsapp}" target="_blank" rel="noopener" data-toque-tipo="whatsapp" data-toque-producto="${idProducto}">
-                  <svg viewBox="0 0 32 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M16.001 2.667c-7.363 0-13.334 5.97-13.334 13.333 0 2.353.615 4.65 1.784 6.667L2.667 29.333l6.822-1.789a13.27 13.27 0 0 0 6.512 1.72h.006c7.362 0 13.333-5.97 13.333-13.334 0-3.56-1.386-6.907-3.903-9.424a13.24 13.24 0 0 0-9.436-3.839zm0 24.4a11.03 11.03 0 0 1-5.625-1.54l-.404-.24-4.05 1.062 1.082-3.948-.263-.406a11.02 11.02 0 0 1-1.694-5.895c0-6.11 4.972-11.081 11.084-11.081 2.96 0 5.744 1.154 7.837 3.25a11.01 11.01 0 0 1 3.244 7.837c0 6.111-4.972 11.081-11.211 11.081zm6.078-8.297c-.333-.167-1.966-.971-2.271-1.081-.305-.111-.526-.167-.748.166-.222.334-.86 1.082-1.054 1.304-.194.223-.388.25-.721.083-.333-.166-1.406-.518-2.678-1.652-.99-.883-1.659-1.973-1.853-2.306-.194-.334-.021-.514.146-.68.15-.15.333-.389.5-.583.166-.194.221-.334.333-.556.111-.223.055-.417-.028-.583-.083-.167-.748-1.803-1.026-2.469-.27-.649-.545-.561-.748-.571l-.638-.011c-.222 0-.583.083-.888.417-.305.333-1.166 1.14-1.166 2.777s1.194 3.222 1.361 3.444c.166.222 2.35 3.588 5.693 5.032.795.343 1.415.549 1.898.703.797.254 1.523.218 2.096.132.639-.095 1.966-.804 2.244-1.581.277-.777.277-1.443.194-1.581-.083-.139-.305-.222-.638-.389z"/></svg>
-                  ${telefono}
-                </a>`;
-              }
-            }
-
-            // 🆕 Botón de correo (mailto), estilo similar al botón "Ayuda".
-            // También se precarga asunto y cuerpo con el nombre del
-            // producto y el remitente (Tienda Monjarrez), editable por el
-            // comprador antes de enviar.
-            let correoHtml = correo;
-            if (correo && correo !== "—") {
-              const asuntoCorreo = encodeURIComponent(
-                `Consulta por "${nombre}" - Tienda Monjarrez`
-              );
-              const cuerpoCorreo = encodeURIComponent(
-                `Hola,\n\nLe escribo desde Tienda Monjarrez por el producto "${nombre}". Vi su publicacion y me intereso mucho, me gustaria conocer mas detalles antes de decidir mi compra.\n\nQuedo atento a su respuesta, muchas gracias.\n\nSaludos cordiales.`
-              );
-              correoHtml = `<a class="contacto-btn contacto-correo" href="mailto:${correo}?subject=${asuntoCorreo}&body=${cuerpoCorreo}" data-toque-tipo="correo" data-toque-producto="${idProducto}">
-                <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6zm-2 0-8 5-8-5h16zm0 12H4V8l8 5 8-5v10z"/></svg>
-                ${correo}
-              </a>`;
-            }
-
             // 🆕 Botón de WhatsApp de la TIENDA (proceso de compra
             // mediante la tienda, no directo con el vendedor). Mismo
             // estilo verde que el WhatsApp del vendedor, con el texto
@@ -5047,10 +5006,6 @@ async function cargarMisProductos(usuarioId) {
             <button type="button" id="btnLeerMasDescripcion" class="btn-leer-mas" style="display:none;">Leer más</button>
 
             <h3>Procesos de compra</h3>
-            <div class="procesos-compra-caja procesos-compra-vendedor">
-              <h4>Hacer el proceso de compra directamente con el vendedor</h4>
-              <p>${telefonoHtml}<br>${correoHtml}</p>
-            </div>
             <div class="procesos-compra-caja procesos-compra-tienda">
               <h4>Hacer el proceso de compra mediante la tienda</h4>
               <p>${tiendaWhatsappHtml}<br>${tiendaCorreoHtml}</p>
