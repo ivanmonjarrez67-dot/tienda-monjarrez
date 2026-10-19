@@ -885,7 +885,7 @@ function formatearCuentaRegresiva(ms) {
 //  - Los 20 productos con más unidades vendidas (mismo orden del panel
 //    "Productos más vendidos") llevan "Artículo más vendido #N".
 //  - Otros 20 vendidos recientemente llevan una insignia discreta
-//    ("Vendido recientemente"): demuestran que se han comprado sin ser
+//    ("Una venta reciente"): demuestran que se han comprado sin ser
 //    "los más vendidos".
 // El servidor (/api/vendidos-recientes) devuelve:
 //   ranking:   [{id, u}] = productos con sus unidades vendidas, en el MISMO
@@ -971,7 +971,7 @@ function calcularBestsellersDelDia(productos) {
   const mapa = new Map();
   top.forEach((id, idx) => mapa.set(id, idx + 1));
 
-  // 3) Otros 20 = "Vendido recientemente": las ventas más recientes que NO están
+  // 3) Otros 20 = "Una venta reciente": las ventas más recientes que NO están
   //    ya en el top (la primera venta es la más antigua, va al final).
   const enTop = new Set(top);
   const recientes = [];
@@ -1044,7 +1044,7 @@ function construirTarjetaProductoHTML(producto) {
     : "";
 
   // 🆕 Ventas REALES: #1..#20 = los 20 productos vendidos más
-  // recientemente; los 20 anteriores llevan "Vendido recientemente". Va debajo
+  // recientemente; los 20 anteriores llevan "Una venta reciente". Va debajo
   // del nombre y le gana el lugar a "Solo quedan X". Independiente de la
   // estrategia de urgencia (una venta real se muestra siempre).
   const idTarjeta = String(producto.id ?? "");
@@ -1053,7 +1053,7 @@ function construirTarjetaProductoHTML(producto) {
   const quedanBadgeHtml = puestoBestseller
     ? `<div class="producto-bestseller-badge">Artículo más vendido #${puestoBestseller}</div>`
     : esVendidoSecundario
-      ? `<div class="producto-vendido-badge"><i class="fa-solid fa-bag-shopping"></i> Vendido recientemente</div>`
+      ? `<div class="producto-vendido-badge"><i class="fa-solid fa-bag-shopping"></i> Una venta reciente</div>`
       : urgencia.mostrarFranja
         ? `<div class="producto-quedan-badge">${urgencia.frase}</div>`
         : "";
