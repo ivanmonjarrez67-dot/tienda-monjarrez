@@ -2,11 +2,13 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Tienda Monjarrez — Detalle del producto</title>
 <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
+<link rel="dns-prefetch" href="https://res.cloudinary.com" />
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link
   rel="stylesheet"
@@ -64,7 +66,7 @@
 
   /* ---------- Layout principal ---------- */
   main {
-    max-width: 1100px;
+    max-width: 1280px;
     margin: 0 auto;
     padding: 28px 20px 60px;
   }
@@ -85,7 +87,7 @@
   }
   @media (min-width: 821px) {
     .producto-layout {
-      grid-template-columns: 90px 1fr 1fr;
+      grid-template-columns: 76px minmax(0, 1.25fr) minmax(0, 1fr);
       grid-template-areas:
         "thumbs image info"
         "thumbs extra info";
@@ -108,7 +110,7 @@
     width: 64px;
     height: 64px;
     flex: 0 0 auto;
-    border-radius: 8px;
+    border-radius: 4px;
     overflow: hidden;
     border: 2px solid var(--border);
     cursor: pointer;
@@ -121,9 +123,9 @@
   .imagen-principal {
     grid-area: image;
     position: relative;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -265,10 +267,11 @@
   }
 
   .precio-nacional {
-    font-size: 1.9rem;
+    font-size: 2.3rem;
     font-weight: 800;
-    color: var(--text);
-    margin-bottom: 4px;
+    color: var(--rojo);
+    line-height: 1.15;
+    margin: 6px 0 8px;
   }
 
   .nota-precio-extranjero {
@@ -475,12 +478,12 @@
     z-index: 2;
     background: linear-gradient(135deg, #b33a3a, var(--rojo));
     color: #fff;
-    font-size: 0.68rem;
-    font-weight: 500;
+    font-size: 0.78rem;
+    font-weight: 600;
     text-transform: uppercase;
-    padding: 3px 10px;
-    border-radius: 4px;
-    letter-spacing: 0.3px;
+    padding: 5px 12px;
+    border-radius: 0;
+    letter-spacing: 0.4px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
   }
 
@@ -519,39 +522,55 @@
   /* 🆕 "Solo quedan X" / "Casi agotados" / "Último día": rojo vino de
      la marca, mayúscula sin negrita. */
   .producto-quedan-badge {
-    margin: 8px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0 0;
     color: var(--rojo);
     text-transform: uppercase;
-    font-weight: 500;
-    font-size: 0.82rem;
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.3px;
     line-height: 1.2;
   }
+  .producto-quedan-badge i { font-size: 1.15em; color: #e05e00; }
 
   /* 🆕 "Ahorra ₡X extra": anaranjado (habla de plata ahorrada, no de
      urgencia), mayúscula sin negrita. */
   .producto-ahorra-extra {
-    margin: 4px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 6px 0 0;
     color: #e05e00;
     text-transform: uppercase;
-    font-weight: 500;
-    font-size: 0.8rem;
+    font-weight: 600;
+    font-size: 0.95rem;
     line-height: 1.2;
   }
+  .producto-ahorra-extra i { font-size: 1.05em; }
 
   .producto-contador {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 4px;
-    margin: 6px 0 0;
-    background: #fff3e6;
-    color: #d35400;
-    font-size: 0.78rem;
+    gap: 8px;
+    margin: 12px 0 0;
+    background: linear-gradient(90deg, #ff6a00, #ff8a1f);
+    color: #fff;
+    font-size: 0.95rem;
     font-weight: 700;
-    padding: 3px 9px;
-    border-radius: 4px;
+    letter-spacing: 0.3px;
+    padding: 10px 14px;
+    border-radius: 0;
   }
-  .producto-contador i { color: #ff6600; font-size: 0.9em; }
-  .producto-contador-reloj { font-variant-numeric: tabular-nums; letter-spacing: 0.5px; }
+  .producto-contador i { color: #fff; font-size: 1.1em; }
+  .producto-contador-reloj {
+    margin-left: auto;
+    font-size: 1.15rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 1px;
+  }
 
   .estado-carga, .estado-error {
     text-align: center;
@@ -756,6 +775,90 @@
   }
   .resenas-form-enviar:disabled { opacity: 0.6; cursor: default; }
   .resenas-form-mensaje { font-size: 0.78rem; margin-top: 8px; }
+
+  /* ---------- Carga (esqueleto) ---------- */
+  .sk { background: linear-gradient(90deg, #eee 25%, #f7f7f7 37%, #eee 63%); background-size: 400% 100%; animation: sk-shimmer 1.3s ease infinite; }
+  @keyframes sk-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+  .sk-layout { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .sk-thumbs { display: none; height: 260px; }
+  .sk-img { aspect-ratio: 1 / 1; }
+  .sk-info > div { margin-bottom: 14px; }
+  .sk-l1 { height: 22px; width: 90%; }
+  .sk-l2 { height: 22px; width: 60%; }
+  .sk-l3 { height: 14px; width: 100%; }
+  .sk-precio { height: 44px; width: 45%; }
+  .sk-boton { height: 52px; width: 100%; }
+  @media (min-width: 821px) {
+    .sk-layout { grid-template-columns: 76px minmax(0, 1.25fr) minmax(0, 1fr); }
+    .sk-thumbs { display: block; }
+  }
+  @media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
+
+  /* ---------- Contador de fotos y barra de compra fija (solo móvil) ---------- */
+  .contador-fotos {
+    display: none;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-variant-numeric: tabular-nums;
+    visibility: hidden;
+  }
+  .barra-compra-movil { display: none; }
+  .btn-comprar-barra {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 13px 14px;
+    border: 0;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #b33a3a 0%, var(--rojo) 45%, #6f1f2a 100%);
+    color: #fff;
+    font-family: inherit; font-size: 1rem; font-weight: 700;
+    cursor: pointer;
+  }
+  .btn-comprar-barra:active { transform: scale(0.98); }
+  .btn-comprar-barra:disabled { background: #ccc; cursor: not-allowed; }
+  .barra-precio { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+  .barra-precio-actual { font-size: 1.3rem; font-weight: 800; color: var(--rojo); white-space: nowrap; }
+  .barra-precio-anterior { font-size: 0.78rem; color: #999; text-decoration: line-through; white-space: nowrap; }
+
+  /* ---------- Móvil ---------- */
+  @media (max-width: 820px) {
+    header { padding: 10px 14px; }
+    .logo { font-size: 1.1rem; white-space: nowrap; }
+    .volver .volver-txt { display: none; }
+    .volver { font-size: 1.05rem; }
+    main { padding-top: 10px; }
+    .breadcrumb { margin-bottom: 10px; }
+    .producto-layout { gap: 14px; }
+    /* La imagen se sale del padding de <main> (20px) para ocupar todo el ancho */
+    .imagen-principal { margin-left: -20px; margin-right: -20px; }
+    .precio-nacional { font-size: 2.1rem; }
+    .imagen-principal { touch-action: pan-y; }
+    .contador-fotos { display: block; }
+    .sk-img { margin-left: -20px; margin-right: -20px; }
+    /* El botón "Comprar ahora" pasa a la barra fija de abajo */
+    #btnComprarAhora { display: none; }
+    body { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+    .barra-compra-movil {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 20;
+      background: #fff;
+      border-top: 1px solid var(--border);
+      padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+      box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+    }
+  }
 </style>
 </head>
 <body>
@@ -763,7 +866,7 @@
 <header>
   <div class="logo">Tienda <span class="rojo">Monjarrez</span></div>
   <div style="display:flex;align-items:center;gap:14px;">
-    <a class="volver" href="/"><i class="fa-solid fa-arrow-left"></i> Volver a la tienda</a>
+    <a class="volver" href="/"><i class="fa-solid fa-arrow-left"></i> <span class="volver-txt">Volver a la tienda</span></a>
     <!-- 🆕 Mismo ícono de carrito que index.html (provisto por
          carrito.js): esta página no carga script.js ni el login de
          index.html, así que si la persona es Invitada, carrito.js la
@@ -779,14 +882,24 @@
 </header>
 
 <main>
-  <div id="estadoCarga" class="estado-carga">Cargando producto…</div>
+  <div id="estadoCarga" role="status" aria-label="Cargando producto">
+    <div class="sk-layout">
+      <div class="sk sk-thumbs"></div>
+      <div class="sk sk-img"></div>
+      <div class="sk-info">
+        <div class="sk sk-l1"></div><div class="sk sk-l2"></div><div class="sk sk-l3"></div>
+        <div class="sk sk-precio"></div><div class="sk sk-boton"></div>
+      </div>
+    </div>
+  </div>
   <div id="contenidoProducto" style="display:none;">
     <div class="breadcrumb" id="breadcrumb"></div>
     <div class="producto-layout">
       <div class="miniaturas" id="miniaturas"></div>
       <div class="imagen-principal">
-        <img id="imagenPrincipal" src="" alt="" />
+        <img id="imagenPrincipal" src="" alt="" fetchpriority="high" decoding="async" />
         <div id="franjaUrgenciaProducto"></div>
+        <div id="contadorFotos" class="contador-fotos"></div>
         <div id="botonCarritoProducto"></div>
       </div>
       <div class="panel-info">
@@ -872,6 +985,10 @@
     <div class="relacionados" id="relacionadosSeccion" style="display:none;">
       <h2>Más productos en esta categoría</h2>
       <div class="relacionados-grid" id="relacionadosGrid"></div>
+    </div>
+    <div class="barra-compra-movil" id="barraCompraMovil">
+      <div class="barra-precio" id="barraPrecio"></div>
+      <button type="button" id="btnComprarBarra" class="btn-comprar-barra"><i class="fa-solid fa-bag-shopping"></i> Comprar ahora</button>
     </div>
   </div>
   <div id="estadoError" class="estado-error" style="display:none;">
@@ -1008,26 +1125,41 @@
   let rankingVendidos = [];
   let idsVendidosRecientes = [];
   let vendidosCargo = false;
+  function aplicarVendidos(d) {
+    rankingVendidos = (d.ranking || []).map((x) => ({ id: String(x.id), u: Number(x.u) || 0 }));
+    idsVendidosRecientes = (d.recientes || d.ids || []).map(String);
+    vendidosCargo = true;
+  }
+  // ⚡ Última respuesta guardada: la página pinta al instante y luego se corrige con la de la red.
+  try {
+    const c = JSON.parse(localStorage.getItem("monj_vendidos_v1") || "null");
+    if (c) aplicarVendidos(c);
+  } catch (e) {}
   const vendidosRecientesPromise = fetch("/api/vendidos-recientes", { cache: "no-store" })
     .then((r) => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
     .then((d) => {
-      rankingVendidos = (d.ranking || []).map((x) => ({ id: String(x.id), u: Number(x.u) || 0 }));
-      idsVendidosRecientes = (d.recientes || d.ids || []).map(String);
-      vendidosCargo = true;
+      aplicarVendidos(d);
+      try { localStorage.setItem("monj_vendidos_v1", JSON.stringify(d)); } catch (e) {}
     })
     .catch((e) => {
       console.warn("No se pudo cargar /api/vendidos-recientes:", e);
-      rankingVendidos = []; idsVendidosRecientes = []; vendidosCargo = false;
     });
   // 🆕 Urgencia SOLO para los vendedores/categorías que el admin elija en el
   // panel (🔥). Igual que script.js: el servidor devuelve en /api/urgencia-config
   // los IDs de producto a los que SÍ les toca (vendedor elegido Y categoría
   // elegida). Si la configuración no carga, por seguridad NO se muestra urgencia.
   let urgenciaIds = new Set();
+  try {
+    const c = JSON.parse(localStorage.getItem("monj_urgencia_v1") || "null");
+    if (Array.isArray(c)) urgenciaIds = new Set(c.map(String));
+  } catch (e) {}
   const urgenciaConfigPromise = fetch("/api/urgencia-config", { cache: "no-store" })
-    .then((r) => (r.ok ? r.json() : { ids: [] }))
-    .then((d) => { urgenciaIds = new Set((d.ids || []).map(String)); })
-    .catch(() => { urgenciaIds = new Set(); });
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
+    .then((d) => {
+      urgenciaIds = new Set((d.ids || []).map(String));
+      try { localStorage.setItem("monj_urgencia_v1", JSON.stringify([...urgenciaIds])); } catch (e) {}
+    })
+    .catch(() => {});
   function aplicaUrgencia(producto) {
     return !!producto && urgenciaIds.has(String(producto.id ?? ""));
   }
@@ -1066,11 +1198,30 @@
   // 🆕 La foto que la persona dejó seleccionada (color/variante). carrito.js la
   // lee al agregar al carrito para que ESA foto sea la que salga en la factura.
   window.imagenElegidaDetalle = () => galeriaActiva || "";
+  let galeriaLista = [];
+  function actualizarContadorFotos() {
+    const el = document.getElementById("contadorFotos");
+    if (!el) return;
+    const n = galeriaLista.length;
+    if (n > 1) {
+      el.textContent = (galeriaLista.indexOf(galeriaActiva) + 1) + "/" + n;
+      el.style.visibility = "visible";
+    } else {
+      el.style.visibility = "hidden";
+    }
+  }
+  function seleccionarFoto(img) {
+    galeriaActiva = img;
+    document.getElementById("imagenPrincipal").src = img;
+    document.querySelectorAll("#miniaturas .miniatura").forEach((m) => m.classList.toggle("activa", m.dataset.src === img));
+    actualizarContadorFotos();
+  }
   function pintarGaleria(imagenes, nombre, activa) {
     const miniaturasWrap = document.getElementById("miniaturas");
     const imgPrincipal = document.getElementById("imagenPrincipal");
     miniaturasWrap.innerHTML = "";
-    if (imagenes.length === 0) return;
+    galeriaLista = imagenes.slice();
+    if (imagenes.length === 0) { actualizarContadorFotos(); return; }
 
     galeriaActiva = imagenes.includes(activa) ? activa : imagenes[0];
     imgPrincipal.src = galeriaActiva;
@@ -1080,17 +1231,31 @@
       imagenes.forEach((img) => {
         const div = document.createElement("div");
         div.className = "miniatura" + (img === galeriaActiva ? " activa" : "");
+        div.dataset.src = img;
         div.innerHTML = `<img src="${esc(img)}" alt="" loading="lazy">`;
-        div.addEventListener("click", () => {
-          galeriaActiva = img;
-          imgPrincipal.src = img;
-          miniaturasWrap.querySelectorAll(".miniatura").forEach((m) => m.classList.remove("activa"));
-          div.classList.add("activa");
-        });
+        div.addEventListener("click", () => seleccionarFoto(img));
         miniaturasWrap.appendChild(div);
       });
     }
+    actualizarContadorFotos();
   }
+  // Deslizar la foto principal a izquierda/derecha (celular)
+  (function () {
+    const cont = document.querySelector(".imagen-principal");
+    if (!cont) return;
+    let x0 = null, y0 = null;
+    cont.addEventListener("touchstart", (e) => { const t0 = e.touches[0]; x0 = t0.clientX; y0 = t0.clientY; }, { passive: true });
+    cont.addEventListener("touchend", (e) => {
+      if (x0 === null || galeriaLista.length < 2) { x0 = null; return; }
+      const t1 = e.changedTouches[0];
+      const dx = t1.clientX - x0, dy = t1.clientY - y0;
+      x0 = null;
+      if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      const i = galeriaLista.indexOf(galeriaActiva);
+      const j = dx < 0 ? Math.min(i + 1, galeriaLista.length - 1) : Math.max(i - 1, 0);
+      if (j !== i) seleccionarFoto(galeriaLista[j]);
+    }, { passive: true });
+  })();
 
   function construirGaleria(producto) {
     const principal = producto.imagen;
@@ -1143,11 +1308,18 @@
       html += ` <span class="producto-precio-anterior">${fmtCrc(urgencia.precioFalsoTachado)}</span>` +
         ` <span class="producto-descuento-badge">-${urgencia.porcentajeFalso}%</span>`;
       contadorHtml = `<div class="producto-contador" data-fin-ms="${Date.now() + urgencia.msRestantes}">
-          <i class="fa-solid fa-bolt"></i> Termina en <span class="producto-contador-reloj">${formatearCuentaRegresiva(urgencia.msRestantes)}</span>
+          <i class="fa-solid fa-clock"></i> <span>Termina en</span> <span class="producto-contador-reloj">${formatearCuentaRegresiva(urgencia.msRestantes)}</span>
         </div>`;
       montoAhorro = urgencia.precioFalsoTachado - precioNum;
     }
     document.getElementById("precioProducto").innerHTML = html + contadorHtml;
+    // Barra fija del celular: solo muestra el precio anterior cuando es un descuento real (precio_anterior).
+    const barraPrecio = document.getElementById("barraPrecio");
+    if (barraPrecio) {
+      barraPrecio.innerHTML =
+        (precioNum ? `<span class="barra-precio-actual">${fmtCrc(precioNum)}</span>` : "") +
+        (tieneDescuentoReal ? `<span class="barra-precio-anterior">${fmtCrc(precioAnteriorNum)}</span>` : "");
+    }
 
     const franjaHtml = urgencia.mostrarFranja
       ? `<div class="producto-franja-urgencia">${urgencia.fraseSecundaria}</div>`
@@ -1161,10 +1333,10 @@
       : esReciente
         ? `<div class="producto-vendido-badge"><i class="fa-solid fa-bag-shopping"></i> Una venta reciente</div>`
       : urgencia.mostrarFranja
-        ? `<div class="producto-quedan-badge">${urgencia.frase}</div>`
+        ? `<div class="producto-quedan-badge"><i class="fa-solid fa-fire"></i><span>${urgencia.frase}</span></div>`
         : "";
     const ahorraExtraHtml = montoAhorro > 0
-      ? `<div class="producto-ahorra-extra">Ahorra ${fmtCrc(Math.round(montoAhorro))} extra</div>`
+      ? `<div class="producto-ahorra-extra"><i class="fa-solid fa-tags"></i><span>Ahorra ${fmtCrc(Math.round(montoAhorro))} extra</span></div>`
       : "";
     document.getElementById("badgesUrgenciaProducto").innerHTML = quedanBadgeHtml + ahorraExtraHtml;
 
@@ -1611,12 +1783,15 @@
   function configurarComprarAhora(producto) {
     const btn = document.getElementById("btnComprarAhora");
     if (!btn) return;
+    const btnBarra = document.getElementById("btnComprarBarra");
+    const bloquear = (v) => { btn.disabled = v; if (btnBarra) btnBarra.disabled = v; };
+    if (btnBarra) btnBarra.addEventListener("click", () => btn.click());
     btn.addEventListener("click", () => {
       if (!window.Carrito || !window.Carrito.haySesion()) {
         if (window.Carrito) window.Carrito.pedirLogin();
         return;
       }
-      btn.disabled = true;
+      bloquear(true);
       fetch("/api/carrito", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -1632,7 +1807,7 @@
         .then(() => { window.location.href = "carrito.html"; })
         .catch((err) => {
           if (err.message !== "sin sesión") alert(err.message);
-          btn.disabled = false;
+          bloquear(false);
         });
     });
   }
@@ -1660,30 +1835,65 @@
     elContenido.style.display = "block";
   }
 
+  // ⚡ Carga rápida: el catálogo de la última visita se guarda en este navegador y se usa
+  // para pintar el producto al instante; mientras tanto se pide el catálogo fresco y,
+  // al llegar, se corrige el precio. Ya no se espera a urgencia/ventas (máx. 0.7 s).
+  const CLAVE_CATALOGO = "monj_catalogo_v1";
+  function leerCatalogoCache() {
+    try {
+      const c = JSON.parse(localStorage.getItem(CLAVE_CATALOGO) || "null");
+      return Array.isArray(c) ? c : null;
+    } catch (e) { return null; }
+  }
+  function guardarCatalogoCache(productos) {
+    try { localStorage.setItem(CLAVE_CATALOGO, JSON.stringify(productos)); } catch (e) {}
+  }
+  let yaRenderizado = false;
+  function pintarProducto(productos) {
+    const producto = (productos || []).find((p) => String(p.id) === String(productoId));
+    if (!producto) return false;
+    const ventas = calcularVentasReales(productos);
+    ventasReales = ventas;
+    const idStr = String(producto.id);
+    const puesto = ventas.puestos.get(idStr);
+    const reciente = !ventas.puestos.has(idStr) && ventas.recientes.has(idStr);
+    if (!yaRenderizado) {
+      yaRenderizado = true;
+      renderizar(producto, puesto, reciente);
+    } else {
+      construirPrecio(producto, puesto, reciente);
+    }
+    return true;
+  }
+
   if (!productoId) {
     elCarga.style.display = "none";
     elError.style.display = "block";
   } else {
-    Promise.all([
-      fetch("/api/productos").then((res) => {
+    const cache = leerCatalogoCache();
+    if (cache) pintarProducto(cache);
+
+    const extras = Promise.all([urgenciaConfigPromise, vendidosRecientesPromise]);
+    fetch("/api/productos")
+      .then((res) => {
         if (!res.ok) throw new Error("respuesta " + res.status);
         return res.json();
-      }),
-      urgenciaConfigPromise,
-      vendidosRecientesPromise,
-    ])
-      .then(([productos]) => {
-        const producto = (productos || []).find((p) => String(p.id) === String(productoId));
-        if (!producto) throw new Error("producto no encontrado");
-        const ventas = calcularVentasReales(productos);
-        ventasReales = ventas;
-        const idStr = String(producto.id);
-        renderizar(producto, ventas.puestos.get(idStr), !ventas.puestos.has(idStr) && ventas.recientes.has(idStr));
+      })
+      .then(async (productos) => {
+        guardarCatalogoCache(productos);
+        if (!yaRenderizado) {
+          await Promise.race([extras, new Promise((r) => setTimeout(r, 700))]);
+        }
+        if (!pintarProducto(productos) && !yaRenderizado) throw new Error("producto no encontrado");
+        // Cuando terminen urgencia/ventas se vuelve a calcular el precio con los datos definitivos.
+        extras.then(() => pintarProducto(productos));
       })
       .catch((err) => {
         console.error("Error al cargar el detalle del producto:", err);
-        elCarga.style.display = "none";
-        elError.style.display = "block";
+        if (!yaRenderizado) {
+          elCarga.style.display = "none";
+          elError.style.display = "block";
+        }
       });
   }
 })();
