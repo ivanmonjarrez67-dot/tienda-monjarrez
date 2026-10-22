@@ -1198,7 +1198,6 @@ function construirTarjetaProductoHTML(producto) {
           ${botonCarritoHtml}
         </div>
         <h3>${producto.nombre || ''}</h3>
-        ${resenasTarjetaHtml(producto)}
         ${quedanBadgeHtml}
         ${ahorraExtraHtml}
         ${precioHtml}
@@ -1221,6 +1220,7 @@ function construirTarjetaProductoHTML(producto) {
         >
           Ver detalles
         </button>
+        ${resenasTarjetaHtml(producto)}
       `;
 }
 // 🆕 Se exponen en window (mismo motivo que window.construirGaleriaHTML,
