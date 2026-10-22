@@ -679,7 +679,7 @@
   /* ★ rojo de la tienda (mismo de las tarjetas del catálogo); la parte vacía va en gris */
   .resenas-estrellas {
     --pct: 100%;
-    font-size: 0.95rem;
+    font-size: 1.15rem;
     letter-spacing: 2px;
     line-height: 1;
     color: #dcdcdc;
@@ -731,7 +731,7 @@
   .resena-cuerpo { flex: 1; min-width: 0; }
   .resena-nombre { font-weight: 600; font-size: 0.85rem; margin: 0; }
   .resena-meta { display: flex; align-items: center; gap: 8px; margin: 2px 0 6px; }
-  .resena-meta .resenas-estrellas { font-size: 0.8rem; }
+  .resena-meta .resenas-estrellas { font-size: 1.05rem; }
   .resena-fecha { font-size: 0.72rem; color: var(--text-dim); }
   .resena-comentario { font-size: 0.85rem; line-height: 1.5; color: #333; margin: 0; white-space: pre-wrap; }
   .resenas-sin-datos { color: var(--text-dim); font-size: 0.85rem; padding: 10px 0; }
@@ -814,7 +814,7 @@
     white-space: nowrap;
   }
   .rating-top strong { font-weight: 600; }
-  .rating-top .resenas-estrellas { font-size: 0.95rem; }
+  .rating-top .resenas-estrellas { font-size: 1.25rem; }
   .rating-top:hover strong { color: var(--rojo); }
 
   /* Barra bajo la imagen: "473 reseñas | 4.7 ★★★★★" (solo el contador;
@@ -832,7 +832,7 @@
   }
   .resumen-resenas .rr-sep { width: 1px; height: 16px; background: #d6d6d6; }
   .resumen-resenas .rr-prom { display: inline-flex; align-items: center; gap: 6px; }
-  .resumen-resenas .resenas-estrellas { font-size: 1rem; }
+  .resumen-resenas .resenas-estrellas { font-size: 1.35rem; }
   .resumen-resenas .rr-link { color: var(--rojo); font-weight: 600; }
   .resumen-resenas .rr-flecha { margin-left: auto; font-size: 0.7rem; color: var(--text-dim); }
   .resumen-resenas:hover .rr-flecha { color: var(--rojo); }
@@ -919,7 +919,22 @@
     .volver { font-size: 1.05rem; }
     main { padding-top: 10px; }
     .breadcrumb { margin-bottom: 10px; }
-    .producto-layout { gap: 14px; }
+    /* 🆕 Orden en celular: imagen, miniaturas, reseñas (contador), info principal
+       (incluye el aviso de producto internacional), procesos de compra, textos de
+       atención/confirmación, ubicación y por último opciones de envío. */
+    .producto-layout { display: flex; flex-direction: column; gap: 14px; }
+    .panel-info, .panel-info-secundaria { display: contents; }
+    .imagen-principal { order: 1; }
+    .miniaturas { order: 2; }
+    .resumen-resenas { order: 3; }
+    .blk-principal { order: 4; }
+    .blk-procesos { order: 5; }
+    .garantias { order: 6; margin: 0; }
+    .blk-ubicacion { order: 7; }
+    .blk-envio { order: 8; }
+    .blk-procesos h3.seccion-titulo,
+    .blk-ubicacion h3.seccion-titulo,
+    .blk-envio h3.seccion-titulo { margin-top: 0; }
     /* La imagen se sale del padding de <main> (20px) para ocupar todo el ancho */
     .imagen-principal { margin-left: -20px; margin-right: -20px; }
     .precio-nacional { font-size: 2.1rem; }
@@ -987,6 +1002,7 @@
       </div>
       <a class="resumen-resenas" id="resumenBajoImagen" href="#resenasSeccion" style="display:none;"></a>
       <div class="panel-info">
+        <div class="blk-principal">
         <span class="badge-nacional"><i class="fa-solid fa-store"></i> Producto de Vendedor Nacional</span>
         <h1 class="titulo-producto" id="tituloProducto"></h1>
 
@@ -1025,6 +1041,7 @@
             Compartir
           </button>
         </p>
+        </div>
 
         <div class="garantias">
           <div class="garantia-fila">
@@ -1037,21 +1054,27 @@
           </div>
         </div>
 
+        <div class="blk-envio">
         <h3 class="seccion-titulo">Opciones de envío</h3>
         <p class="envio-alejado-texto">¿Este producto está en una zona alejada? Con gusto validamos si es posible coordinar el envío.</p>
         <p id="envioProducto"></p>
+        </div>
       </div>
 
       <div class="panel-info-secundaria">
+        <div class="blk-procesos">
         <h3 class="seccion-titulo">Procesos de compra</h3>
         <div class="procesos-compra-caja procesos-compra-tienda">
           <h4>Hacer el proceso de compra mediante la tienda</h4>
           <p id="contactoTienda"></p>
         </div>
+        </div>
 
+        <div class="blk-ubicacion">
         <h3 class="seccion-titulo">Ubicación</h3>
         <p id="ubicacionProducto"></p>
         <div class="mapa-preview" id="mapaPreview"></div>
+        </div>
 
       </div>
     </div>
