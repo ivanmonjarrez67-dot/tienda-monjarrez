@@ -984,6 +984,106 @@ function calcularBestsellersDelDia(productos) {
 }
 // 🆕 ========= Fin de "ARTÍCULO MÁS VENDIDO #N" =========
 
+// 🆕 ========= Estrellas de reseñas en la tarjeta (estilo Temu) =========
+// Muestra el PROMEDIO de calificación del producto con estrellas rojas (color
+// de la marca). Si el promedio es 5, salen 5 llenas; si es 3.6, la 4ª sale
+// parcial y la 5ª vacía. Los productos SIN reseñas no muestran nada (el div
+// queda "hidden" y no ocupa espacio).
+// Origen de los datos:
+//   1) Si el catálogo ya trae producto.promedio_resenas (+ total_resenas), se usa directo.
+//   2) Si no, se consulta /api/resenas?producto_id=ID (el mismo endpoint de
+//      detalle-nacional.html) de forma perezosa: solo cuando la tarjeta entra
+//      en pantalla, con caché y máximo 4 consultas a la vez.
+function estrellasTarjetaHtml(promedio, total) {
+  const prom = Math.max(0, Math.min(5, parseFloat(promedio) || 0));
+  let estrellas = "";
+  for (let i = 0; i < 5; i++) {
+    const pct = Math.round(Math.max(0, Math.min(1, prom - i)) * 100);
+    estrellas += `<span class="rs-star" style="--rs-fill:${pct}%">★</span>`;
+  }
+  const etiqueta = `${prom.toFixed(1)} de 5 estrellas` + (total ? ` (${total} reseña${total === 1 ? "" : "s"})` : "");
+  return `<span class="rs-stars" role="img" aria-label="${etiqueta}">${estrellas}</span>`;
+}
+
+function resenasTarjetaHtml(producto) {
+  const id = String(producto.id ?? "");
+  const prom = parseFloat(producto.promedio_resenas);
+  const total = parseInt(producto.total_resenas, 10);
+  if (!isNaN(prom) && prom > 0 && (isNaN(total) || total > 0)) {
+    return `<div class="producto-resenas" data-listo="1">${estrellasTarjetaHtml(prom, isNaN(total) ? 0 : total)}</div>`;
+  }
+  if (!id) return "";
+  return `<div class="producto-resenas" data-producto-id="${id}" hidden></div>`;
+}
+
+const cacheResenasTarjeta = new Map(); // id -> Promise<{promedio,total}|null>
+let consultasResenasActivas = 0;
+const colaResenas = [];
+
+function procesarColaResenas() {
+  while (consultasResenasActivas < 4 && colaResenas.length) {
+    const { id, resolver } = colaResenas.shift();
+    consultasResenasActivas++;
+    fetch(`/api/resenas?producto_id=${encodeURIComponent(id)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const total = d ? parseInt(d.total, 10) : 0;
+        const promedio = d ? parseFloat(d.promedio) : 0;
+        resolver(total > 0 && promedio > 0 ? { promedio, total } : null);
+      })
+      .catch(() => resolver(null))
+      .finally(() => { consultasResenasActivas--; procesarColaResenas(); });
+  }
+}
+
+function obtenerResumenResenas(id) {
+  if (!cacheResenasTarjeta.has(id)) {
+    cacheResenasTarjeta.set(id, new Promise((resolver) => {
+      colaResenas.push({ id, resolver });
+      procesarColaResenas();
+    }));
+  }
+  return cacheResenasTarjeta.get(id);
+}
+
+function hidratarResenasTarjeta(el) {
+  if (el.dataset.listo) return;
+  el.dataset.listo = "1";
+  obtenerResumenResenas(el.dataset.productoId).then((res) => {
+    if (!res) return; // sin reseñas: no se muestra nada
+    el.innerHTML = estrellasTarjetaHtml(res.promedio, res.total);
+    el.hidden = false;
+  });
+}
+
+(function iniciarEstrellasTarjeta() {
+  const visor = "IntersectionObserver" in window
+    ? new IntersectionObserver((entradas) => {
+        entradas.forEach((e) => {
+          if (e.isIntersecting) { visor.unobserve(e.target); hidratarResenasTarjeta(e.target); }
+        });
+      }, { rootMargin: "300px" })
+    : null;
+
+  function revisar(raiz) {
+    if (!raiz || raiz.nodeType !== 1) return;
+    const lista = raiz.matches && raiz.matches(".producto-resenas[data-producto-id]:not([data-listo])")
+      ? [raiz] : [];
+    raiz.querySelectorAll && raiz.querySelectorAll(".producto-resenas[data-producto-id]:not([data-listo])")
+      .forEach((n) => lista.push(n));
+    lista.forEach((n) => (visor ? visor.observe(n) : hidratarResenasTarjeta(n)));
+  }
+
+  function arrancar() {
+    revisar(document.body);
+    new MutationObserver((muts) => muts.forEach((m) => m.addedNodes.forEach(revisar)))
+      .observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", arrancar);
+  else arrancar();
+})();
+// 🆕 ========= Fin de estrellas de reseñas en la tarjeta =========
+
 function construirTarjetaProductoHTML(producto) {
   // 🆕 Precio visible directo en la tarjeta (antes solo vivía dentro de
   // data-precio, oculto hasta abrir "Ver detalles"). Se formatea con
@@ -1086,6 +1186,7 @@ function construirTarjetaProductoHTML(producto) {
           ${botonCarritoHtml}
         </div>
         <h3>${producto.nombre || ''}</h3>
+        ${resenasTarjetaHtml(producto)}
         ${quedanBadgeHtml}
         ${ahorraExtraHtml}
         ${precioHtml}
@@ -1216,6 +1317,10 @@ const searchInput = document.getElementById("search");
 // manda "q". Los #provincia/#ciudad son del form "Agregar Producto",
 // no se tocan desde aquí.
 function buscarProductos() {
+  // 🆕 Se suelta el foco del buscador (cierra el teclado en el teléfono) para
+  // que el encabezado, la barra de abajo y Monji se oculten al hacer scroll
+  // igual que cuando se explora sin buscar.
+  if (searchInput) searchInput.blur();
   mostrarCatalogoPublico();
   const query = searchInput.value.trim();
   const url = query

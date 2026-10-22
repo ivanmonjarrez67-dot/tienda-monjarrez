@@ -578,6 +578,31 @@
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
       }
 
+      /* 🆕 Estrellas de reseñas en la tarjeta (estilo Temu), en rojo de la
+         marca. Solo existen si el producto tiene reseñas; si no, el div
+         queda "hidden" y no ocupa espacio. */
+      .producto-resenas {
+        margin: 3px 14px 0;
+        line-height: 1;
+      }
+      .producto-resenas[hidden] { display: none !important; }
+      .rs-stars {
+        display: inline-flex;
+        gap: 1px;
+      }
+      .rs-star {
+        font-size: 0.95rem;
+        line-height: 1;
+        background: linear-gradient(90deg, #c62d2d var(--rs-fill, 0%), #e3d3d3 var(--rs-fill, 0%));
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+      }
+      @media (max-width: 500px) {
+        .producto-resenas { margin-left: 8px; margin-right: 8px; }
+      }
+
       /* 🆕 "Artículo más vendido #N": ocupa el mismo lugar que "Solo
          quedan X" (debajo del nombre) — le gana ese lugar a "Solo
          quedan X" cuando el producto es uno de los 20 elegidos hoy.
@@ -1587,6 +1612,18 @@
     <!-- Encabezado y menús: teléfono (encabezado-movil) y computador (encabezado-pc) -->
     <link rel="stylesheet" href="encabezado-movil.css?v=3" />
     <link rel="stylesheet" href="encabezado-pc.css?v=3" />
+    <!-- 🆕 Anti-parpadeo del encabezado: encabezado-config/movil/pc.js corren al
+         final del <body> y transforman el encabezado, por eso se alcanzaba a ver
+         la versión vieja ~1 segundo. Se oculta (visibility, sin mover nada de la
+         página) hasta que esos scripts terminan; si algo falla, a los 1.5 s se
+         muestra igual para que nunca quede invisible. -->
+    <style>
+      html:not(.encabezado-listo) header { visibility: hidden; }
+    </style>
+    <noscript><style>html:not(.encabezado-listo) header { visibility: visible; }</style></noscript>
+    <script>
+      setTimeout(function () { document.documentElement.classList.add("encabezado-listo"); }, 1500);
+    </script>
     <style>
       /* 🆕 Fotos adicionales (selección múltiple con vista previa numerada) */
       .fotos-extra-contador { margin-left: 10px; font-size: 0.85rem; color: #777; }
@@ -7915,6 +7952,20 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     <script src="encabezado-config.js?v=2"></script>
     <script src="encabezado-movil.js?v=2"></script>
     <script src="encabezado-pc.js?v=3"></script>
+    <script>
+      // 🆕 Los scripts del encabezado ya corrieron: se muestra el encabezado nuevo.
+      (function () {
+        function listo() {
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+              document.documentElement.classList.add("encabezado-listo");
+            });
+          });
+        }
+        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", listo);
+        else listo();
+      })();
+    </script>
   
 <!-- 📈 Estadísticas del vendedor (botón en el encabezado de Mi tienda) -->
 <style>
