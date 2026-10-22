@@ -676,14 +676,25 @@
   }
   .resenas-promedio-num { font-size: 2rem; font-weight: 800; line-height: 1; }
   .resenas-promedio-wrap { text-align: center; min-width: 90px; }
-  .resenas-estrellas { color: #ff9017; font-size: 0.95rem; letter-spacing: 1px; }
+  /* ★ rojo de la tienda (mismo de las tarjetas del catálogo); la parte vacía va en gris */
+  .resenas-estrellas {
+    --pct: 100%;
+    font-size: 0.95rem;
+    letter-spacing: 2px;
+    line-height: 1;
+    color: #dcdcdc;
+    background: linear-gradient(90deg, #c62d2d var(--pct), #dcdcdc var(--pct));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
   .resenas-total { font-size: 0.78rem; color: var(--text-dim); margin-top: 4px; }
   .resenas-barras { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 4px; }
   .resenas-barra-fila { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-dim); }
   .resenas-barra-fila span:first-child { width: 34px; flex-shrink: 0; }
   .resenas-barra-fila span:last-child { width: 26px; flex-shrink: 0; text-align: right; }
   .resenas-barra-pista { flex: 1; height: 6px; border-radius: 4px; background: #ececec; overflow: hidden; }
-  .resenas-barra-relleno { height: 100%; background: #ff9017; }
+  .resenas-barra-relleno { height: 100%; background: #c62d2d; }
 
   .resenas-filtros { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
   .resenas-filtro-chip {
@@ -753,7 +764,7 @@
   }
   .resenas-form.abierto { display: block; }
   .resenas-form-estrellas { font-size: 1.6rem; color: #ddd; cursor: pointer; margin-bottom: 10px; letter-spacing: 4px; }
-  .resenas-form-estrellas .fa-star.activa { color: #ff9017; }
+  .resenas-form-estrellas .fa-star.activa { color: #c62d2d; }
   .resenas-form textarea {
     width: 100%;
     min-height: 80px;
@@ -803,7 +814,7 @@
     white-space: nowrap;
   }
   .rating-top strong { font-weight: 600; }
-  .rating-top .resenas-estrellas { font-size: 0.95rem; letter-spacing: 1px; }
+  .rating-top .resenas-estrellas { font-size: 0.95rem; }
   .rating-top:hover strong { color: var(--rojo); }
 
   /* Barra bajo la imagen: "473 reseñas | 4.7 ★★★★★" (solo el contador;
@@ -821,7 +832,7 @@
   }
   .resumen-resenas .rr-sep { width: 1px; height: 16px; background: #d6d6d6; }
   .resumen-resenas .rr-prom { display: inline-flex; align-items: center; gap: 6px; }
-  .resumen-resenas .resenas-estrellas { font-size: 1rem; letter-spacing: 1px; }
+  .resumen-resenas .resenas-estrellas { font-size: 1rem; }
   .resumen-resenas .rr-link { color: var(--rojo); font-weight: 600; }
   .resumen-resenas .rr-flecha { margin-left: auto; font-size: 0.7rem; color: var(--text-dim); }
   .resumen-resenas:hover .rr-flecha { color: var(--rojo); }
@@ -1663,19 +1674,10 @@
   }
 
   function estrellasHtml(valorDecimal, tamanoClase) {
-    // valorDecimal puede venir con decimales (ej. 4.3, para el
-    // promedio) o ser un entero (calificación de una reseña puntual).
-    let html = "";
-    for (let i = 1; i <= 5; i++) {
-      if (valorDecimal >= i - 0.25) {
-        html += '<i class="fa-solid fa-star"></i>';
-      } else if (valorDecimal >= i - 0.75) {
-        html += '<i class="fa-solid fa-star-half-stroke"></i>';
-      } else {
-        html += '<i class="fa-regular fa-star"></i>';
-      }
-    }
-    return `<span class="resenas-estrellas ${tamanoClase || ""}">${html}</span>`;
+    // ★ sólidas, igual que en las tarjetas del catálogo. El relleno rojo llega
+    // hasta el porcentaje de la calificación (ej. 4.7 -> 94%).
+    const pct = Math.max(0, Math.min(100, (parseFloat(valorDecimal) || 0) / 5 * 100));
+    return `<span class="resenas-estrellas ${tamanoClase || ""}" style="--pct:${pct}%">★★★★★</span>`;
   }
 
   function formatearFechaResena(fechaStr) {
