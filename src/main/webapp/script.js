@@ -1057,10 +1057,16 @@ function hidratarResenasTarjeta(el) {
 }
 
 (function iniciarEstrellasTarjeta() {
+  // Se observa la TARJETA (el div "hidden" no tiene caja y nunca se detectaría
+  // como visible); al entrar en pantalla se hidrata su div de estrellas.
+  const objetivos = new WeakMap(); // tarjeta -> div de estrellas
   const visor = "IntersectionObserver" in window
     ? new IntersectionObserver((entradas) => {
         entradas.forEach((e) => {
-          if (e.isIntersecting) { visor.unobserve(e.target); hidratarResenasTarjeta(e.target); }
+          if (!e.isIntersecting) return;
+          visor.unobserve(e.target);
+          const el = objetivos.get(e.target);
+          if (el) hidratarResenasTarjeta(el);
         });
       }, { rootMargin: "300px" })
     : null;
@@ -1071,7 +1077,13 @@ function hidratarResenasTarjeta(el) {
       ? [raiz] : [];
     raiz.querySelectorAll && raiz.querySelectorAll(".producto-resenas[data-producto-id]:not([data-listo])")
       .forEach((n) => lista.push(n));
-    lista.forEach((n) => (visor ? visor.observe(n) : hidratarResenasTarjeta(n)));
+    lista.forEach((n) => {
+      if (!visor) { hidratarResenasTarjeta(n); return; }
+      const tarjeta = n.closest(".producto") || n.parentElement;
+      if (!tarjeta) { hidratarResenasTarjeta(n); return; }
+      objetivos.set(tarjeta, n);
+      visor.observe(tarjeta);
+    });
   }
 
   function arrancar() {
