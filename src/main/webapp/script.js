@@ -1328,6 +1328,24 @@ const searchInput = document.getElementById("search");
 // empresa y provincia contra este mismo valor, así que aquí solo se
 // manda "q". Los #provincia/#ciudad son del form "Agregar Producto",
 // no se tocan desde aquí.
+// 🆕 Al buscar estando abajo en la página, el grid se vacía y se repinta con
+// pocos resultados: la página se hace más corta y el navegador deja el scroll
+// al fondo, así que las coincidencias quedaban arriba, fuera de la vista.
+// Esto sube hasta el inicio de los resultados (descontando el header fijo).
+function irAlInicioDeResultados() {
+  requestAnimationFrame(() => {
+    const wrapper = document.getElementById("productGridWrapper");
+    if (!wrapper) return;
+    const header = document.querySelector("header");
+    const altoHeader = header ? header.offsetHeight : 0;
+    const top = wrapper.getBoundingClientRect().top;
+    // Solo se mueve si el inicio de los resultados quedó por encima de lo visible
+    if (top < altoHeader) {
+      window.scrollTo({ top: Math.max(0, window.scrollY + top - altoHeader), behavior: "auto" });
+    }
+  });
+}
+
 function buscarProductos() {
   // 🆕 Se suelta el foco del buscador (cierra el teclado en el teléfono) para
   // que el encabezado, la barra de abajo y Monji se oculten al hacer scroll
@@ -1347,9 +1365,11 @@ function buscarProductos() {
       if (productos.length === 0) {
         grid.innerHTML = crearAvisoMegaMercado({ conContactoExtra: false });
         window.Monji?.buscando("No encontré ese producto en el catálogo, pero tranquilo: tenemos acceso a un mega mercado. Escríbenos y te ayudamos a conseguirlo 🔍");
+        irAlInicioDeResultados();
         return;
       }
       pintarMosaico(grid, productos, construirTarjetaProductoHTML);
+      irAlInicioDeResultados();
     })
     .catch((error) => console.error("Error al buscar productos:", error));
 }
