@@ -81,6 +81,7 @@
     grid-template-areas:
       "image"
       "thumbs"
+      "rating"
       "info"
       "extra";
     gap: 20px;
@@ -90,7 +91,9 @@
       grid-template-columns: 76px minmax(0, 1.25fr) minmax(0, 1fr);
       grid-template-areas:
         "thumbs image info"
+        "thumbs rating info"
         "thumbs extra info";
+      grid-template-rows: auto auto 1fr;
       align-items: start;
     }
   }
@@ -776,6 +779,75 @@
   .resenas-form-enviar:disabled { opacity: 0.6; cursor: default; }
   .resenas-form-mensaje { font-size: 0.78rem; margin-top: 8px; }
 
+  /* ---------- 🆕 Calificación compacta (estilo Temu) + confianza ---------- */
+  html { scroll-behavior: smooth; }
+  #resenasSeccion { scroll-margin-top: 76px; }
+
+  /* Fila "Vendido por" (izquierda) + estrellas (derecha), justo bajo la descripción */
+  .fila-vendedor-rating {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin: 0 0 16px;
+  }
+  .fila-vendedor-rating .vendedor-producto { margin: 0; }
+  .rating-top {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+  .rating-top strong { font-weight: 600; }
+  .rating-top .resenas-estrellas { font-size: 0.95rem; letter-spacing: 1px; }
+  .rating-top:hover strong { color: var(--rojo); }
+
+  /* Barra bajo la imagen: "473 reseñas | 4.7 ★★★★★" (solo el contador;
+     las reseñas completas siguen al final de la página) */
+  .resumen-resenas {
+    grid-area: rating;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 2px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.92rem;
+  }
+  .resumen-resenas .rr-sep { width: 1px; height: 16px; background: #d6d6d6; }
+  .resumen-resenas .rr-prom { display: inline-flex; align-items: center; gap: 6px; }
+  .resumen-resenas .resenas-estrellas { font-size: 1rem; letter-spacing: 1px; }
+  .resumen-resenas .rr-link { color: var(--rojo); font-weight: 600; }
+  .resumen-resenas .rr-flecha { margin-left: auto; font-size: 0.7rem; color: var(--text-dim); }
+  .resumen-resenas:hover .rr-flecha { color: var(--rojo); }
+
+  /* Bloque de confianza bajo "Compartir" (llena el espacio de la derecha) */
+  .garantias {
+    margin: 16px 0 4px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .garantia-fila { display: flex; align-items: flex-start; gap: 12px; padding: 13px 14px; }
+  .garantia-fila + .garantia-fila { border-top: 1px solid var(--border); }
+  .garantia-fila > i {
+    flex-shrink: 0;
+    width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    background: rgba(161, 51, 65, 0.08);
+    color: var(--rojo);
+    font-size: 0.95rem;
+  }
+  .garantia-fila strong { display: block; font-size: 0.86rem; margin-bottom: 1px; }
+  .garantia-fila span { display: block; font-size: 0.78rem; line-height: 1.5; color: var(--text-dim); }
+
   /* ---------- Carga (esqueleto) ---------- */
   .sk { background: linear-gradient(90deg, #eee 25%, #f7f7f7 37%, #eee 63%); background-size: 400% 100%; animation: sk-shimmer 1.3s ease infinite; }
   @keyframes sk-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
@@ -902,6 +974,7 @@
         <div id="contadorFotos" class="contador-fotos"></div>
         <div id="botonCarritoProducto"></div>
       </div>
+      <a class="resumen-resenas" id="resumenBajoImagen" href="#resenasSeccion" style="display:none;"></a>
       <div class="panel-info">
         <span class="badge-nacional"><i class="fa-solid fa-store"></i> Producto de Vendedor Nacional</span>
         <h1 class="titulo-producto" id="tituloProducto"></h1>
@@ -909,13 +982,16 @@
         <p class="descripcion-texto" id="descripcionProducto"></p>
         <button type="button" id="btnLeerMasDescripcion" class="btn-leer-mas" style="display:none;">Leer más</button>
 
-        <div class="vendedor-producto">
-          Vendido por:
-          <a id="btnVendedorNacional" class="btn-vendedor-nacional" href="#">
-            <span id="iconoVendedorProducto" class="icono-vendedor-producto"></span>
-            <strong id="vendedorProducto"></strong>
-            <i class="fa-solid fa-chevron-right"></i>
-          </a>
+        <div class="fila-vendedor-rating">
+          <div class="vendedor-producto">
+            Vendido por:
+            <a id="btnVendedorNacional" class="btn-vendedor-nacional" href="#">
+              <span id="iconoVendedorProducto" class="icono-vendedor-producto"></span>
+              <strong id="vendedorProducto"></strong>
+              <i class="fa-solid fa-chevron-right"></i>
+            </a>
+          </div>
+          <a class="rating-top" id="ratingTop" href="#resenasSeccion" style="display:none;" aria-label="Ver reseñas"></a>
         </div>
 
         <div id="badgesUrgenciaProducto"></div>
@@ -938,6 +1014,21 @@
             Compartir
           </button>
         </p>
+
+        <div class="garantias">
+          <div class="garantia-fila">
+            <i class="fa-solid fa-headset"></i>
+            <div><strong>Atención directa de la tienda</strong><span>Te acompañamos por WhatsApp o correo durante todo el proceso de compra.</span></div>
+          </div>
+          <div class="garantia-fila">
+            <i class="fa-solid fa-clipboard-check"></i>
+            <div><strong>Confirmas antes de pagar</strong><span>Revisas tu pedido, tus datos de entrega y el pago en el siguiente paso.</span></div>
+          </div>
+        </div>
+
+        <h3 class="seccion-titulo">Opciones de envío</h3>
+        <p class="envio-alejado-texto">¿Este producto está en una zona alejada? Con gusto validamos si es posible coordinar el envío.</p>
+        <p id="envioProducto"></p>
       </div>
 
       <div class="panel-info-secundaria">
@@ -951,9 +1042,6 @@
         <p id="ubicacionProducto"></p>
         <div class="mapa-preview" id="mapaPreview"></div>
 
-        <h3 class="seccion-titulo">Opciones de envío</h3>
-        <p class="envio-alejado-texto">¿Este producto está en una zona alejada? Con gusto validamos si es posible coordinar el envío.</p>
-        <p id="envioProducto"></p>
       </div>
     </div>
 
@@ -1679,6 +1767,34 @@
     });
   }
 
+  // 🆕 Estrellas arriba (junto al vendedor) y "N reseñas | 4.7 ★" bajo la imagen.
+  function pintarResumenCompacto(datos) {
+    const top = document.getElementById("ratingTop");
+    const bajo = document.getElementById("resumenBajoImagen");
+    const total = (datos && datos.total) || 0;
+    if (!total) {
+      if (top) top.style.display = "none";
+      if (bajo) {
+        bajo.innerHTML = '<span>Aún sin reseñas</span><span class="rr-sep"></span><span class="rr-link">Sé el primero en opinar</span><i class="fa-solid fa-chevron-right rr-flecha"></i>';
+        bajo.style.display = "flex";
+      }
+      return;
+    }
+    const prom = parseFloat(datos.promedio) || 0;
+    const promTxt = prom.toFixed(1);
+    if (top) {
+      top.innerHTML = `<strong>${esc(promTxt)}</strong>${estrellasHtml(prom)}`;
+      top.style.display = "inline-flex";
+    }
+    if (bajo) {
+      bajo.innerHTML = `<span><strong>${total.toLocaleString("es-CR")}</strong> reseña${total === 1 ? "" : "s"}</span>` +
+        `<span class="rr-sep"></span>` +
+        `<span class="rr-prom"><strong>${esc(promTxt)}</strong>${estrellasHtml(prom)}</span>` +
+        `<i class="fa-solid fa-chevron-right rr-flecha"></i>`;
+      bajo.style.display = "flex";
+    }
+  }
+
   function cargarResenas(productoId) {
     fetch(`/api/resenas?producto_id=${encodeURIComponent(productoId)}`)
       .then((res) => {
@@ -1687,6 +1803,7 @@
       })
       .then((datos) => {
         resenasDatosActuales = datos.resenas || [];
+        pintarResumenCompacto(datos);
         pintarResumenYFiltros(datos);
         pintarListaResenas();
       })
