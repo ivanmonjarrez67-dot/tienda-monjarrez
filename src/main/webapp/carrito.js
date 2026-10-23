@@ -707,6 +707,9 @@
       const card = btn.closest(".producto");
       const precio = card && card.querySelector(".producto-precio");
       if (!precio) return;
+      // Si la tarjeta ya trae su fila de precio (script.js), el botón ya está
+      // junto al precio: solo se le da el estilo "en-info" y no se mueve.
+      if (btn.closest(".producto-fila-precio")) { btn.classList.add("en-info"); return; }
       const fila = document.createElement("div");
       fila.className = "carrito-fila-btn";
       btn.classList.add("en-info");

@@ -1205,17 +1205,12 @@ function construirTarjetaProductoHTML(producto) {
   // se llena de avisos que compiten entre sí.
   const estadoHtml = quedanBadgeHtml || contadorHtml;
 
-  // 🆕 Línea de datos reales (como el "ventas" y el origen de Temu): unidades
-  // vendidas (solo si hay ventas registradas) + provincia desde donde sale el
-  // producto. Si no hay ninguno de los dos datos, la línea no se muestra.
+  // 🆕 Línea de datos reales (como el "ventas" de Temu): unidades vendidas,
+  // solo si el producto tiene ventas registradas. Si no hay, no se muestra.
   const unidadesVendidas = mapaUnidadesVendidas.get(idTarjeta) || 0;
   const partesMeta = [];
   if (unidadesVendidas > 0) {
     partesMeta.push(`<span><i class="fa-solid fa-fire"></i> ${unidadesVendidas.toLocaleString("es-CR")} vendido${unidadesVendidas === 1 ? "" : "s"}</span>`);
-  }
-  const provinciaTxt = String(producto.provincia || "").trim();
-  if (provinciaTxt) {
-    partesMeta.push(`<span><i class="fa-solid fa-location-dot"></i> ${provinciaTxt}</span>`);
   }
   const metaHtml = partesMeta.length
     ? `<div class="producto-meta">${partesMeta.join("")}</div>`
