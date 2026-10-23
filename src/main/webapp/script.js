@@ -1003,7 +1003,7 @@ function estrellasTarjetaHtml(promedio, total) {
   }
   const etiqueta = `${prom.toFixed(1)} de 5 estrellas` + (total ? ` (${total} reseña${total === 1 ? "" : "s"})` : "");
   // Número de reseñas junto a las estrellas (solo si es un dato real > 0)
-  const cuenta = total > 0 ? `<span class="rs-count">${total.toLocaleString("es-CR")}</span>` : "";
+  const cuenta = total > 0 ? `<span class="rs-count">${total.toLocaleString("es-CR")} reseña${total === 1 ? "" : "s"}</span>` : "";
   return `<span class="rs-stars" role="img" aria-label="${etiqueta}">${estrellas}</span>${cuenta}`;
 }
 
