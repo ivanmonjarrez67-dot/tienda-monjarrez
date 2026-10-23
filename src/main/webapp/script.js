@@ -899,6 +899,7 @@ function formatearCuentaRegresiva(ms) {
 // filtrado) para que el puesto no cambie según el filtro del comprador.
 let mapaBestsellerHoy = new Map();      // id -> puesto 1..20
 let setVendidosSecundarios = new Set(); // ids "ventas recientes" (otros 20)
+let mapaUnidadesVendidas = new Map();   // id -> unidades REALES vendidas (para "N vendidos" en la tarjeta)
 
 // Primera venta de la web (sin registro en la BD): misma lista y cantidades
 // que VENTA_INICIAL en estadisticas.html. Es la más antigua: va al final.
@@ -961,6 +962,7 @@ function calcularBestsellersDelDia(productos) {
   rankingVendidos.concat(vendidosCargo ? VENTA_INICIAL_UNIDADES : []).forEach(({ id, u }) => {
     unidades.set(id, (unidades.get(id) || 0) + u);
   });
+  mapaUnidadesVendidas = new Map([...unidades.entries()].filter(([id]) => enCatalogo.has(id)));
   const porUnidades = [...unidades.entries()]
     .sort((a, b) => b[1] - a[1])
     .map(([id]) => id)
@@ -1202,6 +1204,22 @@ function construirTarjetaProductoHTML(producto) {
   // "Solo quedan X / Último día" > contador "Termina en". Así la tarjeta no
   // se llena de avisos que compiten entre sí.
   const estadoHtml = quedanBadgeHtml || contadorHtml;
+
+  // 🆕 Línea de datos reales (como el "ventas" y el origen de Temu): unidades
+  // vendidas (solo si hay ventas registradas) + provincia desde donde sale el
+  // producto. Si no hay ninguno de los dos datos, la línea no se muestra.
+  const unidadesVendidas = mapaUnidadesVendidas.get(idTarjeta) || 0;
+  const partesMeta = [];
+  if (unidadesVendidas > 0) {
+    partesMeta.push(`<span><i class="fa-solid fa-fire"></i> ${unidadesVendidas.toLocaleString("es-CR")} vendido${unidadesVendidas === 1 ? "" : "s"}</span>`);
+  }
+  const provinciaTxt = String(producto.provincia || "").trim();
+  if (provinciaTxt) {
+    partesMeta.push(`<span><i class="fa-solid fa-location-dot"></i> ${provinciaTxt}</span>`);
+  }
+  const metaHtml = partesMeta.length
+    ? `<div class="producto-meta">${partesMeta.join("")}</div>`
+    : "";
   const filaPrecioHtml = (precioHtml || botonCarritoHtml)
     ? `<div class="producto-fila-precio">${precioHtml}${botonCarritoHtml}</div>`
     : "";
@@ -1216,6 +1234,7 @@ function construirTarjetaProductoHTML(producto) {
         ${filaPrecioHtml}
         ${ahorraExtraHtml}
         ${estadoHtml}
+        ${metaHtml}
         <button class="more-info-btn"
           data-id="${producto.id ?? ''}"
           data-empresa="${producto.empresa || ''}"
