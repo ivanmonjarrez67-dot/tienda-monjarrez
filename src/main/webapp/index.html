@@ -877,6 +877,34 @@
         --fu-icono-color: #3b0a10;
         --fu-linea: #e0a93b;
       }
+      /* Más vendido: dorado metálico con texto vino oscuro y el puesto (#N) en
+         una etiqueta oscura a la derecha. Es el único encabezado dorado. */
+      .fu-vendido {
+        --fu-fondo: linear-gradient(90deg, #b8862b 0%, #f3d27a 45%, #d9a93f 100%);
+        --fu-icono-fondo: #3b0a10;
+        --fu-icono-color: #f3d27a;
+        --fu-texto-color: #3b0a10;
+        --fu-linea: #7a1414;
+      }
+      .mosaic-grid .fu-vendido .fu-texto { text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35); font-weight: 700; }
+      .mosaic-grid .fu-vendido::after {
+        background: repeating-linear-gradient(115deg, rgba(255,255,255,0.35) 0 3px, transparent 3px 9px);
+      }
+      .mosaic-grid .fu-vendido .fu-icono i { animation: fuPulso 2.2s ease-in-out infinite; }
+      .mosaic-grid .fu-puesto {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        margin-left: auto;
+        padding: 0 10px 0 15px;
+        background: #3b0a10;
+        color: #f3d27a;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%);
+      }
       @media (max-width: 500px) {
         .mosaic-grid .producto .producto-franja-urgencia { height: 25px; font-size: 0.58rem; letter-spacing: 0.6px; }
         .mosaic-grid .producto-franja-urgencia .fu-icono { padding: 0 13px 0 8px; }
@@ -4806,7 +4834,7 @@ async function cargarMisProductos(usuarioId) {
   .google-aviso { font-size: 12px; text-align: center; margin: 6px 0 0; opacity: .85; }
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="script.js?v=10"></script>
+<script src="script.js?v=11"></script>
 <script src="carrito.js?v=9"></script>
 
 <script>

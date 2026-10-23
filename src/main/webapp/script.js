@@ -1117,6 +1117,13 @@ function construirFranjaUrgenciaHtml(fraseCruda) {
   return `<div class="producto-franja-urgencia ${d.clase}"><span class="fu-icono"><i class="fa-solid ${d.icono}"></i></span><span class="fu-texto">${texto}</span></div>`;
 }
 
+// 🆕 Encabezado dorado de los "Artículo más vendido #N" (ventas REALES): corona
+// para el top 3 y trofeo para el resto, con el puesto en una etiqueta aparte.
+function construirFranjaVendidoHtml(puesto) {
+  const icono = puesto <= 3 ? "fa-crown" : "fa-trophy";
+  return `<div class="producto-franja-urgencia fu-vendido"><span class="fu-icono"><i class="fa-solid ${icono}"></i></span><span class="fu-texto">Más vendido</span><span class="fu-puesto">#${puesto}</span></div>`;
+}
+
 function construirTarjetaProductoHTML(producto) {
   // 🆕 Precio visible directo en la tarjeta (antes solo vivía dentro de
   // data-precio, oculto hasta abrir "Ver detalles"). Se formatea con
@@ -1174,10 +1181,6 @@ function construirTarjetaProductoHTML(producto) {
     ? `<p class="producto-precio">₡${precioFormateado} ${precioAnteriorHtml}</p>`
     : "";
 
-  const ribbonUrgenciaHtml = urgencia.mostrarFranja
-    ? construirFranjaUrgenciaHtml(urgencia.fraseSecundaria)
-    : "";
-
   // 🆕 Ventas REALES: #1..#20 = los 20 productos vendidos más
   // recientemente; los 20 anteriores llevan "Una venta reciente". Va debajo
   // del nombre y le gana el lugar a "Solo quedan X". Independiente de la
@@ -1185,9 +1188,15 @@ function construirTarjetaProductoHTML(producto) {
   const idTarjeta = String(producto.id ?? "");
   const puestoBestseller = mapaBestsellerHoy.get(idTarjeta);
   const esVendidoSecundario = !puestoBestseller && setVendidosSecundarios.has(idTarjeta);
-  const quedanBadgeHtml = puestoBestseller
-    ? `<div class="producto-bestseller-badge">Artículo más vendido #${puestoBestseller}</div>`
-    : esVendidoSecundario
+  // El "más vendido" ahora es el ENCABEZADO dorado de la tarjeta (abajo); por eso
+  // ya no lleva su propia línea y la línea de estado pasa a la siguiente opción.
+  // Si un producto es "más vendido", su encabezado le gana al de urgencia.
+  const ribbonUrgenciaHtml = puestoBestseller
+    ? construirFranjaVendidoHtml(puestoBestseller)
+    : urgencia.mostrarFranja
+      ? construirFranjaUrgenciaHtml(urgencia.fraseSecundaria)
+      : "";
+  const quedanBadgeHtml = esVendidoSecundario
       ? `<div class="producto-vendido-badge"><i class="fa-solid fa-bag-shopping"></i> Una venta reciente</div>`
       : urgencia.mostrarFranja
         ? `<div class="producto-quedan-badge">${urgencia.frase}</div>`
