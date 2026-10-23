@@ -770,6 +770,11 @@
         min-width: 0 !important;
       }
 
+      /* Sin puntitos de carrusel en las tarjetas (más limpio, como Temu): la
+         imagen ocupa ese espacio. Siguen en el HTML, así que deslizar las fotos
+         con el dedo funciona igual; solo se ocultan a la vista. */
+      .mosaic-grid .producto .galeria-dots { display: none !important; }
+
       /* Líneas de apoyo, más pequeñas y alineadas con el resto del texto */
       .mosaic-grid .producto-ahorra-extra { margin: 3px 14px 0; font-size: 0.64rem; }
       .mosaic-grid .producto-quedan-badge { margin: 4px 14px 0; font-size: 0.66rem; }
