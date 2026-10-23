@@ -1100,6 +1100,23 @@ function hidratarResenasTarjeta(el) {
 })();
 // 🆕 ========= Fin de estrellas de reseñas en la tarjeta =========
 
+// 🆕 Encabezado de la tarjeta ("Oferta relámpago", "Alta demanda"...): cada frase
+// tiene su propio diseño (color, ícono y detalle), con esquinas rectas. Los
+// íconos son Font Awesome (no emojis); el emoji de la frase se descarta.
+const FRANJAS_URGENCIA = {
+  "oferta relampago":   { clase: "fu-relampago", icono: "fa-bolt" },
+  "oferta de temporada":{ clase: "fu-temporada", icono: "fa-fire" },
+  "alta demanda":       { clase: "fu-demanda",   icono: "fa-fire-flame-curved" },
+  "tendencia ahora":    { clase: "fu-tendencia", icono: "fa-arrow-trend-up" },
+};
+function construirFranjaUrgenciaHtml(fraseCruda) {
+  const texto = String(fraseCruda || "").replace(/[^\p{L}\p{N}\s]/gu, "").replace(/\s+/g, " ").trim();
+  if (!texto) return "";
+  const clave = texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const d = FRANJAS_URGENCIA[clave] || { clase: "fu-temporada", icono: "fa-fire" };
+  return `<div class="producto-franja-urgencia ${d.clase}"><span class="fu-icono"><i class="fa-solid ${d.icono}"></i></span><span class="fu-texto">${texto}</span></div>`;
+}
+
 function construirTarjetaProductoHTML(producto) {
   // 🆕 Precio visible directo en la tarjeta (antes solo vivía dentro de
   // data-precio, oculto hasta abrir "Ver detalles"). Se formatea con
@@ -1158,7 +1175,7 @@ function construirTarjetaProductoHTML(producto) {
     : "";
 
   const ribbonUrgenciaHtml = urgencia.mostrarFranja
-    ? `<div class="producto-franja-urgencia">${urgencia.fraseSecundaria}</div>`
+    ? construirFranjaUrgenciaHtml(urgencia.fraseSecundaria)
     : "";
 
   // 🆕 Ventas REALES: #1..#20 = los 20 productos vendidos más

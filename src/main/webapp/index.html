@@ -770,20 +770,121 @@
         min-width: 0 !important;
       }
 
-      /* Franja de urgencia ("Oferta relámpago", "Alta demanda"...): ya no va
-         flotando sobre la foto, sino como ENCABEZADO pegado arriba de la imagen,
-         del mismo ancho de la tarjeta, para que se note que es de ese producto. */
+      /* Franja de urgencia = ENCABEZADO de la tarjeta, pegado arriba de la foto,
+         del ancho completo y con esquinas rectas. Cada frase tiene su diseño:
+         ícono en bloque inclinado, brillo que la recorre, rayas diagonales a la
+         derecha y una línea de acento abajo. Los colores salen de la marca. */
       .mosaic-grid .producto .producto-franja-urgencia {
-        position: static;
-        display: block;
+        position: relative;
+        display: flex;
+        align-items: stretch;
+        overflow: hidden;
         margin: 0;
-        padding: 5px 10px;
-        border-radius: 6px 6px 0 0;
-        box-shadow: none;
+        padding: 0;
+        height: 27px;
+        border-radius: 0 !important;
+        box-shadow: inset 0 -2px 0 var(--fu-linea, #e6b85c);
+        background: var(--fu-fondo, #7a1414);
+        color: var(--fu-texto-color, #fff);
         font-size: 0.64rem;
-        letter-spacing: 0.4px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        line-height: 1;
         text-align: left;
-        line-height: 1.2;
+      }
+      .mosaic-grid .producto-franja-urgencia .fu-icono {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 16px 0 10px;
+        background: var(--fu-icono-fondo, #4a0d17);
+        color: var(--fu-icono-color, #fff);
+        clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+        font-size: 0.72rem;
+      }
+      .mosaic-grid .producto-franja-urgencia .fu-texto {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        padding: 0 10px 2px 8px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+      }
+      /* Rayas diagonales que se desvanecen hacia la derecha */
+      .mosaic-grid .producto-franja-urgencia::after {
+        content: "";
+        position: absolute;
+        top: 0; right: 0; bottom: 0;
+        width: 42%;
+        background: repeating-linear-gradient(115deg, rgba(255,255,255,0.16) 0 3px, transparent 3px 9px);
+        -webkit-mask-image: linear-gradient(90deg, transparent, #000);
+                mask-image: linear-gradient(90deg, transparent, #000);
+        z-index: 1;
+      }
+      /* Brillo que cruza la franja de vez en cuando */
+      .mosaic-grid .producto-franja-urgencia::before {
+        content: "";
+        position: absolute;
+        top: 0; bottom: 0; left: 0;
+        width: 36%;
+        background: linear-gradient(100deg, transparent, rgba(255,255,255,0.32), transparent);
+        transform: translateX(-130%) skewX(-18deg);
+        animation: fuBrillo 3.6s ease-in-out infinite;
+        z-index: 3;
+        pointer-events: none;
+      }
+      @keyframes fuBrillo {
+        0%, 55% { transform: translateX(-130%) skewX(-18deg); }
+        100%    { transform: translateX(380%) skewX(-18deg); }
+      }
+      @keyframes fuPulso {
+        0%, 100% { transform: scale(1); }
+        50%      { transform: scale(1.22); }
+      }
+
+      /* Variantes */
+      .fu-relampago {
+        --fu-fondo: linear-gradient(90deg, #8e1b1b 0%, #c62d2d 100%);
+        --fu-icono-fondo: #560d0d;
+        --fu-icono-color: #ffd36a;
+        --fu-linea: #ffd36a;
+      }
+      .fu-relampago .fu-icono i { animation: fuPulso 1.4s ease-in-out infinite; }
+      .fu-temporada {
+        --fu-fondo: linear-gradient(90deg, #4a0d17 0%, #7a2530 100%);
+        --fu-icono-fondo: #2a050c;
+        --fu-icono-color: #f0c36a;
+        --fu-texto-color: #fff3d6;
+        --fu-linea: #e6b85c;
+      }
+      .fu-demanda {
+        --fu-fondo: linear-gradient(90deg, #1b1b1b 0%, #5a1420 100%);
+        --fu-icono-fondo: #c62d2d;
+        --fu-icono-color: #fff;
+        --fu-linea: #c62d2d;
+      }
+      .fu-demanda .fu-icono i { animation: fuPulso 1.8s ease-in-out infinite; }
+      .fu-tendencia {
+        --fu-fondo: linear-gradient(90deg, #26121a 0%, #7a1414 100%);
+        --fu-icono-fondo: #e0a93b;
+        --fu-icono-color: #3b0a10;
+        --fu-linea: #e0a93b;
+      }
+      @media (max-width: 500px) {
+        .mosaic-grid .producto .producto-franja-urgencia { height: 25px; font-size: 0.58rem; letter-spacing: 0.6px; }
+        .mosaic-grid .producto-franja-urgencia .fu-icono { padding: 0 13px 0 8px; }
+        .mosaic-grid .producto-franja-urgencia .fu-texto { padding: 0 6px 2px 6px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .mosaic-grid .producto-franja-urgencia::before,
+        .mosaic-grid .producto-franja-urgencia .fu-icono i { animation: none; }
       }
 
       /* Sin puntitos de carrusel en las tarjetas (más limpio, como Temu): la
@@ -4705,7 +4806,7 @@ async function cargarMisProductos(usuarioId) {
   .google-aviso { font-size: 12px; text-align: center; margin: 6px 0 0; opacity: .85; }
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="script.js?v=9"></script>
+<script src="script.js?v=10"></script>
 <script src="carrito.js?v=9"></script>
 
 <script>
