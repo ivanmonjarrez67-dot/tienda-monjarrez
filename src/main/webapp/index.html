@@ -699,6 +699,87 @@
         }
       }
 
+      /* 🆕 ========= Tarjeta de producto estilo Temu =========
+         Letras más finas, una fila de precio con el carrito al lado, estrellas
+         debajo y movimiento suave. Mismos colores de la marca (vino/rojo). */
+      .mosaic-grid .producto {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        padding-bottom: 10px;
+        animation: tarjetaEntra 0.45s ease backwards;
+      }
+      @keyframes tarjetaEntra {
+        from { opacity: 0; transform: translateY(14px); }
+        to   { opacity: 1; transform: none; }
+      }
+      .mosaic-grid .producto:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 22px rgba(122, 37, 48, 0.16);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .mosaic-grid .producto { animation: none; }
+        .mosaic-grid .producto:hover { transform: none; }
+      }
+
+      .mosaic-grid .producto h3 {
+        margin: 8px 14px 0;
+        font-size: 0.74rem;
+        color: #333;
+      }
+
+      /* Fila de precio: precio a la izquierda, carrito a la derecha */
+      .mosaic-grid .producto-fila-precio {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin: 5px 14px 0;
+      }
+      .mosaic-grid .producto-fila-precio .producto-precio {
+        flex: 1 1 auto;
+        min-width: 0;
+        margin: 0;
+        font-size: 1rem;
+        line-height: 1.25;
+      }
+      .mosaic-grid .producto-precio-anterior { font-size: 0.66rem; margin-left: 4px; }
+      .mosaic-grid .producto-descuento-badge { font-size: 0.58rem; padding: 1px 5px; margin-left: 3px; }
+      .mosaic-grid .producto-fila-precio .btn-agregar-carrito {
+        position: static !important;
+        inset: auto !important;
+        flex: 0 0 auto;
+        margin: 0 !important;
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 0 !important;
+      }
+
+      /* Líneas de apoyo, más pequeñas y alineadas con el resto del texto */
+      .mosaic-grid .producto-ahorra-extra { margin: 3px 14px 0; font-size: 0.64rem; }
+      .mosaic-grid .producto-quedan-badge { margin: 4px 14px 0; font-size: 0.66rem; }
+      .mosaic-grid .producto-bestseller-badge { margin: 4px 14px 0; font-size: 0.62rem; }
+      .mosaic-grid .producto-vendido-badge { margin: 4px 14px 0; font-size: 0.6rem; }
+      .mosaic-grid .producto-contador { margin: 4px 14px 0; font-size: 0.62rem; }
+
+      /* Estrellas: ahora en el flujo de la tarjeta (antes flotaban abajo a la izquierda) */
+      .mosaic-grid .producto .producto-resenas {
+        position: static;
+        height: auto;
+        margin: 5px 14px 0;
+      }
+      .mosaic-grid .producto .rs-star { font-size: 0.86rem; }
+
+      @media (max-width: 500px) {
+        .mosaic-grid .producto h3 { margin-left: 8px; margin-right: 8px; }
+        .mosaic-grid .producto-fila-precio,
+        .mosaic-grid .producto-ahorra-extra,
+        .mosaic-grid .producto-quedan-badge,
+        .mosaic-grid .producto-bestseller-badge,
+        .mosaic-grid .producto-vendido-badge,
+        .mosaic-grid .producto-contador,
+        .mosaic-grid .producto .producto-resenas { margin-left: 8px; margin-right: 8px; }
+        .mosaic-grid .producto-fila-precio .producto-precio { font-size: 0.94rem; }
+      }
+
       /* 🆕 Mini carrusel de fotos (imagen base + hasta 2 adicionales) */
       .producto-galeria {
         position: relative;

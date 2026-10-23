@@ -1147,8 +1147,10 @@ function construirTarjetaProductoHTML(producto) {
     ? `<div class="producto-ahorra-extra">Ahorra ₡${Math.round(montoAhorro).toLocaleString("es-CR", { maximumFractionDigits: 0 })} extra</div>`
     : "";
 
+  // 🆕 Precio SIN el contador (el contador ahora compite con las demás
+  // insignias por un solo lugar, ver "estadoHtml" más abajo).
   const precioHtml = precioFormateado
-    ? `<p class="producto-precio">₡${precioFormateado} ${precioAnteriorHtml}</p>${contadorHtml}`
+    ? `<p class="producto-precio">₡${precioFormateado} ${precioAnteriorHtml}</p>`
     : "";
 
   const ribbonUrgenciaHtml = urgencia.mostrarFranja
@@ -1191,16 +1193,27 @@ function construirTarjetaProductoHTML(producto) {
   // página, para no romper el catálogo por un error de undefined.
   const botonCarritoHtml = window.Carrito ? window.Carrito.botonHTML(producto) : "";
 
+  // 🆕 Orden de la tarjeta (estilo Temu): foto → nombre → FILA DE PRECIO con
+  // el carrito al lado → "Ahorra ₡X extra" → UNA sola línea de estado →
+  // estrellas. Prioridad de la línea de estado (solo se muestra la primera
+  // que exista): "Artículo más vendido #N" > "Una venta reciente" >
+  // "Solo quedan X / Último día" > contador "Termina en". Así la tarjeta no
+  // se llena de avisos que compiten entre sí.
+  const estadoHtml = quedanBadgeHtml || contadorHtml;
+  const filaPrecioHtml = (precioHtml || botonCarritoHtml)
+    ? `<div class="producto-fila-precio">${precioHtml}${botonCarritoHtml}</div>`
+    : "";
+
   return `
         <div class="producto-media-wrap">
           ${ribbonUrgenciaHtml}
           ${galeriaHtml}
-          ${botonCarritoHtml}
         </div>
         <h3>${producto.nombre || ''}</h3>
-        ${quedanBadgeHtml}
+        ${filaPrecioHtml}
         ${ahorraExtraHtml}
-        ${precioHtml}
+        ${estadoHtml}
+        ${resenasTarjetaHtml(producto)}
         <button class="more-info-btn"
           data-id="${producto.id ?? ''}"
           data-empresa="${producto.empresa || ''}"
@@ -1220,7 +1233,6 @@ function construirTarjetaProductoHTML(producto) {
         >
           Ver detalles
         </button>
-        ${resenasTarjetaHtml(producto)}
       `;
 }
 // 🆕 Se exponen en window (mismo motivo que window.construirGaleriaHTML,
