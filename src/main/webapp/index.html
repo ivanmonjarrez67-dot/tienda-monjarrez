@@ -770,6 +770,22 @@
         min-width: 0 !important;
       }
 
+      /* Franja de urgencia ("Oferta relámpago", "Alta demanda"...): ya no va
+         flotando sobre la foto, sino como ENCABEZADO pegado arriba de la imagen,
+         del mismo ancho de la tarjeta, para que se note que es de ese producto. */
+      .mosaic-grid .producto .producto-franja-urgencia {
+        position: static;
+        display: block;
+        margin: 0;
+        padding: 5px 10px;
+        border-radius: 6px 6px 0 0;
+        box-shadow: none;
+        font-size: 0.64rem;
+        letter-spacing: 0.4px;
+        text-align: left;
+        line-height: 1.2;
+      }
+
       /* Sin puntitos de carrusel en las tarjetas (más limpio, como Temu): la
          imagen ocupa ese espacio. Siguen en el HTML, así que deslizar las fotos
          con el dedo funciona igual; solo se ocultan a la vista. */
@@ -4689,7 +4705,7 @@ async function cargarMisProductos(usuarioId) {
   .google-aviso { font-size: 12px; text-align: center; margin: 6px 0 0; opacity: .85; }
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="script.js?v=8"></script>
+<script src="script.js?v=9"></script>
 <script src="carrito.js?v=9"></script>
 
 <script>

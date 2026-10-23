@@ -1220,8 +1220,8 @@ function construirTarjetaProductoHTML(producto) {
     : "";
 
   return `
+        ${ribbonUrgenciaHtml}
         <div class="producto-media-wrap">
-          ${ribbonUrgenciaHtml}
           ${galeriaHtml}
         </div>
         <h3>${producto.nombre || ''}</h3>
