@@ -1002,7 +1002,9 @@ function estrellasTarjetaHtml(promedio, total) {
     estrellas += `<span class="rs-star" style="--rs-fill:${pct}%">★</span>`;
   }
   const etiqueta = `${prom.toFixed(1)} de 5 estrellas` + (total ? ` (${total} reseña${total === 1 ? "" : "s"})` : "");
-  return `<span class="rs-stars" role="img" aria-label="${etiqueta}">${estrellas}</span>`;
+  // Número de reseñas junto a las estrellas (solo si es un dato real > 0)
+  const cuenta = total > 0 ? `<span class="rs-count">${total.toLocaleString("es-CR")}</span>` : "";
+  return `<span class="rs-stars" role="img" aria-label="${etiqueta}">${estrellas}</span>${cuenta}`;
 }
 
 function resenasTarjetaHtml(producto) {
@@ -1194,8 +1196,8 @@ function construirTarjetaProductoHTML(producto) {
   const botonCarritoHtml = window.Carrito ? window.Carrito.botonHTML(producto) : "";
 
   // 🆕 Orden de la tarjeta (estilo Temu): foto → nombre → FILA DE PRECIO con
-  // el carrito al lado → "Ahorra ₡X extra" → UNA sola línea de estado →
-  // estrellas. Prioridad de la línea de estado (solo se muestra la primera
+  // el carrito al lado → "Ahorra ₡X extra" → UNA sola línea de estado.
+  // (Las estrellas con el número de reseñas van justo debajo del nombre.) Prioridad de la línea de estado (solo se muestra la primera
   // que exista): "Artículo más vendido #N" > "Una venta reciente" >
   // "Solo quedan X / Último día" > contador "Termina en". Así la tarjeta no
   // se llena de avisos que compiten entre sí.
@@ -1210,10 +1212,10 @@ function construirTarjetaProductoHTML(producto) {
           ${galeriaHtml}
         </div>
         <h3>${producto.nombre || ''}</h3>
+        ${resenasTarjetaHtml(producto)}
         ${filaPrecioHtml}
         ${ahorraExtraHtml}
         ${estadoHtml}
-        ${resenasTarjetaHtml(producto)}
         <button class="more-info-btn"
           data-id="${producto.id ?? ''}"
           data-empresa="${producto.empresa || ''}"
