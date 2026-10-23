@@ -755,7 +755,9 @@
       .mosaic-grid .producto-precio-anterior { font-size: 0.66rem; margin-left: 4px; }
       .mosaic-grid .producto-descuento-badge { font-size: 0.58rem; padding: 1px 5px; margin-left: 3px; }
       .mosaic-grid .producto .producto-fila-precio .btn-agregar-carrito {
-        position: static !important;
+        /* relative (no static): el "+" del carrito es absolute y, con static,
+           se iba a la esquina de la tarjeta y quedaba un "+" suelto abajo */
+        position: relative !important;
         inset: auto !important;
         top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
         transform: none !important;
@@ -4682,7 +4684,7 @@ async function cargarMisProductos(usuarioId) {
   .google-aviso { font-size: 12px; text-align: center; margin: 6px 0 0; opacity: .85; }
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="script.js?v=7"></script>
+<script src="script.js?v=8"></script>
 <script src="carrito.js?v=9"></script>
 
 <script>

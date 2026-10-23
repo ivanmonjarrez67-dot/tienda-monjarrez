@@ -1209,7 +1209,7 @@ function construirTarjetaProductoHTML(producto) {
   // solo si el producto tiene ventas registradas. Si no hay, no se muestra.
   const unidadesVendidas = mapaUnidadesVendidas.get(idTarjeta) || 0;
   const partesMeta = [];
-  if (unidadesVendidas > 0) {
+  if (unidadesVendidas > 0 && !puestoBestseller) { // en los "más vendidos" no se muestra la cantidad
     partesMeta.push(`<span><i class="fa-solid fa-fire"></i> ${unidadesVendidas.toLocaleString("es-CR")} vendido${unidadesVendidas === 1 ? "" : "s"}</span>`);
   }
   const metaHtml = partesMeta.length
