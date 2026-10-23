@@ -732,20 +732,30 @@
         align-items: center;
         justify-content: space-between;
         gap: 8px;
-        margin: 5px 14px 0;
+        margin: 6px 14px 0;
+        /* 🆕 Franja suave en rojo de la marca detrás del precio (como las
+           liquidaciones de Temu, pero menos brillante) para que resalte */
+        padding: 3px 4px 3px 8px;
+        background: rgba(198, 45, 45, 0.08);
+        border-radius: 6px;
       }
       .mosaic-grid .producto-fila-precio .producto-precio {
         flex: 1 1 auto;
         min-width: 0;
         margin: 0;
-        font-size: 1rem;
+        font-size: 1.05rem;
         line-height: 1.25;
+        color: #c62d2d; /* mismo rojo de las estrellas: precio = lo más llamativo */
       }
       .mosaic-grid .producto-precio-anterior { font-size: 0.66rem; margin-left: 4px; }
       .mosaic-grid .producto-descuento-badge { font-size: 0.58rem; padding: 1px 5px; margin-left: 3px; }
-      .mosaic-grid .producto-fila-precio .btn-agregar-carrito {
+      .mosaic-grid .producto .producto-fila-precio .btn-agregar-carrito {
         position: static !important;
         inset: auto !important;
+        top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
+        transform: none !important;
+        float: none !important;
+        background: #fff;
         flex: 0 0 auto;
         margin: 0 !important;
         width: 32px !important;
