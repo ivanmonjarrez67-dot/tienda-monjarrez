@@ -997,8 +997,7 @@
         --pt-estrella-vacia: #d6d6d6;
         --pt-etiqueta: #c62d2d;    /* "Excelente" / "Muy bueno" */
         --pt-fuego: #e8590c;       /* ícono 🔥 de vendidos */
-        --pt-carrito: #c62d2d;     /* fondo del botón del carrito */
-        padding-bottom: 8px;
+                padding-bottom: 8px;
       }
       .mosaic-grid .producto h3,
       .mosaic-grid .producto .producto-fila-precio,
@@ -1023,6 +1022,7 @@
         display: flex;
         align-items: center;
         flex-wrap: nowrap;
+        gap: 4px;
         background: none;
         padding: 0;
         margin: 4px 10px 0;
@@ -1049,7 +1049,7 @@
         order: -1;
         margin: 0;
         font-size: 0.78rem;
-        font-weight: 400;
+        font-weight: 700;          /* tachado en NEGRITA */
         letter-spacing: 0;
         color: var(--pt-tachado);
         text-decoration-thickness: 1px;
@@ -1096,19 +1096,7 @@
         white-space: nowrap;
       }
 
-      /* ---- Fila inferior: [🔥 N vendidos] ............ [carrito] ---- */
-      .mosaic-grid .producto .pt-fila-inferior {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 6px;
-        margin: 4px 10px 0;
-      }
-      .mosaic-grid .producto .pt-fila-inferior .producto-meta {
-        margin: 0;
-        flex: 1 1 auto;
-        min-width: 0;
-      }
+      /* ---- Contador de vendidos (🔥 N vendidos) bien visible ---- */
       .mosaic-grid .producto .producto-meta {
         margin: 4px 10px 0;
         gap: 2px 8px;
@@ -1120,29 +1108,14 @@
       .mosaic-grid .producto .producto-meta i { font-size: 0.8rem; margin-right: 2px; }
       .mosaic-grid .producto .producto-meta .fa-fire { color: var(--pt-fuego); }
 
-      /* Carrito: círculo ROJO relleno con el ícono blanco, bien visible */
-      .mosaic-grid .producto .btn-agregar-carrito {
-        position: relative !important;
-        inset: auto !important;
+      /* Carrito: vuelve a su diseño de siempre (blanco con borde), solo un
+         poco más grande. No se toca el ícono ni el "+" de adentro. */
+      .mosaic-grid .producto .producto-fila-precio .btn-agregar-carrito {
+        order: 10;
         flex: 0 0 auto;
-        margin: 0 0 0 auto !important;
-        width: 38px !important;
-        height: 38px !important;
-        min-width: 0 !important;
-        font-size: 16px !important;
-        background: var(--pt-carrito) !important;
-        color: #fff !important;
-        border: 0 !important;
-        border-radius: 50% !important;
-        box-shadow: 0 2px 6px rgba(198, 45, 45, 0.4);
-        display: inline-flex !important;
-        align-items: center;
-        justify-content: center;
-      }
-      .mosaic-grid .producto .btn-agregar-carrito i,
-      .mosaic-grid .producto .btn-agregar-carrito svg {
-        color: #fff !important;
-        fill: #fff;
+        width: 34px !important;
+        height: 34px !important;
+        overflow: visible;
       }
 
       /* Frases secundarias */
@@ -1154,14 +1127,12 @@
         .mosaic-grid .producto h3,
         .mosaic-grid .producto .producto-fila-precio,
         .mosaic-grid .producto .producto-resenas,
-        .mosaic-grid .producto .producto-meta,
-        .mosaic-grid .producto .pt-fila-inferior { margin-left: 8px; margin-right: 8px; }
-        .mosaic-grid .producto .pt-fila-inferior .producto-meta { margin-left: 0; margin-right: 0; }
+        .mosaic-grid .producto .producto-meta { margin-left: 8px; margin-right: 8px; }
         .mosaic-grid .producto .producto-fila-precio .producto-precio { font-size: 1.05rem; column-gap: 4px; }
         .mosaic-grid .producto .producto-precio-anterior { font-size: 0.74rem; }
         .mosaic-grid .producto .producto-descuento-badge { font-size: 0.68rem; padding: 2px 4px; }
         .mosaic-grid .producto .rs-star { font-size: 0.86rem; }
-        .mosaic-grid .producto .btn-agregar-carrito { width: 36px !important; height: 36px !important; font-size: 15px !important; }
+        .mosaic-grid .producto .producto-fila-precio .btn-agregar-carrito { width: 32px !important; height: 32px !important; }
       }
       @media (max-width: 360px) {
         .mosaic-grid .producto .producto-fila-precio .producto-precio { font-size: 1rem; }
@@ -8568,9 +8539,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 })();
 </script>
 <!-- 🆕 Retoques de la tarjeta de producto (estilo Temu): pone "Excelente"
-     junto a las estrellas, deja la cantidad de reseñas como número y
-     lleva el carrito a una fila propia (junto a "N vendidos") para que se
-     vea bien. No toca script.js: observa el catálogo y mejora cada
+     junto a las estrellas, deja la cantidad de reseñas como número.
+     No toca script.js: observa el catálogo y mejora cada
      tarjeta que aparezca (también las que se cargan después). -->
 <script>
 (function () {
@@ -8581,24 +8551,6 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   }
 
   function mejorarTarjeta(card) {
-    // Carrito -> fila inferior, a la derecha de "N vendidos"
-    var cart = card.querySelector(".btn-agregar-carrito");
-    if (cart && !card.querySelector(".pt-fila-inferior")) {
-      var fila = document.createElement("div");
-      fila.className = "pt-fila-inferior";
-      var meta = card.querySelector(".producto-meta");
-      var filaPrecio = card.querySelector(".producto-fila-precio");
-      if (meta) {
-        meta.parentNode.insertBefore(fila, meta);
-        fila.appendChild(meta);
-      } else if (filaPrecio) {
-        filaPrecio.parentNode.insertBefore(fila, filaPrecio.nextSibling);
-      } else {
-        card.appendChild(fila);
-      }
-      fila.appendChild(cart);
-    }
-
     // Estrellas: etiqueta "Excelente" + cantidad como número
     var res = card.querySelector(".producto-resenas");
     if (!res || res.hidden || res.dataset.ptListo) return;
