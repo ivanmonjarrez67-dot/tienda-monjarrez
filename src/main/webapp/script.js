@@ -973,15 +973,17 @@ function calcularBestsellersDelDia(productos) {
   const mapa = new Map();
   top.forEach((id, idx) => mapa.set(id, idx + 1));
 
-  // 3) Otros 20 = "Una venta reciente": las ventas más recientes que NO están
-  //    ya en el top (la primera venta es la más antigua, va al final).
+  // 3) TODOS los demás productos vendidos (fuera del top 20) = "Vendido
+  //    recientemente" + número de ventas. Ya no hay tope de 20: así se ve que
+  //    el resto del catálogo también se ha vendido. (La primera venta de la
+  //    web es la más antigua, va al final.)
   const enTop = new Set(top);
   const recientes = [];
   const vistos = new Set();
   idsVendidosRecientes.concat(vendidosCargo ? VENTA_INICIAL_UNIDADES.map((x) => x.id) : []).forEach((id) => {
     if (enCatalogo.has(id) && !enTop.has(id) && !vistos.has(id)) { vistos.add(id); recientes.push(id); }
   });
-  setVendidosSecundarios = new Set(recientes.slice(0, 20));
+  setVendidosSecundarios = new Set(recientes);
   return mapa;
 }
 // 🆕 ========= Fin de "ARTÍCULO MÁS VENDIDO #N" =========
@@ -1181,23 +1183,29 @@ function construirTarjetaProductoHTML(producto) {
     ? `<p class="producto-precio">₡${precioFormateado} ${precioAnteriorHtml}</p>`
     : "";
 
-  // 🆕 Ventas REALES: #1..#20 = los 20 productos vendidos más
-  // recientemente; los 20 anteriores llevan "Una venta reciente". Va debajo
+  // 🆕 Ventas REALES: #1..#20 = los 20 productos más vendidos; el resto de
+  // productos con ventas llevan "Vendido recientemente" + su número de ventas. Va debajo
   // del nombre y le gana el lugar a "Solo quedan X". Independiente de la
   // estrategia de urgencia (una venta real se muestra siempre).
   const idTarjeta = String(producto.id ?? "");
   const puestoBestseller = mapaBestsellerHoy.get(idTarjeta);
   const esVendidoSecundario = !puestoBestseller && setVendidosSecundarios.has(idTarjeta);
-  // El "más vendido" ahora es el ENCABEZADO dorado de la tarjeta (abajo); por eso
-  // ya no lleva su propia línea y la línea de estado pasa a la siguiente opción.
+  // El "más vendido" lleva el ENCABEZADO dorado de la tarjeta Y la etiqueta roja
+  // "Artículo más vendido #N" debajo del nombre (para que se note más).
   // Si un producto es "más vendido", su encabezado le gana al de urgencia.
   const ribbonUrgenciaHtml = puestoBestseller
     ? construirFranjaVendidoHtml(puestoBestseller)
     : urgencia.mostrarFranja
       ? construirFranjaUrgenciaHtml(urgencia.fraseSecundaria)
       : "";
-  const quedanBadgeHtml = esVendidoSecundario
-      ? `<div class="producto-vendido-badge"><i class="fa-solid fa-bag-shopping"></i> Una venta reciente</div>`
+  // Etiqueta roja debajo del nombre (además del encabezado dorado):
+  // "Artículo más vendido #N" para el top 20; "Vendido recientemente" para
+  // el resto de productos con ventas (el número de ventas va en la línea
+  // "N vendidos" de abajo).
+  const quedanBadgeHtml = puestoBestseller
+      ? `<div class="producto-bestseller-badge"><i class="fa-solid fa-trophy"></i> Artículo más vendido #${puestoBestseller}</div>`
+      : esVendidoSecundario
+      ? `<div class="producto-vendido-badge"><i class="fa-solid fa-bag-shopping"></i> Vendido recientemente</div>`
       : urgencia.mostrarFranja
         ? `<div class="producto-quedan-badge">${urgencia.frase}</div>`
         : "";
@@ -1226,7 +1234,7 @@ function construirTarjetaProductoHTML(producto) {
   // 🆕 Orden de la tarjeta (estilo Temu): foto → nombre → FILA DE PRECIO con
   // el carrito al lado → "Ahorra ₡X extra" → UNA sola línea de estado.
   // (Las estrellas con el número de reseñas van justo debajo del nombre.) Prioridad de la línea de estado (solo se muestra la primera
-  // que exista): "Artículo más vendido #N" > "Una venta reciente" >
+  // que exista): "Artículo más vendido #N" > "Vendido recientemente" >
   // "Solo quedan X / Último día" > contador "Termina en". Así la tarjeta no
   // se llena de avisos que compiten entre sí.
   const estadoHtml = quedanBadgeHtml || contadorHtml;

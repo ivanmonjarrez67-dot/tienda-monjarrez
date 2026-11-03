@@ -1236,7 +1236,8 @@
   // IGUAL que en script.js (ventas REALES, ya no es decorativo):
   //  - Los 20 con más unidades vendidas (mismo orden del panel de
   //    estadísticas) llevan "Artículo más vendido #N".
-  //  - Otros 20 vendidos recientemente llevan "Una venta reciente".
+  //  - TODOS los demás productos con ventas llevan "Vendido recientemente"
+  //    + su número de ventas (ya no hay tope de 20).
   // Los datos vienen de /api/vendidos-recientes. Si falla, no se muestra nada.
   const VENTA_INICIAL_UNIDADES = [
     { id: "56", u: 1 },
@@ -1310,7 +1311,8 @@
     idsVendidosRecientes.concat(vendidosCargo ? VENTA_INICIAL_UNIDADES.map((x) => x.id) : []).forEach((id) => {
       if (enCatalogo.has(id) && !enTop.has(id) && !vistos.has(id)) { vistos.add(id); recientes.push(id); }
     });
-    return { puestos, recientes: new Set(recientes.slice(0, 20)) };
+    const unidadesCat = new Map([...unidades.entries()].filter(([id]) => enCatalogo.has(id)));
+    return { puestos, recientes: new Set(recientes), unidades: unidadesCat };
   }
   // 🆕 ========= Fin de ventas reales =========
 
@@ -1405,6 +1407,12 @@
       .catch((err) => console.warn("No se pudieron cargar las fotos adicionales:", err));
   }
 
+  // Texto de la etiqueta "Vendido recientemente" con el número de ventas.
+  function textoVendidoReciente(id) {
+    const u = (ventasReales.unidades && ventasReales.unidades.get(String(id))) || 0;
+    return u > 0 ? `Vendido recientemente · ${u.toLocaleString("es-CR")} vendido${u === 1 ? "" : "s"}` : "Vendido recientemente";
+  }
+
   function construirPrecio(producto, puestoBestseller, esReciente) {
     const esServicio = !aplicaUrgencia(producto); // true = este producto NO lleva urgencia
     // Las ventas reales se muestran siempre, aunque el producto no lleve urgencia.
@@ -1453,7 +1461,7 @@
     const quedanBadgeHtml = puestoBestseller
       ? `<div class="producto-bestseller-badge">Artículo más vendido #${puestoBestseller}</div>`
       : esReciente
-        ? `<div class="producto-vendido-badge"><i class="fa-solid fa-bag-shopping"></i> Una venta reciente</div>`
+        ? `<div class="producto-vendido-badge"><i class="fa-solid fa-bag-shopping"></i> ${textoVendidoReciente(producto.id)}</div>`
       : urgencia.mostrarFranja
         ? `<div class="producto-quedan-badge"><i class="fa-solid fa-fire"></i><span>${urgencia.frase}</span></div>`
         : "";
@@ -1584,7 +1592,7 @@
 
   // Ventas reales del catálogo completo (se llena al cargar el producto);
   // las tarjetas de "Más productos en esta categoría" la usan para sus insignias.
-  let ventasReales = { puestos: new Map(), recientes: new Set() };
+  let ventasReales = { puestos: new Map(), recientes: new Set(), unidades: new Map() };
 
   function construirTarjetaRelacionada(p) {
     const idRel = String(p.id);
@@ -1592,7 +1600,7 @@
     const insigniaRel = puestoRel
       ? `<div class="producto-bestseller-badge">Artículo más vendido #${puestoRel}</div>`
       : ventasReales.recientes.has(idRel)
-        ? `<div class="producto-vendido-badge"><i class="fa-solid fa-bag-shopping"></i> Una venta reciente</div>`
+        ? `<div class="producto-vendido-badge"><i class="fa-solid fa-bag-shopping"></i> ${textoVendidoReciente(idRel)}</div>`
         : "";
     const precioNum = parseFloat(p.precio);
     const precioAnteriorNum = parseFloat(p.precio_anterior);
