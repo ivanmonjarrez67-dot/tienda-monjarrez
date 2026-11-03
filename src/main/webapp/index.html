@@ -2088,7 +2088,56 @@
       .foto-extra.error .foto-extra-num { background: #c0392b; }
     </style>
     
-    </head>
+        <!-- 🍎 AJUSTES PARA iPHONE / SAFARI (rendimiento de scroll + iconos de abajo).
+         Va al final del <head> para ganar en cascada sin tocar el resto del CSS.
+         Safari en iOS es mucho más lento que Chrome en Android al animar muchas
+         capas a la vez: cada tarjeta tenía 2-3 animaciones infinitas + entrada
+         animada + máscara, y eso multiplicado por todo el catálogo trababa el scroll. -->
+    <style id="ajustes-ios">
+      /* En pantallas táctiles el :hover se queda "pegado" tras un toque y
+         dispara transform + sombra grande en la tarjeta: se desactiva. */
+      @media (hover: none) {
+        .mosaic-grid .producto:hover {
+          transform: none;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        }
+        .red-icono:hover { transform: none; }
+      }
+
+      /* Solo iPhone/iPad (Safari y navegadores WebKit en iOS) */
+      @supports (-webkit-touch-callout: none) {
+        /* Sin animación de entrada ni brillos/pulsos infinitos por tarjeta */
+        .mosaic-grid .producto { animation: none !important; }
+        .mosaic-grid .producto-franja-urgencia::before { animation: none !important; display: none !important; }
+        .mosaic-grid .producto-franja-urgencia .fu-icono i { animation: none !important; }
+        /* La máscara (mask-image) por tarjeta es muy cara en WebKit */
+        .mosaic-grid .producto-franja-urgencia::after {
+          -webkit-mask-image: none;
+          mask-image: none;
+          opacity: 0.55;
+        }
+        /* El botón del menú flotante ya no hace animación de aparición/pulso */
+        body.menu-flotando #menuBtn { animation: none !important; }
+      }
+
+      /* Iconos flotantes de redes: antes se centraban con left:50% +
+         transform, y en iOS los elementos fixed con transform suelen
+         desaparecer o saltar durante el scroll. Ahora el contenedor ocupa
+         todo el ancho (sin transform) y centra los iconos con flex. */
+      .redes-flotantes {
+        left: 0;
+        right: 0;
+        width: max-content;   /* ancho del contenido: así sigue siendo un "elemento pequeño" */
+        margin: 0 auto;       /* centrado sin transform */
+        transform: none;
+        bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+        z-index: 500;
+      }
+      @media (max-width: 460px) {
+        .redes-flotantes { bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+      }
+    </style>
+  </head>
   <script src="mascota.js" defer></script>
   <body>
 <!-- 🔧 El <canvas id="starsCanvas"> se movió de aquí hacia abajo, justo
@@ -8592,7 +8641,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     requestAnimationFrame(barrer);
   }
 
-  new MutationObserver(programar).observe(document.body, { childList: true, subtree: true });
+  // 🍎 Antes observaba TODO el <body>: el contador de la promo (cada 1 s) y otros
+  // cambios disparaban un barrido de todas las tarjetas sin parar. Ahora solo se
+  // observa la cuadrícula de productos.
+  new MutationObserver(programar).observe(
+    document.getElementById("productGrid") || document.body,
+    { childList: true, subtree: true }
+  );
   programar();
 })();
 </script>

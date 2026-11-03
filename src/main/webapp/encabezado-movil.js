@@ -569,24 +569,46 @@
   /* --------------------- OCULTAR / MOSTRAR AL HACER SCROLL --------------------- */
 
   var ultimoY = 0;
-  function alHacerScroll() {
+  var ticking = false;
+  var ultimoMarcado = 0;
+  function procesarScroll() {
+    ticking = false;
     if (!MQ.matches) return;
     var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+    // iOS: el "rebote" elástico arriba (y < 0) y abajo (más allá del final) genera
+    // scrolls falsos que mostraban/ocultaban las barras sin parar. Se ignoran.
+    var maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    if (y < 0 || y > maxY) return;
     var d = y - ultimoY;
     if (Math.abs(d) < 6) return;
     var buscando = document.activeElement && document.activeElement.id === "search";
     if (y < 80 || d < 0) document.body.classList.remove("mt-hide");
     else if (!hojaAbierta && !buscando) {
-      if (!document.body.classList.contains("mt-hide")) marcarFlotantes();
+      if (!document.body.classList.contains("mt-hide")) {
+        // marcarFlotantes() recorre y mide muchos elementos: se limita a una vez cada 3 s
+        var ahora = Date.now();
+        if (ahora - ultimoMarcado > 3000) { ultimoMarcado = ahora; marcarFlotantes(); }
+      }
       document.body.classList.add("mt-hide");
     }
     ultimoY = y;
   }
+  // El navegador dispara "scroll" decenas de veces por segundo: se procesa una vez por frame.
+  function alHacerScroll() {
+    if (ticking) return;
+    ticking = true;
+    window.requestAnimationFrame(procesarScroll);
+  }
 
   /* ------------------- ACTIVAR / DESACTIVAR SEGÚN EL ANCHO ------------------- */
 
+  var ultimoAlto = -1;
   function medirAlto() {
-    document.documentElement.style.setProperty("--mt-top-h", top.offsetHeight + "px");
+    // Solo se escribe la variable si cambió: cada escritura recalcula estilos de toda la página.
+    var h = top.offsetHeight;
+    if (h === ultimoAlto) return;
+    ultimoAlto = h;
+    document.documentElement.style.setProperty("--mt-top-h", h + "px");
   }
 
   function activar() {
@@ -613,6 +635,7 @@
     cerrarHojas();
     document.body.classList.remove("mt-on", "mt-hide");
     document.documentElement.style.removeProperty("--mt-top-h");
+    ultimoAlto = -1; // al reactivar, la variable se vuelve a escribir
     if (header && marcadorHeader && marcadorHeader.parentNode) {
       marcadorHeader.parentNode.insertBefore(header, marcadorHeader);
       marcadorHeader.parentNode.removeChild(marcadorHeader);

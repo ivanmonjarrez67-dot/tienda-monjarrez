@@ -2811,6 +2811,7 @@ function activarEstrellado(guardar = true) {
   }
   sincronizarFondoWrapper('transparent');
   resizeStars();
+  cancelAnimationFrame(starsAnimId); // evita varios bucles de animación a la vez
   drawStars();
   if (guardar) guardarTema('estrellado');
 }

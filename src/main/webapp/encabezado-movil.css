@@ -411,3 +411,17 @@ body.mt-on .mt-full.on { transform: translateY(0); }
 .mt-google-o::before, .mt-google-o::after { content: ""; flex: 1; height: 1px; background: var(--mt-linea); }
 .mt-google-btn { display: flex; justify-content: center; min-height: 44px; }
 .mt-google-nota { margin-top: 6px; font-size: 12px; line-height: 1.35; text-align: center; color: var(--mt-gris); }
+
+/* ==========================================================================
+   🍎 AJUSTES iPHONE / SAFARI (añadido; no cambia nada de lo anterior)
+   ========================================================================== */
+/* "inset" no existe en iOS anteriores a 14.5: sin esto el fondo oscuro y la
+   pantalla de Categorías se encogían y no cubrían la pantalla. */
+body.mt-on .mt-overlay,
+body.mt-on .mt-full {
+  top: 0; left: 0; right: 0; bottom: 0;
+}
+/* 85vh en iOS incluye la zona de la barra de Safari: dvh usa el alto real visible. */
+body.mt-on .mt-sheet { max-height: 85vh; max-height: 85dvh; overscroll-behavior: contain; }
+body.mt-on .mt-cat-lista,
+body.mt-on .mt-cat-panel { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
